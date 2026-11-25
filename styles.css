@@ -116,7 +116,7 @@ button { cursor: pointer; }
 .export-menu button span { color: #969fad; font-size: 10px; font-weight: 700; }
 .avatar { width: 32px; height: 32px; border: 0; border-radius: 50%; background: #e8edf7; color: #526484; font-size: 12px; font-weight: 700; }
 
-.page-content { max-width: 1320px; margin: 0 auto; padding: 35px 42px 60px; }
+.page-content { margin: 0 auto; padding: 35px 42px 60px; }
 .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
 .eyebrow { margin-bottom: 8px; color: #8591a2; font-size: 10px; font-weight: 700; letter-spacing: 1.15px; text-transform: uppercase; }
 h1, h2, h3, p { margin-top: 0; }

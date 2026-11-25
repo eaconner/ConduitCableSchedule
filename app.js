@@ -3,7 +3,7 @@ const CONDUIT_SIZES = ['3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '
 const CABLE_TRAY_LOCATION_ID = "__wireframe_cable_tray__";
 const CABLE_TRAY_LOCATION_NAME = "Cable Tray";
 const SCHEDULE_STATUSES = [
-  "In progress",
+  "In Progress",
   "Internal Review",
   "Issued for Review",
   "Issued for Approval",
@@ -18,7 +18,7 @@ const emptyState = () => ({
     internalProjectNumber: "",
     revisionNumber: "",
     editorName: "",
-    scheduleStatus: "In progress",
+    scheduleStatus: "In Progress",
     cableTypes: [],
     locations: [],
   },
@@ -44,7 +44,7 @@ function loadState() {
       settings: {
         ...emptyState().settings,
         ...parsed.settings,
-        scheduleStatus: parsed.settings?.scheduleStatus || "In progress",
+        scheduleStatus: parsed.settings?.scheduleStatus || "In Progress",
       },
       cables: Array.isArray(parsed.cables) ? parsed.cables : [],
       conduits: Array.isArray(parsed.conduits) ? parsed.conduits : [],
@@ -181,8 +181,8 @@ function showToast(message, isError = false) {
 
 function updateWorkspace() {
   const settings = state.settings;
-  document.querySelector("#sidebar-project-name").textContent = settings.projectName || "New project";
-  document.querySelector("#sidebar-project-number").textContent = settings.internalProjectNumber || "Project workspace";
+  document.querySelector("#sidebar-project-name").textContent = settings.projectName || "New Project";
+  document.querySelector("#sidebar-project-number").textContent = settings.internalProjectNumber || "Project Workspace";
   document.querySelector("#editor-avatar").textContent = (settings.editorName || "E").trim().charAt(0).toUpperCase();
   document.querySelector("#cable-nav-count").textContent = state.cables.length;
   document.querySelector("#conduit-nav-count").textContent = state.conduits.length;
@@ -209,7 +209,7 @@ function renderPage() {
 }
 
 function projectName() {
-  return state.settings.projectName || "Untitled project";
+  return state.settings.projectName || "Untitled Project";
 }
 
 function locationName(id) {
@@ -260,11 +260,11 @@ function renderDashboard() {
     <section class="content-card" style="margin-bottom:18px">
       <div class="card-heading"><div><h2>Project details</h2><p>Project identifiers and schedule ownership</p></div><button class="text-button" data-page="settings">Edit details →</button></div>
       <div class="project-details">
-        ${detail("Client", settings.clientName)}
-        ${detail("Client project number", settings.clientProjectNumber)}
-        ${detail("Internal project number", settings.internalProjectNumber)}
+        ${detail("Client Name", settings.clientName)}
+        ${detail("Client Project #", settings.clientProjectNumber)}
+        ${detail("Internal Project #", settings.internalProjectNumber)}
         ${detail("Revision", settings.revisionNumber)}
-        ${detail("Editor", settings.editorName)}
+        ${detail("Designer", settings.editorName)}
         ${detail("Cable types", settings.cableTypes.length)}
         ${detail("Locations", settings.locations.length)}
         ${detail("Schedule status", scheduleStatus())}
@@ -364,10 +364,10 @@ function renderBillOfMaterials() {
         <div class="bom-project-title"><div><h2>${escapeHtml(projectName())}</h2><p>Bill of Materials</p></div><span class="bom-generated">Generated ${escapeHtml(new Date().toLocaleDateString())}</span></div>
         <div class="bom-project-meta">
           ${detail("Client", settings.clientName)}
-          ${detail("Client project number", settings.clientProjectNumber)}
-          ${detail("Internal project number", settings.internalProjectNumber)}
+          ${detail("Client Project #", settings.clientProjectNumber)}
+          ${detail("Internal Project #", settings.internalProjectNumber)}
           ${detail("Revision", settings.revisionNumber)}
-          ${detail("Prepared by", settings.editorName)}
+          ${detail("Designer", settings.editorName)}
         </div>
       </section>
       <section class="content-card bom-section">
@@ -393,15 +393,15 @@ function renderSettings() {
     <div class="page-heading"><div><div class="eyebrow">PROJECT CONFIGURATION</div><h1>Settings</h1><p>Manage project information, cable specifications, and equipment locations.</p></div></div>
     <div class="settings-layout">
       <section class="content-card settings-section">
-        <div class="card-heading"><div><h2>Project information</h2><p>These details are included with your schedule exports</p></div></div>
+        <div class="card-heading"><div><h2>Project Information</h2><p>These details are included with your schedule exports</p></div></div>
         <form class="settings-form" id="project-settings-form">
           <div class="form-grid">
-            ${settingsField("projectName", "Project name", settings.projectName, "e.g. North Campus Substation")}
-            ${settingsField("clientName", "Client name", settings.clientName, "e.g. Acme Energy")}
-            ${settingsField("clientProjectNumber", "Client project number", settings.clientProjectNumber, "e.g. CE-2025-014")}
-            ${settingsField("internalProjectNumber", "Internal project number", settings.internalProjectNumber, "e.g. ENG-2418")}
-            ${settingsField("revisionNumber", "Revision number", settings.revisionNumber, "e.g. 0")}
-            ${settingsField("editorName", "Editor name", settings.editorName, "e.g. Jordan Lee")}
+            ${settingsField("projectName", "Project Name", settings.projectName, "e.g. North Substation Upgrades")}
+            ${settingsField("clientName", "Client Name", settings.clientName, "e.g. Acme Co.")}
+            ${settingsField("clientProjectNumber", "Client Project #", settings.clientProjectNumber, "e.g. AC-2026-11")}
+            ${settingsField("internalProjectNumber", "Internal Project #", settings.internalProjectNumber, "e.g. ENG-860513")}
+            ${settingsField("revisionNumber", "Revision", settings.revisionNumber, "e.g. 0")}
+            ${settingsField("editorName", "Designer", settings.editorName, "e.g. E. Conner")}
             ${scheduleStatusField(settings.scheduleStatus)}
           </div>
           <div class="settings-submit"><button class="button button-primary" type="submit">Save project details</button></div>
