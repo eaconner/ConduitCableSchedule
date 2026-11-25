@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <title>Wireframe — Cable & Conduit Schedules</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="app-sidebar">
+        <a class="brand" href="#" data-page="dashboard" aria-label="Wireframe home">
+          <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h13a5 5 0 0 1 0 10H9a5 5 0 0 0 0 10h18M5 4v8m22 12v8" /></svg></span>
+          <span class="brand-name">wireframe<span>engineering schedules</span></span>
+        </a>
+        <div class="sidebar-workspace">
+          <div class="workspace-label">WORKSPACE</div>
+          <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Minimize sidebar" aria-controls="app-sidebar" aria-expanded="true" data-tooltip="Minimize sidebar">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M4 3v14" /></svg>
+          </button>
+        </div>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button class="nav-item active" data-page="dashboard" data-tooltip="Overview"><span class="nav-icon">⌂</span>Overview</button>
+          <button class="nav-item" data-page="cables" data-tooltip="Cable schedule"><span class="nav-icon cable-icon">⌁</span>Cable schedule<span class="nav-count" id="cable-nav-count">0</span></button>
+          <button class="nav-item" data-page="conduits" data-tooltip="Conduit schedule"><span class="nav-icon conduit-icon">▤</span>Conduit schedule<span class="nav-count" id="conduit-nav-count">0</span></button>
+          <button class="nav-item" data-page="bom" data-tooltip="Bill of Materials"><span class="nav-icon">▦</span>Bill of Materials</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="sidebar-project">
+            <span class="project-avatar">P</span>
+            <span class="project-label"><strong id="sidebar-project-name">New project</strong><small id="sidebar-project-number">Project workspace</small></span>
+            <span class="status-dot"></span>
+          </div>
+          <button class="nav-item settings-link" data-page="settings" data-tooltip="Settings"><span class="nav-icon">⚙</span>Settings</button>
+          <div class="sidebar-footer">WIREFRAME <span>·</span> PROJECT TOOLS</div>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div class="breadcrumbs"><span>Projects</span><span class="crumb-chevron">/</span><strong id="breadcrumb-page">Overview</strong></div>
+          <div class="topbar-actions">
+            <span class="saved-state"><span class="saved-dot"></span>All changes saved</span>
+            <div class="project-file-actions" aria-label="Project file actions">
+              <button class="button button-secondary project-file-action" data-action="import-project" title="Open project backup"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3.5h7l4 4v9H4z" /><path d="M11 3.5v4h4M10 15V9m0 0-2.5 2.5M10 9l2.5 2.5" /></svg>Open</button>
+              <button class="button button-secondary project-file-action" data-action="export-project" title="Save project backup"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 12.5v3h13v-3M10 3.5v8m0 0 3-3m-3 3-3-3" /></svg>Save</button>
+            </div>
+            <div class="export-wrap">
+              <button class="button button-secondary export-trigger" id="export-trigger" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0 3-3m-3 3L7 9M4 13v3h12v-3" /></svg>Export schedules<span class="chevron">⌄</span></button>
+              <div class="export-menu" id="export-menu" hidden>
+                <button data-action="export-cables">Cable schedule <span>CSV</span></button>
+                <button data-action="export-conduits">Conduit schedule <span>CSV</span></button>
+                <button data-action="export-conduit-cable-csv">Conduit Cable Schedule <span>CSV</span></button>
+              </div>
+              <input id="backup-import-input" type="file" accept=".ccs,.json,application/json" hidden>
+            </div>
+            <button class="avatar" id="editor-avatar" title="Editor">E</button>
+          </div>
+        </header>
+        <section id="page-content" class="page-content" aria-live="polite"></section>
+      </main>
+    </div>
+    <div id="modal-root"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
