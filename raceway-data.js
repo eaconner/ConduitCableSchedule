@@ -1,12 +1,9 @@
 // Editable raceway options and 100% internal areas (sq in) keyed by type and trade size.
 const RACEWAY_TYPES = [
   { value: "emt", label: "EMT" },
-  { value: "imc", label: "IMC" },
   { value: "rmc", label: "RMC" },
-  { value: "pvc-schedule-40", label: "PVC Schedule 40" },
-  { value: "pvc-schedule-80", label: "PVC Schedule 80" },
-  { value: "fmc", label: "FMC" },
-  { value: "lfmc", label: "LFMC" },
+  { value: "pvc-s40", label: "PVC S40" },
+  { value: "pvc-s80", label: "PVC S80" },
   { value: "other", label: "Other / custom" },
 ];
 
@@ -22,28 +19,6 @@ const RACEWAY_INTERNAL_AREAS = {
     "3-1/2": 11.545,
     "4": 14.753,
   },
-  "pvc-schedule-40": {
-    "1/2": 0.285,
-    "3/4": 0.508,
-    "1": 0.832,
-    "1-1/2": 1.986,
-    "2": 3.291,
-    "2-1/2": 4.695,
-    "3": 7.268,
-    "3-1/2": 9.737,
-    "4": 12.554,
-  },
-  "pvc-schedule-80": {
-    "1/2": 0.217,
-    "3/4": 0.409,
-    "1": 0.688,
-    "1-1/2": 1.711,
-    "2": 2.874,
-    "2-1/2": 4.119,
-    "3": 6.442,
-    "3-1/2": 8.688,
-    "4": 11.258,
-  },
   rmc: {
     "1/2": 0.314,
     "3/4": 0.549,
@@ -55,4 +30,26 @@ const RACEWAY_INTERNAL_AREAS = {
     "3-1/2": 10.010,
     "4": 12.882,
   },
+  "pvc-s40": {
+    "1/2": 0.285,
+    "3/4": 0.508,
+    "1": 0.832,
+    "1-1/2": 1.986,
+    "2": 3.291,
+    "2-1/2": 4.695,
+    "3": 7.268,
+    "3-1/2": 9.737,
+    "4": 12.554,
+  },
+  "pvc-s80": {
+    "1/2": 0.217,
+    "3/4": 0.409,
+    "1": 0.688,
+    "1-1/2": 1.711,
+    "2": 2.874,
+    "2-1/2": 4.119,
+    "3": 6.442,
+    "3-1/2": 8.688,
+    "4": 11.258,
+  }
 };

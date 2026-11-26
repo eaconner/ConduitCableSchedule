@@ -4,8 +4,8 @@ const THEME_PREFERENCES = ["system", "light", "dark"];
 const CONDUIT_SIZES = ['1/2"', '3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '4"'];
 const NEC_EDITIONS = ["2017", "2020", "2023", "2026"];
 const CABLE_FILL_TYPES = [
-  { value: "individual", label: "Individual insulated conductor" },
-  { value: "multiconductor", label: "Multiconductor cable assembly" },
+  { value: "individual", label: "Individual Conductor" },
+  { value: "multiconductor", label: "Multiconductor Cable" },
 ];
 const CONDUIT_FILL_CONDITIONS = ["standard", "nipple"];
 const CABLE_TRAY_LOCATION_ID = "__wireframe_cable_tray__";
@@ -328,6 +328,12 @@ function projectName() {
   return state.settings.projectName || "Untitled Project";
 }
 
+function titleCaseHeading(value) {
+  return String(value).toLocaleLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, separator, letter) =>
+    `${separator}${letter.toLocaleUpperCase()}`,
+  );
+}
+
 function locationName(id) {
   if (id === CABLE_TRAY_LOCATION_ID) return CABLE_TRAY_LOCATION_NAME;
   return state.settings.locations.find((location) => location.id === id)?.name || "Location removed";
@@ -461,9 +467,9 @@ function renderDashboard() {
         ${detail("Internal Project #", settings.internalProjectNumber)}
         ${detail("Revision", settings.revisionNumber)}
         ${detail("Designer", settings.editorName)}
-        ${detail("Cable types", settings.cableTypes.length)}
+        ${detail("Cable Types", settings.cableTypes.length)}
         ${detail("Locations", settings.locations.length)}
-        ${detail("Schedule status", scheduleStatus())}
+        ${detail("Schedule Status", scheduleStatus())}
       </div>
     </section>
     <section class="content-card">
@@ -574,7 +580,7 @@ function renderBillOfMaterials() {
         <div><div class="eyebrow">PROJECT MATERIALS</div><h1>Bill of Materials</h1><p>Material totals summarized from the cable and conduit schedules for purchasing and field coordination.</p></div>
       </div>
       <section class="content-card bom-project-card">
-        <div class="bom-project-title"><div><h2>${escapeHtml(projectName())}</h2><p>Bill of Materials</p></div><span class="bom-generated">Generated ${escapeHtml(new Date().toLocaleDateString())}</span></div>
+        <div class="bom-project-title"><div><h2>${escapeHtml(titleCaseHeading(projectName()))}</h2><p>Bill of Materials</p></div><span class="bom-generated">Generated ${escapeHtml(new Date().toLocaleDateString())}</span></div>
         <div class="bom-project-meta">
           ${detail("Client", settings.clientName)}
           ${detail("Client Project #", settings.clientProjectNumber)}
@@ -627,7 +633,7 @@ function renderSettings() {
                 ${NEC_EDITIONS.map((edition) => `<option value="${edition}" ${settings.necEdition === edition ? "selected" : ""}>${edition} NEC</option>`).join("")}
               </select>
             </div>
-            ${settingsField("necJurisdiction", "Jurisdiction / amendments", settings.necJurisdiction, "e.g. City or project code notes")}
+            ${settingsField("necJurisdiction", "Jurisdiction / Amendments", settings.necJurisdiction, "e.g. City or project code notes")}
           </div>
           <p class="section-description">Select the edition adopted by the authority having jurisdiction. Supplied area lookups cover EMT, RMC, and PVC Schedule 40/80 sizes; other combinations need manual dimensions. Local amendments and requirements beyond conduit fill are not evaluated automatically.</p>
           <div class="settings-submit"><button class="button button-primary" type="submit">Save project details</button></div>
@@ -682,8 +688,8 @@ function settingsField(name, label, value, placeholder) {
 function scheduleStatusField(value) {
   const isCustom = Boolean(value) && !SCHEDULE_STATUSES.includes(value);
   const selectedStatus = isCustom ? "custom" : value || "In progress";
-  return `<div class="field"><label for="setting-scheduleStatus">Schedule status</label><select id="setting-scheduleStatus" name="scheduleStatus">${SCHEDULE_STATUSES.map((status) => `<option value="${escapeHtml(status)}" ${selectedStatus === status ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}<option value="custom" ${selectedStatus === "custom" ? "selected" : ""}>Custom status…</option></select></div>
-    <div class="field" id="custom-schedule-status-field" ${isCustom ? "" : "hidden"}><label for="setting-custom-schedule-status">Custom status</label><input id="setting-custom-schedule-status" name="customScheduleStatus" value="${escapeHtml(isCustom ? value : "")}" ${isCustom ? "required" : "disabled"} /></div>`;
+  return `<div class="field"><label for="setting-scheduleStatus">Schedule Status</label><select id="setting-scheduleStatus" name="scheduleStatus">${SCHEDULE_STATUSES.map((status) => `<option value="${escapeHtml(status)}" ${selectedStatus === status ? "selected" : ""}>${escapeHtml(status)}</option>`).join("")}<option value="custom" ${selectedStatus === "custom" ? "selected" : ""}>Custom status…</option></select></div>
+    <div class="field" id="custom-schedule-status-field" ${isCustom ? "" : "hidden"}><label for="setting-custom-schedule-status">Custom Status</label><input id="setting-custom-schedule-status" name="customScheduleStatus" value="${escapeHtml(isCustom ? value : "")}" ${isCustom ? "required" : "disabled"} /></div>`;
 }
 
 function options(items, selectedId) {
@@ -799,7 +805,7 @@ function openCableForm(id, draft = {}, modalOptions = {}) {
     ${routeLocationField("toLocationId", "To location", draft.toLocationId || cable?.toLocationId, true)}
     ${textField("purpose", "Cable purpose", draft.purpose ?? cable?.purpose ?? "", "e.g. Feeder, control, instrumentation", { required: false, full: true })}
   </div>`;
-  openModal(modalOptions.title || (cable ? "Edit cable" : "Add Cable"), modalOptions.subtitle || "Enter the cable schedule details and route.", cable ? `edit-cable:${id}` : "new-cable", fields, modalOptions.submitLabel || (cable ? "Save changes" : "Add Cable"));
+  openModal(modalOptions.title || (cable ? "Edit Cable" : "Add Cable"), modalOptions.subtitle || "Enter the cable schedule details and route.", cable ? `edit-cable:${id}` : "new-cable", fields, modalOptions.submitLabel || (cable ? "Save changes" : "Add Cable"));
   if (needsLocations) modalRoot.querySelector('[type="submit"]').disabled = true;
 }
 
@@ -1131,7 +1137,25 @@ function returnToRoute(returnContext) {
   if (formKind.startsWith("edit-conduit:")) return openConduitForm(formKind.split(":")[1], draft);
 }
 
+function startNewProject() {
+  if (!confirm("Start a new project? This will replace the project currently open in this browser. Save a backup first if you need to keep it.")) return;
+  const previousState = state;
+  state = emptyState();
+  if (!persist()) {
+    state = previousState;
+    renderPage();
+    return;
+  }
+  pendingCableDraft = null;
+  pendingLocationReturn = null;
+  showAllVersionHistory = false;
+  closeModal();
+  setPage("dashboard");
+  showToast("New project started.");
+}
+
 function handleAction(action, id, fieldName) {
+  if (action === "new-project") return startNewProject();
   if (action === "close-modal") return closeModal();
   if (action === "toggle-version-history") {
     showAllVersionHistory = !showAllVersionHistory;
@@ -1160,7 +1184,7 @@ function handleAction(action, id, fieldName) {
     const cable = state.cables.find((item) => item.id === id);
     if (!cable) return;
     return openCableForm(undefined, { ...cable, number: "", numberPrefix: numberPrefixFrom(cable.number) }, {
-      title: "Duplicate cable",
+      title: "Duplicate Cable",
       subtitle: `Copy of ${cable.number}. Enter a new cable number and adjust the details before saving.`,
       submitLabel: "Create duplicate",
     });
@@ -1171,7 +1195,7 @@ function handleAction(action, id, fieldName) {
     const conduit = state.conduits.find((item) => item.id === id);
     if (!conduit) return;
     return openConduitForm(undefined, { ...conduit, number: "", numberPrefix: numberPrefixFrom(conduit.number) }, {
-      title: "Duplicate conduit",
+      title: "Duplicate Conduit",
       subtitle: `Copy of ${conduit.number}. Enter a new conduit number and adjust the details before saving.`,
       submitLabel: "Create duplicate",
     });
@@ -1262,7 +1286,7 @@ function renderConduitCablePrint() {
           <div><div class="eyebrow">PROJECT SCHEDULE</div><h1>Conduit Cable Schedule</h1></div>
           <span>Generated ${escapeHtml(new Date().toLocaleDateString())}</span>
         </div>
-        <h2>${escapeHtml(projectName())}</h2>
+        <h2>${escapeHtml(titleCaseHeading(projectName()))}</h2>
         <div class="conduit-cable-print-project-meta">
           ${detail("Client", settings.clientName)}
           ${detail("Client Project #", settings.clientProjectNumber)}

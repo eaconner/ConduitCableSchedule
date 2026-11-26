@@ -18,7 +18,7 @@
         "fillClassification": "multiconductor",
         "diameter": 2.48,
         "netWeight": 4285,
-        "url": ""
+        "url": "https://www.okonite.com/media/catalog/product/files/2-20.pdf"
       },
       {
         "id": "268ca807-1005-4f06-9416-2705d76c0ec0",
@@ -28,7 +28,7 @@
         "fillClassification": "multiconductor",
         "diameter": 2.17,
         "netWeight": 2857,
-        "url": ""
+        "url": "https://www.okonite.com/media/catalog/product/files/2-20.pdf"
       },
       {
         "id": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
@@ -38,7 +38,7 @@
         "fillClassification": "multiconductor",
         "diameter": 2.25,
         "netWeight": 5980,
-        "url": ""
+        "url": "https://www.anixter.com/en_us/products/Control-and-Power-Cable/p/3H-5003"
       },
       {
         "id": "308b8b17-f72a-4e3c-a5aa-f5f80d79e8e4",
@@ -48,7 +48,7 @@
         "fillClassification": "multiconductor",
         "diameter": 2.75,
         "netWeight": 8626,
-        "url": ""
+        "url": "https://www.anixter.com/en_us/products/Control-and-Power-Cable/p/3MR-7503"
       },
       {
         "id": "0b5baf61-d502-407e-b789-98a9c07cdcf8",
@@ -58,7 +58,7 @@
         "fillClassification": "multiconductor",
         "diameter": 1.97,
         "netWeight": 4150,
-        "url": ""
+        "url": "https://www.anixter.com/en_us/products/Control-and-Power-Cable/p/3H-3503"
       },
       {
         "id": "cca84952-2da8-457b-a49f-48d1699dd29a",
@@ -68,7 +68,7 @@
         "fillClassification": "multiconductor",
         "diameter": 1.75,
         "netWeight": 3190,
-        "url": ""
+        "url": "https://www.anixter.com/en_us/products/Control-and-Power-Cable/p/3H-2503"
       },
       {
         "id": "8fa32b07-2b15-441f-9011-907c8e101db2",
@@ -78,7 +78,7 @@
         "fillClassification": "multiconductor",
         "diameter": 1.22,
         "netWeight": 1436,
-        "url": ""
+        "url": "https://www.anixter.com/en_us/products/Control-and-Power-Cable/p/3H-1013"
       },
       {
         "id": "2ad5de79-624a-404f-80cc-965182e7b385",
@@ -88,7 +88,7 @@
         "fillClassification": "multiconductor",
         "diameter": 0.445,
         "netWeight": 190,
-        "url": ""
+        "url": "https://www.anixter.com/en_us/products/Control-and-Power-Cable/p/3H-0802"
       }
     ],
     "locations": [
