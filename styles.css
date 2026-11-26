@@ -160,6 +160,9 @@ tbody tr:hover { background: #fcfcfd; }
 .tag.blue { background: var(--blue-soft); color: #4866cf; }
 .tag.neutral { background: #f0f2f5; color: #747f8f; }
 .tag.tbd { background: #fff0ef; color: #c84743; }
+.tag.fill-pass { background: var(--green-soft); color: var(--green); }
+.tag.fill-fail { background: #fff0ef; color: #c84743; }
+.fill-details { max-width: 150px; line-height: 1.35; white-space: normal; }
 .length-tbd-text { color: #c84743; font-weight: 700; }
 .empty-state { padding: 42px 20px; text-align: center; }
 .empty-icon { display: grid; place-items: center; width: 43px; height: 43px; margin: 0 auto 13px; border-radius: 12px; background: #f1f4fb; color: #6277a7; font-size: 21px; }
@@ -179,6 +182,9 @@ tbody tr:hover { background: #fcfcfd; }
 .settings-section { overflow: hidden; }
 .settings-form { padding: 20px; }
 .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.form-divider { height: 1px; margin: 21px 0; background: var(--line); }
+.settings-inline-heading { margin: 0 0 16px; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
+.settings-inline-heading h3 { margin: 0; font-size: 12px; font-weight: 700; }
 .field { display: grid; align-content: start; gap: 7px; }
 .field[hidden] { display: none; }
 .field label { color: #697587; font-size: 11px; font-weight: 600; }
@@ -236,6 +242,7 @@ tbody tr:hover { background: #fcfcfd; }
 .modal-header p { margin: 5px 0 0; color: #929cab; font-size: 11px; }
 .modal-form { padding: 20px 22px 22px; }
 .modal-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.modal-form .form-grid.conduit-raceway-fields { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .modal-form .field.full { grid-column: 1 / -1; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; padding-top: 17px; border-top: 1px solid #f0f2f5; }
 .form-note { margin: 0 0 14px; border-radius: 6px; padding: 10px 12px; background: #f5f7fb; color: #717e90; font-size: 11px; line-height: 1.5; }
@@ -312,6 +319,7 @@ tbody tr:hover { background: #fcfcfd; }
   .metric-icon { display: grid; }
   .project-details { grid-template-columns: 1fr 1fr; gap: 17px; }
   .form-grid, .modal-form .form-grid { grid-template-columns: 1fr; }
+  .modal-form .form-grid.conduit-raceway-fields { grid-template-columns: 1fr; }
   .modal-form .field.full { grid-column: auto; }
   .heading-actions { width: 100%; }
   .heading-actions .button { flex: 1; }
@@ -438,8 +446,12 @@ tbody tr:hover { background: #fcfcfd; }
 :root[data-theme="dark"] .modal-actions { border-color: #344155; }
 :root[data-theme="dark"] .tag.blue { background: #28395f; color: #b6c5ff; }
 :root[data-theme="dark"] .tag.tbd { background: #492c32; color: #ffaaa4; }
+:root[data-theme="dark"] .tag.fill-pass { background: #1e4136; color: #65cba3; }
+:root[data-theme="dark"] .tag.fill-fail { background: #492c32; color: #ffaaa4; }
 :root[data-theme="dark"] .length-tbd-text,
 :root[data-theme="dark"] .checkbox-cable-type small.checkbox-cable-incompatible { color: #ffaaa4; }
+:root[data-theme="dark"] .form-divider { background: var(--line); }
+:root[data-theme="dark"] .settings-inline-heading { border-color: var(--line); }
 :root[data-theme="dark"] .icon-button { color: #a0adbf; }
 :root[data-theme="dark"] .icon-button:hover { color: #a9bbff; }
 :root[data-theme="dark"] .icon-button.delete:hover { background: #492c32; color: #ffaaa4; }

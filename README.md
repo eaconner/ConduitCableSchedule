@@ -5,6 +5,7 @@ Wireframe is a lightweight browser app for creating and managing electrical cabl
 ## Features
 
 - Create and manage cable and conduit schedules, including conduit cable assignments.
+- Analyze conduit fill against NEC Table 1 limits and flag passing, failing, or incomplete checks.
 - Maintain project information, cable specifications, and equipment locations.
 - Review cable length totals and identify entries with missing lengths.
 - Export schedules and the bill of materials as CSV files.
@@ -20,6 +21,8 @@ Wireframe is a lightweight browser app for creating and managing electrical cabl
 5. Use **Export** for CSV files and print reports.
 
 Project data is saved in the browser's local storage. Use **Save Project** to download a `.ccs` backup and **Open Project** to restore a `.ccs` or `.json` backup. Keep backups when moving projects to another browser or device.
+
+For conduit-fill analysis, select the adopted NEC edition in **Settings**. Raceway area auto-populates for the supplied EMT, RMC, and PVC Schedule 40/80 size table; other raceway/size combinations require an area from the applicable NEC table or manufacturer data. The area remains editable. Cable types need an actual outside diameter and a fill classification. The app applies the standard fill percentages and the optional short-nipple limit, but does not apply local amendments or evaluate other NEC requirements. Verify code selections and dimensions with the authority having jurisdiction.
 
 ## Project Files
 

@@ -7,12 +7,15 @@
     "revisionNumber": "0",
     "editorName": "J. Designer",
     "scheduleStatus": "In Progress",
+    "necEdition": "2023",
+    "necJurisdiction": "Louisville, KY",
     "cableTypes": [
       {
         "id": "15307af5-32b4-4fe4-9018-64280cddcc86",
         "manufacturer": "Okonite",
         "specNumber": "115-23-3808",
         "specType": "3/C #4/0AWG 15kV",
+        "fillClassification": "multiconductor",
         "diameter": 2.48,
         "netWeight": 4285,
         "url": ""
@@ -22,6 +25,7 @@
         "manufacturer": "Okonite",
         "specNumber": "115-23-3804",
         "specType": "3/C #1/0AWG 15kV",
+        "fillClassification": "multiconductor",
         "diameter": 2.17,
         "netWeight": 2857,
         "url": ""
@@ -31,6 +35,7 @@
         "manufacturer": "Anixter",
         "specNumber": "3H-5003",
         "specType": "3/C #500MCM",
+        "fillClassification": "multiconductor",
         "diameter": 2.25,
         "netWeight": 5980,
         "url": ""
@@ -40,6 +45,7 @@
         "manufacturer": "Anixter",
         "specNumber": "3MR-7503",
         "specType": "3/C #750MCM",
+        "fillClassification": "multiconductor",
         "diameter": 2.75,
         "netWeight": 8626,
         "url": ""
@@ -49,6 +55,7 @@
         "manufacturer": "Anixter",
         "specNumber": "3H-3503",
         "specType": "3/C #350MCM",
+        "fillClassification": "multiconductor",
         "diameter": 1.97,
         "netWeight": 4150,
         "url": ""
@@ -58,6 +65,7 @@
         "manufacturer": "Anxiter",
         "specNumber": "3H-2503",
         "specType": "3/C #250MCM",
+        "fillClassification": "multiconductor",
         "diameter": 1.75,
         "netWeight": 3190,
         "url": ""
@@ -67,6 +75,7 @@
         "manufacturer": "Anxiter",
         "specNumber": "3H-1013",
         "specType": "3/C #1/0AWG",
+        "fillClassification": "multiconductor",
         "diameter": 1.22,
         "netWeight": 1436,
         "url": ""
@@ -76,6 +85,7 @@
         "manufacturer": "Anixter",
         "specNumber": "3H-0802",
         "specType": "2/C #8AWG",
+        "fillClassification": "multiconductor",
         "diameter": 0.445,
         "netWeight": 190,
         "url": ""
@@ -349,7 +359,11 @@
       "id": "9960bb34-46aa-4a58-9e60-28a20ac83ec6",
       "number": "P1690",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "8774cf1a-c396-4342-a498-5a3a06ea2209",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
@@ -360,7 +374,11 @@
       "id": "dff72112-fc00-43dc-94ed-82743cea345d",
       "number": "P1691",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "cableIds": [
@@ -371,8 +389,12 @@
       "id": "43d562c5-7cb5-42d8-807f-8fad9b1e50ea",
       "number": "P1692",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "dce753fd-0947-47cb-9993-70108b23103f",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "ca83aa6b-cb64-4b62-8ee9-385867707c6f"
@@ -382,7 +404,11 @@
       "id": "0ec09183-b2ec-4382-823d-02d4c0820c06",
       "number": "P1693",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "aa9be09b-ea47-4c09-80ef-29ecec0bb630",
       "cableIds": [
@@ -393,8 +419,12 @@
       "id": "aeefc071-3ba9-48fa-a455-a76bfade3d45",
       "number": "P1694",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "46b49007-2d72-437b-8405-b9e212ba1b2b"
@@ -404,7 +434,11 @@
       "id": "28b532aa-7888-4169-9f97-3ce56b01b214",
       "number": "P1695",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
       "cableIds": [
@@ -415,8 +449,12 @@
       "id": "9410cf40-9f03-4cbc-986c-e7fbb892bc89",
       "number": "P1696",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "1fbe6734-30d4-4da8-8d95-06c26cf67589"
@@ -426,7 +464,11 @@
       "id": "30897eb3-638f-4866-ba97-068dd25c9995",
       "number": "P1697",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
       "cableIds": [
@@ -437,8 +479,12 @@
       "id": "2bd970d4-bc8c-4da5-ba36-670627d20684",
       "number": "P1698",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "36fd5c08-a38a-4397-86f4-6a2a02fe379d"
@@ -448,7 +494,11 @@
       "id": "e9745563-7304-4ea6-8252-3ae7a5c93fe7",
       "number": "P1699",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
       "cableIds": [
@@ -459,8 +509,12 @@
       "id": "48d7cddc-3bb3-45c1-a0eb-e32bd573ca9d",
       "number": "P1700",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "84353b1b-500d-4af8-a954-ee2f44abee39",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "a1a695da-c941-4d5e-b74a-ccc9a349b04e"
@@ -470,7 +524,11 @@
       "id": "72311de5-b687-498b-8174-69795d77f1d8",
       "number": "P1701",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "b81a7761-1258-4d93-b220-24f1d3e87fcc",
       "cableIds": [
@@ -481,8 +539,12 @@
       "id": "f274662d-10e6-46f7-9f4f-f1be263943f0",
       "number": "P1702",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "84353b1b-500d-4af8-a954-ee2f44abee39",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "bc456490-0eca-478a-b7c4-c38f9c46d000"
@@ -492,7 +554,11 @@
       "id": "5fd40341-d064-4a19-9ec5-9826e0ba688e",
       "number": "P1703",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "b81a7761-1258-4d93-b220-24f1d3e87fcc",
       "cableIds": [
@@ -503,8 +569,12 @@
       "id": "966cf667-14aa-4601-b359-6006098db680",
       "number": "P1704",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "17145feb-1647-42ba-b608-58faca3e638b"
@@ -514,7 +584,11 @@
       "id": "e30261d9-5aa4-4219-a485-8f4b13a4f8bd",
       "number": "P1705",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
       "cableIds": [
@@ -525,8 +599,12 @@
       "id": "a68b5d3e-50f7-4b44-8e93-3725c9749b0e",
       "number": "P1706",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "c84136e2-2421-4d6f-9c54-0aa5d71de94b"
@@ -536,7 +614,11 @@
       "id": "cefe1bfa-f01c-4b41-8fb2-c56e8ac688ef",
       "number": "P1707",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
       "cableIds": [
@@ -547,8 +629,12 @@
       "id": "b8e64a82-29ea-4225-a6f7-c300b2ae3f05",
       "number": "P1708",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "aeb71f05-a26f-41a1-aa41-ac21ac2a0ab7"
@@ -558,7 +644,11 @@
       "id": "b6c23586-f698-46e1-bd78-c2781d92f79d",
       "number": "P1709",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
       "cableIds": [
@@ -569,8 +659,12 @@
       "id": "7fce6e49-43f7-4824-8f2a-7023ec2b52fc",
       "number": "P1710",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "9094312d-dc7f-4ab1-be20-21f8133016c9",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "acab35ea-ae46-4384-bb79-d1546a7df925"
@@ -580,7 +674,11 @@
       "id": "e0d4d070-7889-4c57-95cd-9be53f4c3c7e",
       "number": "P1711",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
       "cableIds": [
@@ -591,8 +689,12 @@
       "id": "3a35d02d-1720-4153-9dc9-73523a62bc63",
       "number": "P1712",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
-      "fromLocationId": "9094312d-dc7f-4ab1-be20-21f8133016c9",
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
         "3591f28e-caac-48ff-9c06-2997d9b6823f"
@@ -602,7 +704,11 @@
       "id": "af683a79-1257-48e6-8eb4-a2e5031113f5",
       "number": "P1713",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
       "cableIds": [
@@ -613,7 +719,11 @@
       "id": "0a6597f1-3f89-4e69-96f9-74e9280a0362",
       "number": "P1714",
       "size": "4\"",
+      "racewayType": "rmc",
+      "racewayArea": 12.882,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
@@ -625,7 +735,11 @@
       "id": "e25fd30e-2de7-44df-936d-1834d7900674",
       "number": "P1715",
       "size": "3\"",
+      "racewayType": "rmc",
+      "racewayArea": 7.499,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "56a786a0-8763-483a-966c-6c25542ea7b4",
       "cableIds": [
@@ -636,7 +750,11 @@
       "id": "1443ebf7-c0c6-4d7c-993f-bed6af5a8c3f",
       "number": "P1716",
       "size": "2\"",
+      "racewayType": "rmc",
+      "racewayArea": 3.408,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "460f5b1f-89fe-4c71-bc61-344c7f8a0e23",
       "cableIds": [
@@ -647,7 +765,11 @@
       "id": "c50e336f-c16f-4d16-97bb-9f4dbef2e284",
       "number": "P1717",
       "size": "2\"",
+      "racewayType": "rmc",
+      "racewayArea": 3.408,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
@@ -658,7 +780,11 @@
       "id": "d4617de6-dd42-46c6-b167-861f8f584adf",
       "number": "P1718",
       "size": "2\"",
+      "racewayType": "rmc",
+      "racewayArea": 3.408,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "c58c4808-7732-4459-bfe1-6cdd6e16e408",
       "cableIds": [
@@ -669,7 +795,11 @@
       "id": "a4781bfd-7bab-4a54-9c1a-db9a9cfd2186",
       "number": "P1719",
       "size": "1-1/2\"",
+      "racewayType": "rmc",
+      "racewayArea": 2.071,
       "length": null,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
       "fromLocationId": "45c92a31-7377-42b9-bfc2-66c3a80c0016",
       "toLocationId": "ec8b620e-d5b0-4bfe-95df-8284203b46a5",
       "cableIds": [
@@ -678,6 +808,6 @@
       ]
     }
   ],
-  "exportedAt": "2026-11-26T14:31:35.168Z",
+  "exportedAt": "2026-11-26T16:32:45.404Z",
   "formatVersion": 1
 }

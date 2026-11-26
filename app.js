@@ -1,7 +1,69 @@
 const STORAGE_KEY = "wireframe-project-v1";
 const THEME_PREFERENCE_KEY = "wireframe-theme-preference-v1";
 const THEME_PREFERENCES = ["system", "light", "dark"];
-const CONDUIT_SIZES = ['3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '4"'];
+const CONDUIT_SIZES = ['1/2"', '3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '4"'];
+const NEC_EDITIONS = ["2017", "2020", "2023", "2026"];
+const RACEWAY_TYPES = [
+  { value: "emt", label: "EMT" },
+  { value: "imc", label: "IMC" },
+  { value: "rmc", label: "RMC" },
+  { value: "pvc-schedule-40", label: "PVC Schedule 40" },
+  { value: "pvc-schedule-80", label: "PVC Schedule 80" },
+  { value: "fmc", label: "FMC" },
+  { value: "lfmc", label: "LFMC" },
+  { value: "other", label: "Other / custom" },
+];
+const RACEWAY_INTERNAL_AREAS = {
+  emt: {
+    "1/2": 0.304,
+    "3/4": 0.533,
+    "1": 0.864,
+    "1-1/2": 2.036,
+    "2": 3.356,
+    "2-1/2": 5.858,
+    "3": 8.846,
+    "3-1/2": 11.545,
+    "4": 14.753,
+  },
+  "pvc-schedule-40": {
+    "1/2": 0.285,
+    "3/4": 0.508,
+    "1": 0.832,
+    "1-1/2": 1.986,
+    "2": 3.291,
+    "2-1/2": 4.695,
+    "3": 7.268,
+    "3-1/2": 9.737,
+    "4": 12.554,
+  },
+  "pvc-schedule-80": {
+    "1/2": 0.217,
+    "3/4": 0.409,
+    "1": 0.688,
+    "1-1/2": 1.711,
+    "2": 2.874,
+    "2-1/2": 4.119,
+    "3": 6.442,
+    "3-1/2": 8.688,
+    "4": 11.258,
+  },
+  rmc: {
+    "1/2": 0.314,
+    "3/4": 0.549,
+    "1": 0.887,
+    "1-1/2": 2.071,
+    "2": 3.408,
+    "2-1/2": 4.866,
+    "3": 7.499,
+    "3-1/2": 10.010,
+    "4": 12.882,
+  },
+};
+const CABLE_FILL_TYPES = [
+  { value: "individual", label: "Individual insulated conductor" },
+  { value: "multiconductor", label: "Multiconductor cable assembly" },
+];
+const CONDUIT_FILL_CONDITIONS = ["standard", "nipple"];
 const CABLE_TRAY_LOCATION_ID = "__wireframe_cable_tray__";
 const CABLE_TRAY_LOCATION_NAME = "Cable Tray";
 const SCHEDULE_STATUSES = [
@@ -63,6 +125,10 @@ const VERSION_HISTORY = [
       "Kept CCS From/To values on one line, compacted other columns, and prevented conduit groups from splitting across pages.",
     ],
   },
+  {
+    version: "2026.11.11",
+    changes: ["Added NEC conduit-fill analysis with pass/fail/needs-data status and automatic raceway area lookups for the supplied EMT, RMC, and PVC tables."],
+  },
 ];
 let showAllVersionHistory = false;
 const emptyState = () => ({
@@ -74,6 +140,8 @@ const emptyState = () => ({
     revisionNumber: "",
     editorName: "",
     scheduleStatus: "In Progress",
+    necEdition: "",
+    necJurisdiction: "",
     cableTypes: [],
     locations: [],
   },
@@ -338,6 +406,84 @@ function cableType(id) {
   return state.settings.cableTypes.find((type) => type.id === id);
 }
 
+function racewayTypeLabel(value) {
+  return RACEWAY_TYPES.find((type) => type.value === value)?.label || "";
+}
+
+function racewayInternalAreaFor(type, size) {
+  const tradeSize = String(size ?? "").replace(/["]/g, "").trim();
+  const areas = Object.prototype.hasOwnProperty.call(RACEWAY_INTERNAL_AREAS, type)
+    ? RACEWAY_INTERNAL_AREAS[type]
+    : null;
+  return areas?.[tradeSize] ?? null;
+}
+
+function cableFillTypeLabel(value) {
+  return CABLE_FILL_TYPES.find((type) => type.value === value)?.label || "";
+}
+
+function conduitFillAnalysis(conduit) {
+  const cableIds = Array.isArray(conduit.cableIds) ? conduit.cableIds : [];
+  if (!cableIds.length) return { status: "not-applicable", label: "No cables", reason: "No cables assigned" };
+  if (!NEC_EDITIONS.includes(state.settings.necEdition)) {
+    return { status: "needs-data", label: "Needs data", reason: "Select an NEC edition in Settings" };
+  }
+  if (!conduit.size) return { status: "needs-data", label: "Needs data", reason: "Select a conduit trade size" };
+  if (!RACEWAY_TYPES.some((type) => type.value === conduit.racewayType)) {
+    return { status: "needs-data", label: "Needs data", reason: "Select a raceway type" };
+  }
+  const racewayArea = Number(conduit.racewayArea);
+  if (!Number.isFinite(racewayArea) || racewayArea <= 0) {
+    return { status: "needs-data", label: "Needs data", reason: "Enter the 100% raceway internal area" };
+  }
+  if (new Set(cableIds).size !== cableIds.length) {
+    return { status: "needs-data", label: "Needs data", reason: "Remove duplicate cable assignments" };
+  }
+  if (!CONDUIT_FILL_CONDITIONS.includes(conduit.fillCondition || "standard")) {
+    return { status: "needs-data", label: "Needs data", reason: "Select a supported fill condition" };
+  }
+
+  const cables = cableIds.map((id) => state.cables.find((item) => item.id === id));
+  if (cables.some((cable) => !cable)) {
+    return { status: "needs-data", label: "Needs data", reason: "An assigned cable is unavailable" };
+  }
+
+  let cableArea = 0;
+  for (const cable of cables) {
+    const type = cableType(cable.cableTypeId);
+    if (!type) return { status: "needs-data", label: "Needs data", reason: `Add a cable type for ${cable.number}` };
+    if (!CABLE_FILL_TYPES.some((fillType) => fillType.value === type.fillClassification)) {
+      return { status: "needs-data", label: "Needs data", reason: `Set the fill type for ${type.specNumber || cable.number}` };
+    }
+    const diameter = Number(type.diameter);
+    if (!Number.isFinite(diameter) || diameter <= 0) {
+      return { status: "needs-data", label: "Needs data", reason: `Enter a valid outside diameter for ${type.specNumber || cable.number}` };
+    }
+    cableArea += Math.PI * (diameter / 2) ** 2;
+  }
+
+  let allowedPercent;
+  if (conduit.fillCondition === "nipple") {
+    const nippleLength = Number(conduit.nippleLengthInches);
+    if (!Number.isFinite(nippleLength) || nippleLength <= 0 || nippleLength > 24) {
+      return { status: "needs-data", label: "Needs data", reason: "Enter a nipple length from 0.1 to 24 inches" };
+    }
+    allowedPercent = 60;
+  } else {
+    allowedPercent = cables.length === 1 ? 53 : cables.length === 2 ? 31 : 40;
+  }
+
+  const fillPercent = (cableArea / racewayArea) * 100;
+  const status = fillPercent <= allowedPercent + Number.EPSILON * 100 ? "pass" : "fail";
+  return {
+    status,
+    label: status === "pass" ? "Pass" : "Fail",
+    reason: status === "pass" ? "Conduit fill is within the selected limit" : "Conduit fill exceeds the selected limit",
+    fillPercent,
+    allowedPercent,
+  };
+}
+
 function renderDashboard() {
   const settings = state.settings;
   const cableLength = sumScheduledLengths(state.cables);
@@ -417,16 +563,26 @@ function renderConduits() {
   const rows = sortByNumber(state.conduits);
   return `
     <div class="page-heading">
-      <div><div class="eyebrow">SCHEDULES / CONDUITS</div><h1>Conduit Schedule</h1><p>Document conduit routes and assign scheduled cables to each run.</p></div>
+      <div><div class="eyebrow">SCHEDULES / CONDUITS</div><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Conduit</button></div>
     </div>
-    <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
+    <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing and cable assignments</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit<br>number</th><th>Size</th><th>Conduit<br>Length</th><th>Conduit Routing From</th><th>Conduit Routing To</th><th>Assigned<br>cables</th><th></th></tr></thead><tbody>${rows.map((conduit) => `<tr data-searchable="${escapeHtml([conduit.number, conduit.size, locationName(conduit.fromLocationId), locationName(conduit.toLocationId), ...conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number)].join(" ").toLowerCase())}">
-        <td class="primary-cell">${escapeHtml(conduit.number)}</td><td>${conduit.size ? `<span class="tag neutral">${escapeHtml(conduit.size)}</span>` : `<span class="tag tbd">TBD</span>`}</td><td>${renderScheduledLength(conduit.length)}</td><td>${escapeHtml(locationName(conduit.fromLocationId))}</td><td>${escapeHtml(locationName(conduit.toLocationId))}</td>
+      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing, cable assignments, and fill checks</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit<br>number</th><th>Raceway / size</th><th>NEC fill</th><th>Conduit<br>Length</th><th>Conduit Routing From</th><th>Conduit Routing To</th><th>Assigned<br>cables</th><th></th></tr></thead><tbody>${rows.map((conduit) => {
+        const analysis = conduitFillAnalysis(conduit);
+        const sizeClass = analysis.status === "pass" ? "fill-pass" : analysis.status === "fail" ? "fill-fail" : "neutral";
+        const sizeTitle = analysis.status === "pass" || analysis.status === "fail"
+          ? `${analysis.label}: ${analysis.fillPercent.toFixed(1)}% used; ${analysis.allowedPercent}% allowed`
+          : analysis.reason;
+        const fillDetails = analysis.status === "pass" || analysis.status === "fail"
+          ? `${analysis.fillPercent.toFixed(1)}% used · ${analysis.allowedPercent}% max`
+          : analysis.reason;
+        return `<tr data-searchable="${escapeHtml([conduit.number, conduit.size, racewayTypeLabel(conduit.racewayType), locationName(conduit.fromLocationId), locationName(conduit.toLocationId), ...conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number)].join(" ").toLowerCase())}">
+        <td class="primary-cell">${escapeHtml(conduit.number)}</td><td><span class="tag ${sizeClass}" title="${escapeHtml(sizeTitle)}">${conduit.size ? escapeHtml(conduit.size) : "TBD"}</span><span class="secondary-cell">${escapeHtml(racewayTypeLabel(conduit.racewayType) || "Raceway type not set")}</span></td><td><span class="tag fill-status ${analysis.status === "pass" ? "fill-pass" : analysis.status === "fail" ? "fill-fail" : "neutral"}">${escapeHtml(analysis.label)}</span><span class="secondary-cell fill-details" title="${escapeHtml(fillDetails)}">${escapeHtml(fillDetails)}</span></td><td>${renderScheduledLength(conduit.length)}</td><td>${escapeHtml(locationName(conduit.fromLocationId))}</td><td>${escapeHtml(locationName(conduit.toLocationId))}</td>
         <td>${conduit.cableIds.length ? `<span class="tag blue">${conduit.cableIds.length} ${conduit.cableIds.length === 1 ? "cable" : "cables"}</span><span class="secondary-cell">${escapeHtml(conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number || "Removed").join(", "))}</span>` : `<span class="tag neutral">Unassigned</span>`}</td>
         <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}">✎</button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}" title="Duplicate conduit">⧉</button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}">×</button></div></td>
-      </tr>`).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} conduits</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon">▤</div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first conduit</button></div>`}
+      </tr>`;
+      }).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} conduits</span><span>Fill checks use the selected NEC edition's Table 1 limits. Raceway area is entered per conduit.</span></div>` : `<div class="empty-state"><div class="empty-icon">▤</div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first conduit</button></div>`}
     </section>`;
 }
 
@@ -506,6 +662,19 @@ function renderSettings() {
             ${settingsField("editorName", "Designer", settings.editorName, "e.g. E. Conner")}
             ${scheduleStatusField(settings.scheduleStatus)}
           </div>
+          <div class="form-divider"></div>
+          <div class="card-heading settings-inline-heading"><div><h3>Conduit Fill Analysis</h3><p>Set the code basis used for conduit fill checks</p></div></div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="setting-necEdition">NEC edition</label>
+              <select id="setting-necEdition" name="necEdition">
+                <option value="">Select adopted edition…</option>
+                ${NEC_EDITIONS.map((edition) => `<option value="${edition}" ${settings.necEdition === edition ? "selected" : ""}>${edition} NEC</option>`).join("")}
+              </select>
+            </div>
+            ${settingsField("necJurisdiction", "Jurisdiction / amendments", settings.necJurisdiction, "e.g. City or project code notes")}
+          </div>
+          <p class="section-description">Select the edition adopted by the authority having jurisdiction. Supplied area lookups cover EMT, RMC, and PVC Schedule 40/80 sizes; other combinations need manual dimensions. Local amendments and requirements beyond conduit fill are not evaluated automatically.</p>
           <div class="settings-submit"><button class="button button-primary" type="submit">Save project details</button></div>
         </form>
       </section>
@@ -525,7 +694,7 @@ function renderSettings() {
       </section>
       <section class="content-card settings-section">
         <div class="card-heading section-title-row"><div><h2>Cable Types <span class="tag neutral">${settings.cableTypes.length}</span></h2><p>Reusable manufacturer and specification details for cable entries</p></div><button class="button button-secondary" data-action="new-cable-type"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable Type</button></div>
-        <div class="settings-list">${settings.cableTypes.length ? settings.cableTypes.map((type) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(type.manufacturer)} <span style="color:#a1a9b4;font-weight:400">·</span> ${escapeHtml(type.specNumber)}</strong><small>${escapeHtml(type.specType)} · ${formatNumber(type.diameter)} in OD · ${formatNumber(type.netWeight)} lbs/1000'${safeHttpUrl(type.url) ? ` · <a href="${escapeHtml(safeHttpUrl(type.url))}" target="_blank" rel="noopener noreferrer" style="color:#4268e8">Details ↗</a>` : ""}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-cable-type" data-id="${type.id}" aria-label="Edit ${escapeHtml(type.specNumber)}">✎</button><button class="icon-button delete" data-action="delete-cable-type" data-id="${type.id}" aria-label="Delete ${escapeHtml(type.specNumber)}">×</button></div></div>`).join("") : `<div class="settings-empty">No cable types yet. Add a specification to use it in the cable schedule.</div>`}</div>
+        <div class="settings-list">${settings.cableTypes.length ? settings.cableTypes.map((type) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(type.manufacturer)} <span style="color:#a1a9b4;font-weight:400">·</span> ${escapeHtml(type.specNumber)}</strong><small>${escapeHtml(type.specType)} · ${formatNumber(type.diameter)} in OD · ${formatNumber(type.netWeight)} lbs/1000' · Fill: ${escapeHtml(cableFillTypeLabel(type.fillClassification) || "not set")}${safeHttpUrl(type.url) ? ` · <a href="${escapeHtml(safeHttpUrl(type.url))}" target="_blank" rel="noopener noreferrer" style="color:#4268e8">Details ↗</a>` : ""}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-cable-type" data-id="${type.id}" aria-label="Edit ${escapeHtml(type.specNumber)}">✎</button><button class="icon-button delete" data-action="delete-cable-type" data-id="${type.id}" aria-label="Delete ${escapeHtml(type.specNumber)}">×</button></div></div>`).join("") : `<div class="settings-empty">No cable types yet. Add a specification to use it in the cable schedule.</div>`}</div>
       </section>
       <section class="content-card settings-section">
         <div class="card-heading section-title-row"><div><h2>Equipment <span class="tag neutral">${equipmentLocations.length}</span></h2><p>Equipment appears in the From and To dropdowns on schedules</p></div><button class="button button-secondary" data-action="new-location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Equipment</button></div>
@@ -566,6 +735,12 @@ function options(items, selectedId) {
   return `<option value="">Select…</option>${items.map((item) => `<option value="${item.id}" ${item.id === selectedId ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
 }
 
+function selectField(name, label, choices, selectedValue = "", fieldOptions = {}) {
+  const full = fieldOptions.full ? " full" : "";
+  const optional = fieldOptions.optional ? ` <span class="optional">(optional)</span>` : "";
+  return `<div class="field${full}"><label for="modal-${name}">${escapeHtml(label)}${optional}</label><select id="modal-${name}" name="${name}"><option value="">Select…</option>${choices.map(({ value, label: choiceLabel }) => `<option value="${escapeHtml(value)}" ${value === selectedValue ? "selected" : ""}>${escapeHtml(choiceLabel)}</option>`).join("")}</select></div>`;
+}
+
 function openModal(title, subtitle, formKind, fields, submitLabel = "Save") {
   modalRoot.innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
     <div class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div></div>
@@ -584,7 +759,8 @@ function textField(name, label, value = "", placeholder = "", options = {}) {
   const type = options.type || "text";
   const step = options.step ? ` step="${options.step}"` : "";
   const min = options.min ? ` min="${options.min}"` : "";
-  return `<div class="field${full}"><label for="modal-${name}">${escapeHtml(label)}${options.optional ? ` <span class="optional">(optional)</span>` : ""}</label><input id="modal-${name}" name="${name}" type="${type}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}"${required}${step}${min} /></div>`;
+  const max = options.max ? ` max="${options.max}"` : "";
+  return `<div class="field${full}"><label for="modal-${name}">${escapeHtml(label)}${options.optional ? ` <span class="optional">(optional)</span>` : ""}</label><input id="modal-${name}" name="${name}" type="${type}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}"${required}${step}${min}${max} /></div>`;
 }
 
 function numberPrefixFrom(number) {
@@ -680,6 +856,7 @@ function openConduitForm(id, draft = {}, modalOptions = {}) {
   const numberField = conduit
     ? textField("number", "Conduit number", draft.number ?? conduit.number, "e.g. CON-101", { full: true })
     : scheduleNumberField("Conduit number", state.conduits, "conduits", draft.numberPrefix || numberPrefixFrom(draft.number), draft.number, true);
+  const selectedFillCondition = draft.fillCondition || conduit?.fillCondition || "standard";
   const cableOptions = state.cables.length ? `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><p class="form-note assignment-warning" hidden>Remove incompatible cable assignments before saving this conduit.</p><div class="checkbox-list" role="group" aria-label="Assign cables">
     <div class="checkbox-list-header" aria-hidden="true"><span>Select</span><span>Cable number</span><span>From → To</span><span>Cable type / spec</span></div>
     ${sortCablesByPrefix(state.cables).map((cable) => {
@@ -689,16 +866,30 @@ function openConduitForm(id, draft = {}, modalOptions = {}) {
     }).join("")}
     <div class="checkbox-list-empty" hidden></div>
   </div></div>` : `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><p class="form-note">No cables are available yet. Add cables from the Cable schedule to assign them here.</p></div>`;
-  const fields = `${setupNote}<div class="form-grid">
+  const nippleLength = `<div class="field" data-nipple-length-field ${selectedFillCondition === "nipple" ? "" : "hidden"}><label for="modal-nippleLengthInches">Nipple length (in)</label><input id="modal-nippleLengthInches" name="nippleLengthInches" type="number" min="0.1" max="24" step="0.1" value="${escapeHtml(draft.nippleLengthInches ?? conduit?.nippleLengthInches ?? "")}" ${selectedFillCondition === "nipple" ? "required" : ""} /></div>`;
+  const fields = `${setupNote}<p class="form-note">Supplied EMT, RMC, and PVC Schedule 40/80 areas auto-fill for listed sizes. For other combinations, enter the 100% internal area from the applicable NEC Chapter 9 raceway table or product data.</p><div class="form-grid">
     ${numberField}
-    ${conduitSizeField(draft.size ?? conduit?.size ?? "")}
+    <div class="form-grid conduit-raceway-fields">
+      ${conduitSizeField(draft.size ?? conduit?.size ?? "")}
+      ${selectField("racewayType", "Raceway type", RACEWAY_TYPES, draft.racewayType ?? conduit?.racewayType ?? "", { optional: true })}
+      ${textField("racewayArea", "Internal area (sq in)", draft.racewayArea ?? conduit?.racewayArea ?? "", "e.g. 0.864", { type: "number", min: "0.0001", step: "0.0001", required: false, optional: true })}
+      <p class="section-description field full" data-raceway-area-note></p>
+    </div>
     ${textField("length", "Conduit length (ft)", draft.length ?? conduit?.length ?? "", "e.g. 120", { type: "number", min: "0", step: "0.01", required: false, optional: true })}
+    ${selectField("fillCondition", "Fill condition", [
+    { value: "standard", label: "Standard raceway" },
+    { value: "nipple", label: "Nipple 24 in or shorter" },
+    ], selectedFillCondition)}
+    ${nippleLength}
     ${routeLocationField("fromLocationId", "From location", draft.fromLocationId || conduit?.fromLocationId, false, true, true)}
     ${routeLocationField("toLocationId", "To location", draft.toLocationId || conduit?.toLocationId, false, true, true)}
     ${cableOptions}
   </div>`;
-  openModal(modalOptions.title || (conduit ? "Edit Conduit" : "Add Conduit"), modalOptions.subtitle || "Define the conduit route and cable assignments.", conduit ? `edit-conduit:${id}` : "new-conduit", fields, modalOptions.submitLabel || (conduit ? "Save changes" : "Add Conduit"));
-  updateConduitCableOptions(modalRoot.querySelector(".modal-form"));
+  openModal(modalOptions.title || (conduit ? "Edit Conduit" : "Add Conduit"), modalOptions.subtitle || "Define the conduit route, raceway dimensions, and cable assignments.", conduit ? `edit-conduit:${id}` : "new-conduit", fields, modalOptions.submitLabel || (conduit ? "Save changes" : "Add Conduit"));
+  const form = modalRoot.querySelector(".modal-form");
+  updateConduitCableOptions(form);
+  updateConduitFillCondition(form);
+  updateConduitRacewayArea(form, true);
   if (needsLocations) modalRoot.querySelector('[type="submit"]').disabled = true;
 }
 
@@ -740,6 +931,37 @@ function updateConduitCableOptions(form) {
   if (assignmentWarning) assignmentWarning.hidden = !hasIncompatibleAssignments;
 }
 
+function updateConduitFillCondition(form) {
+  if (!form) return;
+  const isNipple = form.elements.namedItem("fillCondition").value === "nipple";
+  const field = form.querySelector("[data-nipple-length-field]");
+  const input = form.elements.namedItem("nippleLengthInches");
+  if (!field || !input) return;
+  field.hidden = !isNipple;
+  input.required = isNipple;
+}
+
+function updateConduitRacewayArea(form, preserveExisting = false) {
+  if (!form) return;
+  const racewayType = form.elements.namedItem("racewayType").value;
+  const size = form.elements.namedItem("size").value;
+  const areaInput = form.elements.namedItem("racewayArea");
+  const note = form.querySelector("[data-raceway-area-note]");
+  const area = racewayInternalAreaFor(racewayType, size);
+  if (area !== null) {
+    const hasCustomArea = preserveExisting && areaInput.value && Number(areaInput.value) !== area;
+    if (!preserveExisting || !areaInput.value) areaInput.value = String(area);
+    note.textContent = hasCustomArea
+      ? "Keeping the existing custom area. Change raceway or size to use the supplied table value."
+      : `Auto-filled from the supplied ${racewayTypeLabel(racewayType)} table. You can edit this value if your product data differs.`;
+  } else {
+    if (!preserveExisting) areaInput.value = "";
+    note.textContent = preserveExisting && areaInput.value
+      ? "No supplied lookup for this raceway and size. The existing custom area is retained; verify it against the applicable NEC table or product data."
+      : "No supplied lookup for this raceway and size. Enter the 100% internal area from the applicable NEC table or product data.";
+  }
+}
+
 function isConduitForm(form) {
   return form?.dataset.form === "new-conduit" || form?.dataset.form.startsWith("edit-conduit:");
 }
@@ -750,9 +972,11 @@ function openCableTypeForm(id, returnToCableDraft = null) {
     ${textField("manufacturer", "Manufacturer", type?.manufacturer || "", "e.g. Anixter")}
     ${textField("specNumber", "Spec number", type?.specNumber || "", "e.g. 115-23-3804")}
     ${textField("specType", "Spec type", type?.specType || "", "e.g. 3/C #1/0 AWG 15kV", { full: true })}
+    ${selectField("fillClassification", "Cable fill type", CABLE_FILL_TYPES, type?.fillClassification || "", { full: true, optional: true })}
     ${textField("diameter", "Overall diameter (in)", type?.diameter ?? "", "e.g. 1.42", { type: "number", min: "0", step: "0.001" })}
     ${textField("netWeight", "Net weight (lbs/1000')", type?.netWeight ?? "", "e.g. 1120", { type: "number", min: "0", step: "0.01" })}
     ${textField("url", "URL to details", type?.url || "", "https://...", { type: "url", required: false, full: true, optional: true })}
+    <p class="section-description field full">For fill checks, enter the actual outside diameter and identify whether this specification is one insulated conductor or one multiconductor cable assembly.</p>
   </div>`;
   openModal(type ? "Edit Cable Type" : "Add Cable Type", "Save a reusable cable specification for this project.", type ? `edit-cable-type:${id}` : returnToCableDraft ? "new-cable-type-inline" : "new-cable-type", fields, type ? "Save changes" : "Add Cable Type");
   if (returnToCableDraft) {
@@ -789,6 +1013,10 @@ function handleSubmit(event) {
     if (selectedScheduleStatus === "custom" && !customScheduleStatus) {
       return showToast("Enter a custom schedule status.", true);
     }
+    const necEdition = String(formData.get("necEdition") || "").trim();
+    if (necEdition && !NEC_EDITIONS.includes(necEdition)) {
+      return showToast("Choose a supported NEC edition.", true);
+    }
     Object.keys(state.settings).filter((key) => !["cableTypes", "locations"].includes(key)).forEach((key) => {
       state.settings[key] = String(formData.get(key) || "").trim();
     });
@@ -808,7 +1036,10 @@ function handleSubmit(event) {
   const kind = form.dataset.form;
   if (kind === "new-cable-type" || kind === "new-cable-type-inline" || kind.startsWith("edit-cable-type:")) {
     const id = kind.startsWith("edit-cable-type:") ? kind.split(":")[1] : makeId();
-    const type = { id, manufacturer: values.manufacturer.trim(), specNumber: values.specNumber.trim(), specType: values.specType.trim(), diameter: Number(values.diameter), netWeight: Number(values.netWeight), url: values.url.trim() };
+    if (values.fillClassification && !CABLE_FILL_TYPES.some((fillType) => fillType.value === values.fillClassification)) {
+      return showToast("Choose a supported cable fill type.", true);
+    }
+    const type = { id, manufacturer: values.manufacturer.trim(), specNumber: values.specNumber.trim(), specType: values.specType.trim(), fillClassification: values.fillClassification.trim(), diameter: Number(values.diameter), netWeight: Number(values.netWeight), url: values.url.trim() };
     const detailsUrl = safeHttpUrl(type.url);
     if (type.url && !detailsUrl) return showToast("Enter an HTTP or HTTPS URL for cable details.", true);
     type.url = detailsUrl || "";
@@ -849,7 +1080,34 @@ function handleSubmit(event) {
         : "Remove incompatible cable assignments before saving this conduit.";
       return showToast(message, true);
     }
-    const conduit = { id, number, size: values.size.trim() || null, length: values.length === "" ? null : Number(values.length), fromLocationId: values.fromLocationId, toLocationId: values.toLocationId, cableIds: formData.getAll("cableIds") };
+    const racewayArea = values.racewayArea === "" ? null : Number(values.racewayArea);
+    if (racewayArea !== null && (!Number.isFinite(racewayArea) || racewayArea <= 0)) {
+      return showToast("Enter a raceway internal area greater than zero.", true);
+    }
+    if (values.racewayType && !RACEWAY_TYPES.some((type) => type.value === values.racewayType)) {
+      return showToast("Choose a supported raceway type.", true);
+    }
+    const fillCondition = values.fillCondition || "standard";
+    if (!CONDUIT_FILL_CONDITIONS.includes(fillCondition)) {
+      return showToast("Choose a supported conduit fill condition.", true);
+    }
+    const nippleLengthInches = values.nippleLengthInches === "" ? null : Number(values.nippleLengthInches);
+    if (fillCondition === "nipple" && (!Number.isFinite(nippleLengthInches) || nippleLengthInches <= 0 || nippleLengthInches > 24)) {
+      return showToast("A nipple must have a length from 0.1 to 24 inches.", true);
+    }
+    const conduit = {
+      id,
+      number,
+      size: values.size.trim() || null,
+      racewayType: values.racewayType,
+      racewayArea,
+      length: values.length === "" ? null : Number(values.length),
+      fillCondition,
+      nippleLengthInches: fillCondition === "nipple" ? nippleLengthInches : null,
+      fromLocationId: values.fromLocationId,
+      toLocationId: values.toLocationId,
+      cableIds: formData.getAll("cableIds"),
+    };
     if (isDuplicate(state.conduits, conduit.number, id, "number")) return showToast("A conduit with that number already exists.", true);
     const index = state.conduits.findIndex((item) => item.id === id);
     if (index >= 0) state.conduits[index] = conduit;
@@ -1237,19 +1495,30 @@ function validateBackupData(backup) {
 
   const settings = { ...emptyState().settings, ...backup.settings };
   settings.scheduleStatus ||= "In progress";
-  const textSettings = ["projectName", "clientName", "clientProjectNumber", "internalProjectNumber", "revisionNumber", "editorName", "scheduleStatus"];
+  const textSettings = ["projectName", "clientName", "clientProjectNumber", "internalProjectNumber", "revisionNumber", "editorName", "scheduleStatus", "necEdition", "necJurisdiction"];
   if (!textSettings.every((key) => typeof settings[key] === "string")) {
     throw new Error("The backup contains invalid project settings.");
   }
+  if (settings.necEdition && !NEC_EDITIONS.includes(settings.necEdition)) {
+    throw new Error("The backup contains an unsupported NEC edition.");
+  }
   validateItems(settings.cableTypes, "cable types", (item) =>
     isRecord(item) && isText(item.id) &&
+    (item.fillClassification === undefined || item.fillClassification === "" ||
+      CABLE_FILL_TYPES.some((fillType) => fillType.value === item.fillClassification)) &&
     (item.url === undefined || item.url === null ||
       (typeof item.url === "string" && (!item.url.trim() || Boolean(safeHttpUrl(item.url))))));
   validateItems(settings.locations, "locations", (item) => isRecord(item) && isText(item.id) && isText(item.name));
   validateItems(backup.cables, "cables", (item) => isRecord(item) && isText(item.id) && isText(item.number));
   validateItems(backup.conduits, "conduits", (item) =>
     isRecord(item) && isText(item.id) && isText(item.number) &&
-    Array.isArray(item.cableIds) && item.cableIds.every((id) => typeof id === "string"));
+    Array.isArray(item.cableIds) && item.cableIds.every((id) => typeof id === "string") &&
+    (item.racewayType === undefined || item.racewayType === "" || RACEWAY_TYPES.some((type) => type.value === item.racewayType)) &&
+    (item.racewayArea === undefined || item.racewayArea === null ||
+      (typeof item.racewayArea === "number" && Number.isFinite(item.racewayArea) && item.racewayArea > 0)) &&
+    (item.fillCondition === undefined || item.fillCondition === "" || CONDUIT_FILL_CONDITIONS.includes(item.fillCondition)) &&
+    (item.nippleLengthInches === undefined || item.nippleLengthInches === null ||
+      (typeof item.nippleLengthInches === "number" && Number.isFinite(item.nippleLengthInches) && item.nippleLengthInches > 0 && item.nippleLengthInches <= 24)));
 
   return normalizeCableTrayLocations({
     settings,
@@ -1352,6 +1621,14 @@ document.addEventListener("change", (event) => {
     return;
   }
   const form = event.target.closest(".modal-form");
+  if (isConduitForm(form) && ["size", "racewayType"].includes(event.target.name)) {
+    updateConduitRacewayArea(form);
+    return;
+  }
+  if (isConduitForm(form) && event.target.name === "fillCondition") {
+    updateConduitFillCondition(form);
+    return;
+  }
   if (isConduitForm(form) && ["fromLocationId", "toLocationId", "cableIds"].includes(event.target.name)) {
     updateConduitCableOptions(form);
     return;
