@@ -9,6 +9,8 @@
     "scheduleStatus": "In Progress",
     "necEdition": "2023",
     "necJurisdiction": "Louisville, KY",
+    "powerFactor": 0.9,
+    "maxVoltageDropPercent": 3,
     "cableTypes": [
       {
         "id": "15307af5-32b4-4fe4-9018-64280cddcc86",
@@ -265,7 +267,7 @@
       "toLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "purpose": "13.8kV, 3PH, 3W",
       "voltage": "13800",
-      "loadAmps": 200,
+      "loadAmps": null,
       "cableRating": "90",
       "phase": "Three"
     },
@@ -293,7 +295,7 @@
       "toLocationId": "aa9be09b-ea47-4c09-80ef-29ecec0bb630",
       "purpose": "13.8kV, 3PH, 3W",
       "voltage": "13800",
-      "loadAmps": 150,
+      "loadAmps": null,
       "cableRating": "90",
       "phase": "Three"
     },
@@ -334,7 +336,7 @@
       "cableTypeId": "0b5baf61-d502-407e-b789-98a9c07cdcf8",
       "fromLocationId": "9094312d-dc7f-4ab1-be20-21f8133016c9",
       "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
-      "purpose": "480V, 3PH, 3W, Set 1-2",
+      "purpose": "480V, 3PH, 3W",
       "voltage": "480",
       "loadAmps": null,
       "cableRating": "60",
@@ -489,7 +491,7 @@
       "cableTypeId": "0b5baf61-d502-407e-b789-98a9c07cdcf8",
       "fromLocationId": "9094312d-dc7f-4ab1-be20-21f8133016c9",
       "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
-      "purpose": "480V, 3PH, 3W, Set 1-2",
+      "purpose": "480V, 3PH, 3W",
       "voltage": "480",
       "loadAmps": null,
       "cableRating": "60",
@@ -952,6 +954,6 @@
       ]
     }
   ],
-  "exportedAt": "2026-11-26T21:50:12.510Z",
+  "exportedAt": "2026-11-26T23:56:53.899Z",
   "formatVersion": 1
 }
