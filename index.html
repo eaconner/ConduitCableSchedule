@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f5f7fa" />
     <title>Wireframe — Cable & Conduit Schedules</title>
-    <link rel="stylesheet" href="styles.css?v=2026.11.12.4" />
+    <link rel="stylesheet" href="styles.css?v=2026.11.13.26" />
   </head>
   <body>
     <div class="app-shell">
@@ -21,10 +21,11 @@
           </button>
         </div>
         <nav class="main-nav" aria-label="Main navigation">
-          <button class="nav-item active" data-page="dashboard" data-tooltip="Overview"><span class="nav-icon">⌂</span>Overview</button>
-          <button class="nav-item" data-page="cables" data-tooltip="Cable schedule"><span class="nav-icon cable-icon">⌁</span>Cable Schedule<span class="nav-count" id="cable-nav-count">0</span></button>
-          <button class="nav-item" data-page="conduits" data-tooltip="Conduit schedule"><span class="nav-icon conduit-icon">▤</span>Conduit Schedule<span class="nav-count" id="conduit-nav-count">0</span></button>
-          <button class="nav-item" data-page="bom" data-tooltip="Bill of Materials"><span class="nav-icon">▦</span>Bill of Materials</button>
+          <button class="nav-item active" data-page="dashboard" data-tooltip="Overview"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m3.5 8.5 6.5-5 6.5 5M5.5 7.5v9h9v-9M8.5 16.5v-5h3v5" /></svg></span>Overview</button>
+          <button class="nav-item" data-page="cables" data-tooltip="Cable schedule"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></span>Cable Schedule<span class="nav-count" id="cable-nav-count">0</span></button>
+          <button class="nav-item" data-page="voltage-drop" data-tooltip="Voltage drop"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></span>Voltage Drop</button>
+          <button class="nav-item" data-page="conduits" data-tooltip="Conduit schedule"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4.5 3v8a4.5 4.5 0 0 0 4.5 4.5h7M2.5 3h4M13 13.5h4" /></svg></span>Conduit Schedule<span class="nav-count" id="conduit-nav-count">0</span></button>
+          <button class="nav-item" data-page="bom" data-tooltip="Bill of Materials"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="13" rx="1.5" /><path d="M8 4V2.5h4V4M7 8h6M7 11h6M7 14h4" /></svg></span>Bill of Materials</button>
         </nav>
         <div class="sidebar-bottom">
           <div class="sidebar-project">
@@ -32,7 +33,7 @@
             <span class="project-label"><strong id="sidebar-project-name">New Project</strong><small id="sidebar-project-number">Project Workspace</small></span>
             <span class="status-dot"></span>
           </div>
-          <button class="nav-item settings-link" data-page="settings" data-tooltip="Settings"><span class="nav-icon">⚙</span>Settings</button>
+          <button class="nav-item settings-link" data-page="settings" data-tooltip="Settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" /><circle cx="7" cy="5" r="1.8" /><circle cx="12" cy="10" r="1.8" /><circle cx="9" cy="15" r="1.8" /></svg></span>Settings</button>
           <div class="sidebar-footer">WIREFRAME <span>·</span> PROJECT TOOLS</div>
         </div>
       </aside>
@@ -68,7 +69,9 @@
     <div id="print-root" aria-hidden="true"></div>
     <div id="modal-root"></div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="raceway-data.js?v=2026.11.12.4"></script>
-    <script src="app.js?v=2026.11.12.4"></script>
+    <script src="raceway-data.js?v=2026.11.13.26"></script>
+    <script src="ampacity-data.js?v=2026.11.13.26"></script>
+    <script src="voltage-drop-data.js?v=2026.11.13.26"></script>
+    <script src="app.js?v=2026.11.13.26"></script>
   </body>
 </html>

@@ -7,6 +7,15 @@ const CABLE_FILL_TYPES = [
   { value: "individual", label: "Individual Conductor" },
   { value: "multiconductor", label: "Multiconductor Cable" },
 ];
+const CABLE_MATERIALS = ["Aluminum", "Copper"];
+const CABLE_RATINGS = ["60", "75", "90"];
+const CABLE_PHASES = ["Single", "Three"];
+const CABLE_SPEC_CONSTRUCTIONS = ["conductor", "pair"];
+const CABLE_SPEC_SIZES = [
+  ...["18", "16", "14", "12", "10", "8", "6", "4", "3", "2", "1", "1/0", "2/0", "3/0", "4/0"].map((size) => `${size} AWG`),
+  ...["250", "300", "350", "400", "500", "600", "700", "750", "800", "900", "1000"].map((size) => `${size} KCMIL`),
+];
+const MAX_PARALLEL_SETS = 6;
 const CONDUIT_FILL_CONDITIONS = ["standard", "nipple"];
 const CABLE_TRAY_LOCATION_ID = "__wireframe_cable_tray__";
 const CABLE_TRAY_LOCATION_NAME = "Cable Tray";
@@ -81,6 +90,16 @@ const VERSION_HISTORY = [
       "Added project and report names to saved project files, CSV exports, and print-to-PDF titles.",
     ],
   },
+  {
+    version: "2026.11.13",
+    changes: [
+      "Added a cable specification builder for conductor/pair count, AWG/KCMIL size, ground/shield, and optional suffix; cable material is selected on the cable type.",
+      "Added Cable Ampacity lookups by size, material, and rating, plus Ampacity Overhead (ampacity minus load) with combined parallel-set ampacity, red/green status indicators, and ampere units for loads.",
+      "Added Power Factor and Max Voltage Drop settings to Project Information; voltage drop uses Table 9 impedance, cable length, load, phase, rating temperature, raceway, and parallel sets, with the maximum setting controlling status colors. Missing inputs show Needs data; multiconductor and pair results are labeled estimates.",
+      "Grouped parallel sets in the Cable and Voltage Drop schedules with set counts and cable numbers; added editable per-set numbering (up to six), whole-set duplicate/delete, combined conduit assignments, and “Set x of y” purpose suffixes while showing shared purposes once in grouped rows.",
+      "Added Actions headings to Cable and Conduit Schedules, consistent sidebar icon styling, and Voltage Drop column alignment.",
+    ],
+  },
 ];
 let showAllVersionHistory = false;
 const emptyState = () => ({
@@ -94,6 +113,8 @@ const emptyState = () => ({
     scheduleStatus: "In Progress",
     necEdition: "",
     necJurisdiction: "",
+    powerFactor: 0.9,
+    maxVoltageDropPercent: 3,
     cableTypes: [],
     locations: [],
   },
@@ -113,7 +134,7 @@ function loadState() {
   if (!saved) return emptyState();
   try {
     const parsed = JSON.parse(saved);
-    return normalizeCableTrayLocations({
+    return normalizeCableTypeMaterials(normalizeCableTrayLocations({
       ...emptyState(),
       ...parsed,
       settings: {
@@ -123,7 +144,7 @@ function loadState() {
       },
       cables: Array.isArray(parsed.cables) ? parsed.cables : [],
       conduits: Array.isArray(parsed.conduits) ? parsed.conduits : [],
-    });
+    }));
   } catch (error) {
     console.error("Could not read the saved project.", error);
     showToast("Saved project data could not be read. Start a new project or restore a backup.", true);
@@ -149,6 +170,27 @@ function normalizeCableTrayLocations(projectState) {
       fromLocationId: cableTrayIds.has(conduit.fromLocationId) ? CABLE_TRAY_LOCATION_ID : conduit.fromLocationId,
       toLocationId: cableTrayIds.has(conduit.toLocationId) ? CABLE_TRAY_LOCATION_ID : conduit.toLocationId,
     })),
+  };
+}
+
+function normalizeCableTypeMaterials(projectState) {
+  const legacyMaterials = new Map();
+  projectState.cables.forEach((cable) => {
+    if (!CABLE_MATERIALS.includes(cable.cableMaterial)) return;
+    const materials = legacyMaterials.get(cable.cableTypeId) || new Set();
+    materials.add(cable.cableMaterial);
+    legacyMaterials.set(cable.cableTypeId, materials);
+  });
+  return {
+    ...projectState,
+    settings: {
+      ...projectState.settings,
+      cableTypes: projectState.settings.cableTypes.map((type) => {
+        if (CABLE_MATERIALS.includes(type.cableMaterial)) return type;
+        const materials = legacyMaterials.get(type.id);
+        return materials?.size === 1 ? { ...type, cableMaterial: [...materials][0] } : type;
+      }),
+    },
   };
 }
 
@@ -309,7 +351,7 @@ function setPage(page) {
   document.querySelectorAll("[data-page]").forEach((item) => {
     item.classList.toggle("active", item.dataset.page === page && item.classList.contains("nav-item"));
   });
-  const titles = { dashboard: "Overview", cables: "Cable Schedule", conduits: "Conduit Schedule", bom: "Bill of Materials", settings: "Settings" };
+  const titles = { dashboard: "Overview", cables: "Cable Schedule", "voltage-drop": "Voltage Drop", conduits: "Conduit Schedule", bom: "Bill of Materials", settings: "Settings" };
   document.querySelector("#breadcrumb-page").textContent = titles[page];
   renderPage();
 }
@@ -319,6 +361,7 @@ function renderPage() {
   document.body.classList.toggle("printing-bom", activePage === "bom");
   if (activePage === "settings") pageContent.innerHTML = renderSettings();
   else if (activePage === "cables") pageContent.innerHTML = renderCables();
+  else if (activePage === "voltage-drop") pageContent.innerHTML = renderVoltageDrop();
   else if (activePage === "conduits") pageContent.innerHTML = renderConduits();
   else if (activePage === "bom") pageContent.innerHTML = renderBillOfMaterials();
   else pageContent.innerHTML = renderDashboard();
@@ -448,7 +491,7 @@ function renderDashboard() {
   const definedCableLengthCount = state.cables.filter((cable) => hasScheduledLength(cable.length)).length;
   const missingCableLengthCount = state.cables.length - definedCableLengthCount;
   const hasDefinedCableLength = definedCableLengthCount > 0;
-  const recent = [...state.cables].slice(-5).reverse();
+  const recent = cableDisplayGroups([...state.cables].reverse()).slice(0, 5);
   return `
     <div class="page-heading">
       <div><div class="eyebrow">PROJECT OVERVIEW</div><h1>${escapeHtml(projectName())}</h1><p>Your cable and conduit schedules, all in one place.</p></div>
@@ -473,10 +516,12 @@ function renderDashboard() {
       </div>
     </section>
     <section class="content-card">
-      <div class="card-heading"><div><h2>Recently Added Cables</h2><p>Your latest cable schedule entries</p></div><button class="text-button" data-page="cables">View cable schedule →</button></div>
-      ${recent.length ? `<div class="table-wrap"><table><thead><tr><th>Cable number</th><th>Type</th><th>Length</th><th>Route</th><th>Purpose</th></tr></thead><tbody>${recent.map((cable) => {
+      <div class="card-heading"><div><h2>Recently Added Cables</h2><p>Latest cable entries, with parallel sets grouped together</p></div><button class="text-button" data-page="cables">View cable schedule →</button></div>
+      ${recent.length ? `<div class="table-wrap"><table><thead><tr><th>Cable number</th><th>Parallel Sets</th><th>Type</th><th>Length</th><th>Route</th><th>Purpose</th></tr></thead><tbody>${recent.map((cables) => {
+        const cable = cables[0];
+        const cableNumbers = cables.map((member) => member.number).join(", ");
         const type = cableType(cable.cableTypeId);
-        return `<tr><td class="primary-cell">${escapeHtml(cable.number)}</td><td>${escapeHtml(type?.specNumber || "—")}<span class="secondary-cell">${escapeHtml(type?.specType || "Cable type unavailable")}</span></td><td>${renderScheduledLength(cable.length)}</td><td>${escapeHtml(cableLocationName(cable.fromLocationId))} <span style="color:#a6aeba">→</span> ${escapeHtml(cableLocationName(cable.toLocationId))}</td><td>${escapeHtml(cable.purpose || "—")}</td></tr>`;
+        return `<tr><td class="primary-cell">${escapeHtml(cableNumbers)}</td><td>${cables.length}</td><td>${escapeHtml(type?.specNumber || "—")}<span class="secondary-cell">${escapeHtml(type?.specType || "Cable type unavailable")}</span></td><td>${renderScheduledLength(cable.length)}</td><td>${escapeHtml(cableLocationName(cable.fromLocationId))} <span style="color:#a6aeba">→</span> ${escapeHtml(cableLocationName(cable.toLocationId))}</td><td>${escapeHtml(cable.purpose || "—")}</td></tr>`;
       }).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon">⌁</div><h3>Your schedule starts here</h3><p>Add cable types and equipment locations in Settings, then create your first cable schedule entry.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Create a cable</button></div>`}
     </section>`;
 }
@@ -490,31 +535,209 @@ function scheduleStatus() {
 }
 
 function renderCables() {
-  const rows = sortByNumber(state.cables);
+  const rows = cableDisplayGroups();
+  const cableCount = state.cables.length;
   return `
     <div class="page-heading">
       <div><div class="eyebrow">SCHEDULES / CABLES</div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
-    <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
+    <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Cable<br>number</th><th>Mfr. / Spec</th><th>Spec<br>Type</th><th>Cable<br>Length</th><th>Cable Routing From</th><th>Cable Routing To</th><th>Purpose</th><th>Conduit<br>Assignment</th><th></th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} cables</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon">⌁</div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Cable<br>number</th><th>Parallel<br>Sets</th><th>Mfr. / Spec</th><th>Spec<br>Type</th><th>Cable<br>Length</th><th>Cable Routing From</th><th>Cable Routing To</th><th>Purpose</th><th>Conduit<br>Assignment</th><th>Actions</th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>${rows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon">⌁</div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
     </section>`;
 }
 
-function renderCableRow(cable) {
+function renderCableRow(cables) {
+  const cable = cables[0];
   const type = cableType(cable.cableTypeId);
-  const conduits = state.conduits.filter((conduit) => conduit.cableIds.includes(cable.id));
+  const cableIds = new Set(cables.map((member) => member.id));
+  const cableNumbers = cables.map((member) => member.number).join(", ");
+  const conduits = state.conduits.filter((conduit) => conduit.cableIds.some((cableId) => cableIds.has(cableId)));
+  const conduitNumbers = [...new Set(conduits.map((conduit) => conduit.number))];
   const conduitStatus = conduits.length
-    ? `<span class="tag">Assigned</span><span class="secondary-cell">${escapeHtml(conduits.map((conduit) => conduit.number).join(", "))}</span>`
+    ? `<span class="tag">Assigned</span><span class="secondary-cell">${escapeHtml(conduitNumbers.join(", "))}</span>`
     : `<span class="tag neutral">Unassigned</span>`;
-  return `<tr data-searchable="${escapeHtml([cable.number, type?.manufacturer, type?.specNumber, type?.specType, cableLocationName(cable.fromLocationId), cableLocationName(cable.toLocationId), cable.purpose].join(" ").toLowerCase())}">
-    <td class="primary-cell">${escapeHtml(cable.number)}</td>
+  const isParallelGroup = Boolean(cable.parallelGroupId) && cables.length > 1;
+  const actionLabels = isParallelGroup
+    ? { edit: `Edit parallel set ${cableNumbers}`, duplicate: `Duplicate parallel set ${cableNumbers}`, delete: `Delete parallel set ${cableNumbers}` }
+    : { edit: `Edit ${cable.number}`, duplicate: `Duplicate ${cable.number}`, delete: `Delete ${cable.number}` };
+  return `<tr data-searchable="${escapeHtml([cableNumbers, type?.manufacturer, type?.specNumber, type?.specType, cableLocationName(cable.fromLocationId), cableLocationName(cable.toLocationId), cable.purpose].join(" ").toLowerCase())}">
+    <td class="primary-cell">${escapeHtml(cableNumbers)}</td>
+    <td>${cables.length}</td>
     <td>${escapeHtml(type?.manufacturer || "—")}<span class="secondary-cell">${escapeHtml(type?.specNumber || "Type unavailable")}</span></td>
     <td>${escapeHtml(type?.specType || "—")}</td><td>${renderScheduledLength(cable.length)}</td>
     <td>${escapeHtml(cableLocationName(cable.fromLocationId))}</td><td>${escapeHtml(cableLocationName(cable.toLocationId))}</td>
-    <td>${escapeHtml(cable.purpose || "—")}</td><td>${conduitStatus}</td><td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${cable.id}" aria-label="Edit ${escapeHtml(cable.number)}">✎</button><button class="icon-button" data-action="duplicate-cable" data-id="${cable.id}" aria-label="Duplicate ${escapeHtml(cable.number)}" title="Duplicate cable">⧉</button><button class="icon-button delete" data-action="delete-cable" data-id="${cable.id}" aria-label="Delete ${escapeHtml(cable.number)}">×</button></div></td>
+    <td>${escapeHtml(cable.purpose || "—")}</td><td>${conduitStatus}</td><td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.edit)}">✎</button><button class="icon-button" data-action="duplicate-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.duplicate)}" title="${isParallelGroup ? "Duplicate parallel set" : "Duplicate cable"}">⧉</button><button class="icon-button delete" data-action="delete-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.delete)}" title="${isParallelGroup ? "Delete parallel set" : "Delete cable"}">×</button></div></td>
   </tr>`;
+}
+
+function renderVoltageDrop() {
+  const rows = cableDisplayGroups();
+  return `
+    <div class="page-heading">
+      <div><div class="eyebrow">ANALYSIS / CABLES</div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
+      <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
+    </div>
+    <section class="content-card">
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr><th>Cable #</th><th>Spec Type</th><th>Cable Material</th><th>Voltage</th><th>Load (Amps)</th><th>Cable<br>Ampacity</th><th>Ampacity<br>Overhead</th><th>Parallel Sets</th><th>Cable Rating</th><th>Phase</th><th>Voltage Drop %</th><th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon">⚡</div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
+    </section>`;
+}
+
+function cableDisplayGroups(cables = sortByNumber(state.cables)) {
+  const seenGroups = new Set();
+  const groups = [];
+  cables.forEach((cable) => {
+    if (!cable.parallelGroupId) {
+      groups.push([cable]);
+      return;
+    }
+    if (seenGroups.has(cable.parallelGroupId)) return;
+    seenGroups.add(cable.parallelGroupId);
+    groups.push(parallelGroupMembers(cable));
+  });
+  return groups;
+}
+
+function renderVoltageDropRow(cables) {
+  const cable = cables[0];
+  const type = cableType(cable.cableTypeId);
+  const cableMaterial = type && Object.hasOwn(type, "cableMaterial") ? type.cableMaterial : cable.cableMaterial;
+  const material = CABLE_MATERIALS.includes(cableMaterial) ? cableMaterial : "—";
+  const voltage = cable.voltage || "—";
+  const numericLoadAmps = cable.loadAmps === null || cable.loadAmps === undefined || cable.loadAmps === ""
+    ? null
+    : Number(cable.loadAmps);
+  const loadAmps = numericLoadAmps === null || !Number.isFinite(numericLoadAmps)
+    ? "—"
+    : `${formatNumber(numericLoadAmps)} A`;
+  const rating = CABLE_RATINGS.includes(String(cable.cableRating)) ? `${cable.cableRating}°C` : "—";
+  const phase = CABLE_PHASES.includes(cable.phase) ? cable.phase : "—";
+  const cableNumbers = cables.map((member) => member.number).join(", ");
+  const parallelSets = String(cables.length);
+  const singleCableAmpacity = lookupCableAmpacity(cableSpecSizeFromType(type), cableMaterial, cable.cableRating);
+  const totalCableAmpacity = singleCableAmpacity === null ? null : singleCableAmpacity * cables.length;
+  const cableAmpacity = totalCableAmpacity === null ? "—" : `${formatNumber(totalCableAmpacity)} A`;
+  const ampacityOverhead = totalCableAmpacity === null || numericLoadAmps === null || !Number.isFinite(numericLoadAmps)
+    ? null
+    : totalCableAmpacity - numericLoadAmps;
+  const overheadClass = ampacityOverhead === null
+    ? "neutral"
+    : ampacityOverhead < 0
+      ? "fill-fail"
+      : ampacityOverhead > 0 ? "fill-pass" : "neutral";
+  const voltageDrop = calculateCableVoltageDrop(cables);
+  const voltageDropClass = voltageDropStatusClass(
+    voltageDrop.percent,
+    Number(state.settings.maxVoltageDropPercent),
+  );
+  const voltageDropTitle = [
+    voltageDrop.reason,
+    voltageDrop.approximate ? "Estimate: single-conductor Table 9 impedance is used for this cable." : "",
+  ].filter(Boolean).join(" ");
+  return `<tr>
+    <td class="primary-cell">${escapeHtml(cableNumbers || "—")}</td>
+    <td>${escapeHtml(type?.specType || "—")}</td>
+    <td>${escapeHtml(material)}</td>
+    <td>${escapeHtml(voltage)}</td>
+    <td>${escapeHtml(loadAmps)}</td>
+    <td>${escapeHtml(cableAmpacity)}</td>
+    <td><span class="tag ${overheadClass}">${ampacityOverhead === null ? "—" : `${formatNumber(ampacityOverhead)} A`}</span></td>
+    <td>${escapeHtml(parallelSets)}</td>
+    <td>${escapeHtml(rating)}</td>
+    <td>${escapeHtml(phase)}</td>
+    <td><span class="tag ${voltageDropClass}"${voltageDropTitle ? ` title="${escapeHtml(voltageDropTitle)}"` : ""}>${voltageDrop.percent === null ? "Needs data" : `${voltageDrop.percent.toFixed(2)}%${voltageDrop.approximate ? " est." : ""}`}</span></td>
+    <td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${cable.id}" aria-label="Edit ${escapeHtml(cableNumbers)}">✎</button></div></td>
+  </tr>`;
+}
+
+function calculateCableVoltageDrop(cables) {
+  const cable = cables[0];
+  const type = cableType(cable?.cableTypeId);
+  if (!cable || !type) return { percent: null, reason: "Select a cable type.", approximate: false };
+
+  const conductorCount = Number(type.specCount);
+  const isSingleConductor = (type.specConstruction === "conductor" && conductorCount === 1) ||
+    /^\s*1\s*\/\s*C(?:\s|$)/i.test(String(type.specType || ""));
+  const approximate = !isSingleConductor;
+  const missing = (reason) => ({ percent: null, reason, approximate });
+
+  if (!hasScheduledLength(cable.length) || Number(cable.length) < 0) return missing("Enter the one-way cable length in feet.");
+  const length = Number(cable.length);
+  const voltage = Number(cable.voltage);
+  if (!Number.isFinite(voltage) || voltage <= 0) return missing("Enter a positive system voltage.");
+  const loadAmps = Number(cable.loadAmps);
+  if (cable.loadAmps === null || cable.loadAmps === undefined || cable.loadAmps === "" ||
+      !Number.isFinite(loadAmps) || loadAmps < 0) return missing("Enter a nonnegative load in amps.");
+  if (!CABLE_PHASES.includes(cable.phase)) return missing("Select Single or Three phase.");
+  if (!CABLE_RATINGS.includes(String(cable.cableRating))) return missing("Select a cable rating temperature.");
+
+  const cableMaterial = Object.hasOwn(type, "cableMaterial") ? type.cableMaterial : cable.cableMaterial;
+  if (!CABLE_MATERIALS.includes(cableMaterial)) return missing("Set the cable material.");
+  const size = cableSpecSizeFromType(type);
+  if (!size) return missing("Set a supported conductor size.");
+
+  const powerFactor = Number(state.settings.powerFactor);
+  if (!Number.isFinite(powerFactor) || powerFactor <= 0 || powerFactor > 1) return missing("Set a valid power factor in Settings.");
+  const racewayClasses = cableRacewayClasses(cables);
+  if (!racewayClasses.classes.length) return missing(racewayClasses.reason);
+
+  const temperature = Number(cable.cableRating);
+  const resistanceTemperatureConstant = cableMaterial === "Copper" ? 234.5 : 228.1;
+  const resistanceTemperatureFactor = (resistanceTemperatureConstant + temperature) /
+    (resistanceTemperatureConstant + 75);
+  const sinTheta = Math.sqrt(1 - powerFactor ** 2);
+  const phaseMultiplier = cable.phase === "Single" ? 2 : Math.sqrt(3);
+  const parallelSets = cables.length;
+  const dropPercentByRaceway = racewayClasses.classes.map((racewayClass) => {
+    const impedance = lookupCableACImpedance(size, cableMaterial, racewayClass);
+    if (!impedance) return null;
+    const resistance = impedance.resistance * resistanceTemperatureFactor;
+    const effectiveImpedance = resistance * powerFactor + impedance.reactance * sinTheta;
+    const dropVolts = phaseMultiplier * loadAmps * length * effectiveImpedance /
+      (1000 * parallelSets);
+    return dropVolts / voltage * 100;
+  });
+  if (dropPercentByRaceway.some((percent) => !Number.isFinite(percent))) {
+    return missing("No impedance values are available for this size, material, and raceway.");
+  }
+  return { percent: Math.max(...dropPercentByRaceway), reason: "", approximate };
+}
+
+function cableRacewayClasses(cables) {
+  const classes = new Set();
+  for (const cable of cables) {
+    const assignedConduits = state.conduits.filter((conduit) =>
+      Array.isArray(conduit.cableIds) && conduit.cableIds.includes(cable.id));
+    if (!assignedConduits.length) {
+      return { classes: [], reason: "Assign each cable to a conduit with a supported raceway type." };
+    }
+    for (const conduit of assignedConduits) {
+      const racewayClass = ["emt", "rmc"].includes(conduit.racewayType)
+        ? "steel"
+        : ["pvc-s40", "pvc-s80"].includes(conduit.racewayType)
+          ? "pvc"
+          : null;
+      if (!racewayClass) {
+        return { classes: [], reason: "Set each assigned conduit to EMT, RMC, or PVC." };
+      }
+      classes.add(racewayClass);
+    }
+  }
+  return { classes: [...classes], reason: "" };
+}
+
+function voltageDropStatusClass(percent, maxPercent) {
+  if (!Number.isFinite(percent) || !Number.isFinite(maxPercent) || maxPercent < 0) return "neutral";
+  if (percent < maxPercent) return "fill-pass";
+  if (percent > maxPercent) return "fill-fail";
+  return "neutral";
+}
+
+function cableSpecSizeFromType(type) {
+  if (CABLE_SPEC_SIZES.includes(type?.specSize)) return type.specSize;
+  const match = String(type?.specType || "").match(/#?\s*(\d+(?:\/0)?)\s*(AWG|KCMIL)\b/i);
+  return match ? `${match[1]} ${match[2].toUpperCase()}` : "";
 }
 
 function renderConduits() {
@@ -526,7 +749,7 @@ function renderConduits() {
     </div>
     <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing, cable assignments, and fill checks</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit<br>number</th><th>Raceway / size</th><th>NEC fill</th><th>Conduit<br>Length</th><th>Conduit Routing From</th><th>Conduit Routing To</th><th>Assigned<br>cables</th><th></th></tr></thead><tbody>${rows.map((conduit) => {
+      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing, cable assignments, and fill checks</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit<br>number</th><th>Raceway / size</th><th>NEC fill</th><th>Conduit<br>Length</th><th>Conduit Routing From</th><th>Conduit Routing To</th><th>Assigned<br>cables</th><th>Actions</th></tr></thead><tbody>${rows.map((conduit) => {
         const analysis = conduitFillAnalysis(conduit);
         const sizeClass = analysis.status === "pass" ? "fill-pass" : analysis.status === "fail" ? "fill-fail" : "neutral";
         const sizeTitle = analysis.status === "pass" || analysis.status === "fail"
@@ -624,6 +847,19 @@ function renderSettings() {
             ${scheduleStatusField(settings.scheduleStatus)}
           </div>
           <div class="form-divider"></div>
+          <div class="card-heading settings-inline-heading"><div><h3>Voltage Drop</h3><p>Configure voltage-drop analysis settings</p></div></div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="setting-powerFactor">Power Factor</label>
+              <input id="setting-powerFactor" name="powerFactor" type="number" min="0.01" max="1" step="0.01" value="${escapeHtml(settings.powerFactor ?? 0.9)}" required />
+            </div>
+            <div class="field">
+              <label for="setting-maxVoltageDropPercent">Max Voltage Drop (%)</label>
+              <input id="setting-maxVoltageDropPercent" name="maxVoltageDropPercent" type="number" min="0" step="0.01" value="${escapeHtml(settings.maxVoltageDropPercent ?? 3)}" required />
+            </div>
+          </div>
+          <p class="section-description">Power Factor will be used in the voltage-drop calculation. The maximum voltage drop controls the table indicator.</p>
+          <div class="form-divider"></div>
           <div class="card-heading settings-inline-heading"><div><h3>Conduit Fill Analysis</h3><p>Set the code basis used for conduit fill checks</p></div></div>
           <div class="form-grid">
             <div class="field">
@@ -655,7 +891,7 @@ function renderSettings() {
       </section>
       <section class="content-card settings-section">
         <div class="card-heading section-title-row"><div><h2>Cable Types <span class="tag neutral">${settings.cableTypes.length}</span></h2><p>Reusable manufacturer and specification details for cable entries</p></div><button class="button button-secondary" data-action="new-cable-type"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable Type</button></div>
-        <div class="settings-list">${settings.cableTypes.length ? settings.cableTypes.map((type) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(type.manufacturer)} <span style="color:#a1a9b4;font-weight:400">·</span> ${escapeHtml(type.specNumber)}</strong><small>${escapeHtml(type.specType)} · ${formatNumber(type.diameter)} in OD · ${formatNumber(type.netWeight)} lbs/1000' · Fill: ${escapeHtml(cableFillTypeLabel(type.fillClassification) || "not set")}${safeHttpUrl(type.url) ? ` · <a href="${escapeHtml(safeHttpUrl(type.url))}" target="_blank" rel="noopener noreferrer" style="color:#4268e8">Details ↗</a>` : ""}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-cable-type" data-id="${type.id}" aria-label="Edit ${escapeHtml(type.specNumber)}">✎</button><button class="icon-button delete" data-action="delete-cable-type" data-id="${type.id}" aria-label="Delete ${escapeHtml(type.specNumber)}">×</button></div></div>`).join("") : `<div class="settings-empty">No cable types yet. Add a specification to use it in the cable schedule.</div>`}</div>
+        <div class="settings-list">${settings.cableTypes.length ? settings.cableTypes.map((type) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(type.manufacturer)} <span style="color:#a1a9b4;font-weight:400">·</span> ${escapeHtml(type.specNumber)}</strong><small>${escapeHtml(type.specType)} · ${formatNumber(type.diameter)} in OD · ${formatNumber(type.netWeight)} lbs/1000' · Material: ${escapeHtml(type.cableMaterial || "not set")} · Fill: ${escapeHtml(cableFillTypeLabel(type.fillClassification) || "not set")}${safeHttpUrl(type.url) ? ` · <a href="${escapeHtml(safeHttpUrl(type.url))}" target="_blank" rel="noopener noreferrer" style="color:#4268e8">Details ↗</a>` : ""}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-cable-type" data-id="${type.id}" aria-label="Edit ${escapeHtml(type.specNumber)}">✎</button><button class="icon-button delete" data-action="delete-cable-type" data-id="${type.id}" aria-label="Delete ${escapeHtml(type.specNumber)}">×</button></div></div>`).join("") : `<div class="settings-empty">No cable types yet. Add a specification to use it in the cable schedule.</div>`}</div>
       </section>
       <section class="content-card settings-section">
         <div class="card-heading section-title-row"><div><h2>Equipment <span class="tag neutral">${equipmentLocations.length}</span></h2><p>Equipment appears in the From and To dropdowns on schedules</p></div><button class="button button-secondary" data-action="new-location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Equipment</button></div>
@@ -694,6 +930,40 @@ function scheduleStatusField(value) {
 
 function options(items, selectedId) {
   return `<option value="">Select…</option>${items.map((item) => `<option value="${item.id}" ${item.id === selectedId ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
+}
+
+function cableSpecTypeValue({ suffix, count, construction, size, includeGroundShield }) {
+  const conductorCount = Number(count);
+  if (!Number.isSafeInteger(conductorCount) || conductorCount < 1 ||
+      !CABLE_SPEC_CONSTRUCTIONS.includes(construction) || !CABLE_SPEC_SIZES.includes(size)) return "";
+  const [sizeValue, sizeUnit] = size.split(" ");
+  const constructionLabel = construction === "pair" ? `${conductorCount}PR` : `${conductorCount}/C`;
+  const sizeLabel = sizeUnit === "AWG" ? `#${sizeValue} AWG` : `${sizeValue} KCMIL`;
+  const qualifier = includeGroundShield
+    ? (construction === "pair" ? "SH" : "W/GND")
+    : "";
+  return [constructionLabel, sizeLabel, qualifier, String(suffix || "").trim()].filter(Boolean).join(" ");
+}
+
+function cableSpecSizeField(selectedSize) {
+  const sizes = (unit) => CABLE_SPEC_SIZES
+    .filter((size) => size.endsWith(unit))
+    .map((size) => `<option value="${size}" ${selectedSize === size ? "selected" : ""}>${escapeHtml(size)}</option>`)
+    .join("");
+  return `<div class="field"><label for="modal-specSize">Cable size</label><select id="modal-specSize" name="specSize"><option value="">Select size…</option><optgroup label="AWG">${sizes("AWG")}</optgroup><optgroup label="KCMIL">${sizes("KCMIL")}</optgroup></select></div>`;
+}
+
+function isCableTypeForm(form) {
+  return form?.dataset.form === "new-cable-type" ||
+    form?.dataset.form === "new-cable-type-inline" ||
+    form?.dataset.form.startsWith("edit-cable-type:");
+}
+
+function updateCableSpecLabels(form) {
+  if (!isCableTypeForm(form)) return;
+  const construction = form.elements.namedItem("specConstruction").value;
+  const groundShieldLabel = form.querySelector("#spec-ground-shield-label");
+  groundShieldLabel.textContent = construction === "pair" ? "Include shield" : "Include ground";
 }
 
 function selectField(name, label, choices, selectedValue = "", fieldOptions = {}) {
@@ -753,10 +1023,42 @@ function nextScheduleNumber(items, prefix) {
   return candidate;
 }
 
-function scheduleNumberField(label, items, recordType, prefix = "P", value = "", full = false) {
+function nextScheduleNumbers(items, prefix, count) {
+  const availableItems = [...items];
+  const numbers = [];
+  for (let index = 0; index < count; index += 1) {
+    const number = nextScheduleNumber(availableItems, prefix);
+    numbers.push(number);
+    availableItems.push({ number });
+  }
+  return numbers;
+}
+
+function parallelGroupMembers(cable) {
+  if (!cable?.parallelGroupId) return cable ? [cable] : [];
+  return state.cables
+    .filter((item) => item.parallelGroupId === cable.parallelGroupId)
+    .sort((a, b) => Number(a.parallelSetIndex || 0) - Number(b.parallelSetIndex || 0));
+}
+
+function cablePurposeDisplay(cable) {
+  const purpose = String(cable?.purpose || "").trim();
+  if (!cable?.parallelGroupId) return purpose;
+  const setCount = parallelGroupMembers(cable).length;
+  if (setCount < 2) return purpose;
+  const setLabel = `Set ${cable.parallelSetIndex || 1} of ${setCount}`;
+  return purpose ? `${purpose} - ${setLabel}` : setLabel;
+}
+
+function scheduleNumberField(label, items, recordType, prefix = "P", value = "", full = false, autoNumberNote = false) {
   const selectedPrefix = ["P", "C", "S"].includes(prefix) ? prefix : "P";
   const number = value || nextScheduleNumber(items, selectedPrefix);
-  return `<div class="field${full ? " full" : ""}"><label for="modal-number">${escapeHtml(label)}</label><div class="number-prefix-entry"><select id="modal-number-prefix" name="numberPrefix" data-number-records="${recordType}" aria-label="${escapeHtml(label)} prefix"><option value="P" ${selectedPrefix === "P" ? "selected" : ""}>P · Power</option><option value="C" ${selectedPrefix === "C" ? "selected" : ""}>C · Control</option><option value="S" ${selectedPrefix === "S" ? "selected" : ""}>S · Spare</option></select><input id="modal-number" name="number" value="${escapeHtml(number)}" placeholder="e.g. ${selectedPrefix}101" required /></div></div>`;
+  const note = autoNumberNote ? `<small class="number-auto-note" id="parallel-number-note" hidden></small>` : "";
+  return `<div class="field${full ? " full" : ""}"><label for="modal-number">${escapeHtml(label)}</label><div class="number-prefix-entry"><select id="modal-number-prefix" name="numberPrefix" data-number-records="${recordType}" aria-label="${escapeHtml(label)} prefix"><option value="P" ${selectedPrefix === "P" ? "selected" : ""}>P · Power</option><option value="C" ${selectedPrefix === "C" ? "selected" : ""}>C · Control</option><option value="S" ${selectedPrefix === "S" ? "selected" : ""}>S · Spare</option></select><input id="modal-number" name="number" value="${escapeHtml(number)}" placeholder="e.g. ${selectedPrefix}101" required /></div>${note}</div>`;
+}
+
+function parallelNumberInputMarkup(index, value, customized = false) {
+  return `<div class="field"><label for="modal-parallel-number-${index + 1}">Set ${index + 1} cable number</label><input id="modal-parallel-number-${index + 1}" name="parallelNumbers" value="${escapeHtml(value)}" required data-customized="${customized}" /></div>`;
 }
 
 function routeLocationField(name, label, selectedId, includeEquipmentId = false, includeCableTray = false, combineDuplicateNames = false) {
@@ -791,22 +1093,117 @@ function conduitSizeField(selectedSize) {
 
 function openCableForm(id, draft = {}, modalOptions = {}) {
   const cable = state.cables.find((item) => item.id === id);
+  const groupMembers = cable?.parallelGroupId ? parallelGroupMembers(cable) : [];
+  const isParallelGroup = groupMembers.length > 1;
   const needsLocations = !state.settings.locations.length;
   const setupNote = needsLocations ? `<p class="form-note">Add at least one location using New location below or in <a href="#" data-page="settings">Settings</a>.</p>` : "";
   const cableTypeId = draft.cableTypeId || cable?.cableTypeId;
-  const numberField = cable
-    ? textField("number", "Cable number", draft.number ?? cable.number, "e.g. C-101")
-    : scheduleNumberField("Cable number", state.cables, "cables", draft.numberPrefix || numberPrefixFrom(draft.number), draft.number);
+  const numberField = isParallelGroup
+    ? ""
+    : cable
+      ? textField("number", "Cable number", draft.number ?? cable.number, "e.g. C-101")
+      : scheduleNumberField("Cable number", state.cables, "cables", draft.numberPrefix || numberPrefixFrom(draft.number), draft.number);
+  const voltage = draft.voltage ?? cable?.voltage ?? "";
+  const loadAmps = draft.loadAmps ?? cable?.loadAmps ?? "";
+  const parallelSets = draft.parallelSets ?? (isParallelGroup ? groupMembers.length : "1");
+  const initialParallelNumbers = Array.isArray(draft.parallelNumbers)
+    ? draft.parallelNumbers
+    : isParallelGroup
+      ? groupMembers.map((member) => member.number)
+      : [];
+  const customizedParallelNumbers = Array.isArray(draft.parallelNumbersCustomized) ? draft.parallelNumbersCustomized : [];
+  const parallelNumbersField = `<div class="field full" id="parallel-number-fields" hidden><label>Cable numbers</label><div class="parallel-number-list">${initialParallelNumbers.map((number, index) => parallelNumberInputMarkup(index, number, customizedParallelNumbers[index] === true)).join("")}</div><small class="number-auto-note" id="parallel-number-note"></small></div>`;
+  const cableRating = draft.cableRating ?? cable?.cableRating ?? "";
+  const phase = draft.phase ?? cable?.phase ?? "";
   const fields = `${setupNote}<div class="form-grid">
-    ${numberField}
+    ${numberField}${parallelNumbersField}
     ${textField("length", "Cable length (ft)", draft.length ?? cable?.length ?? "", "e.g. 250", { type: "number", min: "0", step: "0.01", required: false, optional: true })}
     <div class="field full"><label for="modal-cableTypeId">Cable type</label><div class="inline-select-action"><select id="modal-cableTypeId" name="cableTypeId" required>${options(state.settings.cableTypes.map((type) => ({ id: type.id, name: [type.specType, type.manufacturer, type.specNumber].filter(Boolean).join(" · ") })), cableTypeId)}</select><button class="button button-secondary" type="button" data-action="add-cable-type-inline">+ New type</button></div></div>
     ${routeLocationField("fromLocationId", "From location", draft.fromLocationId || cable?.fromLocationId, true)}
     ${routeLocationField("toLocationId", "To location", draft.toLocationId || cable?.toLocationId, true)}
     ${textField("purpose", "Cable purpose", draft.purpose ?? cable?.purpose ?? "", "e.g. Feeder, control, instrumentation", { required: false, full: true })}
+    ${textField("voltage", "Voltage", voltage, "e.g. 480", { required: false, optional: true })}
+    ${textField("loadAmps", "Load (Amps)", loadAmps, "e.g. 12.5", { type: "number", min: "0", step: "0.01", required: false, optional: true })}
+    ${textField("parallelSets", "Parallel Sets", parallelSets, "1", { type: "number", min: "1", max: String(MAX_PARALLEL_SETS), step: "1" })}
+    ${selectField("cableRating", "Cable Rating", CABLE_RATINGS.map((value) => ({ value, label: `${value}°C` })), cableRating, { optional: true })}
+    ${selectField("phase", "Phase", CABLE_PHASES.map((value) => ({ value, label: value })), phase, { optional: true })}
   </div>`;
-  openModal(modalOptions.title || (cable ? "Edit Cable" : "Add Cable"), modalOptions.subtitle || "Enter the cable schedule details and route.", cable ? `edit-cable:${id}` : "new-cable", fields, modalOptions.submitLabel || (cable ? "Save changes" : "Add Cable"));
+  const title = modalOptions.title || (isParallelGroup ? "Edit Parallel Cable Set" : cable ? "Edit Cable" : "Add Cable");
+  const subtitle = modalOptions.subtitle || (isParallelGroup
+    ? `Changes apply to all ${groupMembers.length} cables in this parallel set. Edit each cable number or change Parallel Sets.`
+    : "Enter cable schedule and electrical details. Parallel-set numbers are suggested automatically and can be edited.");
+  openModal(title, subtitle, cable ? `edit-cable:${id}` : "new-cable", fields, modalOptions.submitLabel || (cable ? "Save changes" : "Add Cable"));
+  const form = modalRoot.querySelector(".modal-form");
+  form.dataset.parallelGroup = String(isParallelGroup);
   if (needsLocations) modalRoot.querySelector('[type="submit"]').disabled = true;
+  updateParallelNumberPreview(form);
+}
+
+function updateParallelNumberPreview(form, prefixChanged = false) {
+  if (!form || !(form.dataset.form === "new-cable" || form.dataset.form.startsWith("edit-cable:"))) return;
+  const countInput = form.elements.namedItem("parallelSets");
+  const numberInput = form.elements.namedItem("number");
+  const prefixSelect = form.elements.namedItem("numberPrefix");
+  const numberFields = form.querySelector("#parallel-number-fields");
+  const note = numberFields?.querySelector("#parallel-number-note");
+  if (!countInput || !numberFields || !note) return;
+  const count = Number(countInput.value);
+  const wasShowingParallelNumbers = numberFields.dataset.active === "true";
+  const currentInputs = [...numberFields.querySelectorAll('input[name="parallelNumbers"]')];
+  const isEditingParallelGroup = form.dataset.parallelGroup === "true";
+  const showParallelNumbers = isEditingParallelGroup || count > 1;
+  numberFields.hidden = !showParallelNumbers;
+  numberFields.querySelectorAll('input[name="parallelNumbers"]').forEach((input) => {
+    input.disabled = !showParallelNumbers;
+  });
+  if (numberInput) {
+    numberInput.disabled = showParallelNumbers;
+    numberInput.hidden = showParallelNumbers;
+    if (prefixSelect) {
+      const label = numberInput.closest(".field").querySelector("label");
+      label.textContent = showParallelNumbers ? "Automatic number prefix" : "Cable number";
+      label.htmlFor = showParallelNumbers ? "modal-number-prefix" : "modal-number";
+    }
+  }
+  if (!showParallelNumbers) {
+    if (wasShowingParallelNumbers && numberInput && currentInputs[0]) {
+      numberInput.value = currentInputs[0].value;
+      numberInput.dataset.customized = currentInputs[0].dataset.customized;
+    }
+    numberFields.dataset.active = "false";
+    note.textContent = "";
+    return;
+  }
+  if (!Number.isSafeInteger(count) || count < 1 || count > MAX_PARALLEL_SETS) {
+    numberFields.dataset.active = "true";
+    note.textContent = count > MAX_PARALLEL_SETS
+      ? `The maximum is ${MAX_PARALLEL_SETS} parallel sets.`
+      : "Enter a whole number of parallel sets.";
+    return;
+  }
+  const currentValues = currentInputs.map((input) => ({
+    value: input.value,
+    customized: input.dataset.customized === "true",
+  }));
+  if ((!wasShowingParallelNumbers || !currentValues.length) && numberInput) {
+    currentValues[0] = { value: numberInput.value, customized: numberInput.dataset.customized === "true" };
+  }
+  const prefix = prefixSelect?.value || numberPrefixFrom(currentValues[0]?.value);
+  const availableItems = [...state.cables];
+  const numberMarkup = [];
+  for (let index = 0; index < count; index += 1) {
+    const current = currentValues[index];
+    const keepCustom = current?.customized;
+    const keepExisting = current && !prefixChanged;
+    const value = keepCustom || keepExisting
+      ? current.value
+      : nextScheduleNumber(availableItems, prefix);
+    availableItems.push({ number: value });
+    numberMarkup.push(parallelNumberInputMarkup(index, value, keepCustom));
+  }
+  numberFields.querySelector(".parallel-number-list").innerHTML = numberMarkup.join("");
+  numberFields.dataset.active = "true";
+  note.textContent = "Cable numbers are suggested automatically. Edit any number to use a custom value.";
 }
 
 function openConduitForm(id, draft = {}, modalOptions = {}) {
@@ -932,7 +1329,14 @@ function openCableTypeForm(id, returnToCableDraft = null) {
   const fields = `<div class="form-grid">
     ${textField("manufacturer", "Manufacturer", type?.manufacturer || "", "e.g. Anixter")}
     ${textField("specNumber", "Spec number", type?.specNumber || "", "e.g. 115-23-3804")}
-    ${textField("specType", "Spec type", type?.specType || "", "e.g. 3/C #1/0 AWG 15kV", { full: true })}
+    <div class="cable-spec-builder-row field full">
+      ${textField("specCount", "Count", type?.specCount ?? "", "e.g. 3", { type: "number", min: "1", step: "1", required: false })}
+      ${selectField("specConstruction", "Conductor or Pair", CABLE_SPEC_CONSTRUCTIONS.map((value) => ({ value, label: value === "pair" ? "Pair" : "Conductor" })), type?.specConstruction || "conductor")}
+      ${cableSpecSizeField(type?.specSize || "")}
+      ${textField("specSuffix", "Spec suffix", type?.specSuffix ?? type?.specPrefix ?? "", "e.g. 15kV", { required: false })}
+      <div class="field"><label for="modal-specGroundShield">Specification detail</label><label class="cable-spec-checkbox" for="modal-specGroundShield"><input id="modal-specGroundShield" name="specGroundShield" type="checkbox" ${type?.specGroundShield ? "checked" : ""} /><span id="spec-ground-shield-label">${type?.specConstruction === "pair" ? "Include shield" : "Include ground"}</span></label></div>
+    </div>
+    ${selectField("cableMaterial", "Cable Material", CABLE_MATERIALS.map((value) => ({ value, label: value })), type?.cableMaterial || "", { optional: true })}
     ${selectField("fillClassification", "Cable fill type", CABLE_FILL_TYPES, type?.fillClassification || "", { full: true, optional: true })}
     ${textField("diameter", "Overall diameter (in)", type?.diameter ?? "", "e.g. 1.42", { type: "number", min: "0", step: "0.001" })}
     ${textField("netWeight", "Net weight (lbs/1000')", type?.netWeight ?? "", "e.g. 1120", { type: "number", min: "0", step: "0.01" })}
@@ -940,6 +1344,7 @@ function openCableTypeForm(id, returnToCableDraft = null) {
     <p class="section-description field full">For fill checks, enter the actual outside diameter and identify whether this specification is one insulated conductor or one multiconductor cable assembly.</p>
   </div>`;
   openModal(type ? "Edit Cable Type" : "Add Cable Type", "Save a reusable cable specification for this project.", type ? `edit-cable-type:${id}` : returnToCableDraft ? "new-cable-type-inline" : "new-cable-type", fields, type ? "Save changes" : "Add Cable Type");
+  updateCableSpecLabels(modalRoot.querySelector(".modal-form"));
   if (returnToCableDraft) {
     pendingCableDraft = returnToCableDraft;
     modalRoot.querySelectorAll('[data-action="close-modal"]').forEach((button) => {
@@ -978,9 +1383,20 @@ function handleSubmit(event) {
     if (necEdition && !NEC_EDITIONS.includes(necEdition)) {
       return showToast("Choose a supported NEC edition.", true);
     }
-    Object.keys(state.settings).filter((key) => !["cableTypes", "locations"].includes(key)).forEach((key) => {
+    const powerFactor = Number(formData.get("powerFactor"));
+    const maxVoltageDropPercent = Number(formData.get("maxVoltageDropPercent"));
+    if (!Number.isFinite(powerFactor) || powerFactor <= 0 || powerFactor > 1) {
+      return showToast("Power Factor must be greater than 0 and no greater than 1.", true);
+    }
+    if (!Number.isFinite(maxVoltageDropPercent) || maxVoltageDropPercent < 0) {
+      return showToast("Max Voltage Drop must be zero or greater.", true);
+    }
+    Object.keys(state.settings).filter((key) =>
+      !["cableTypes", "locations", "powerFactor", "maxVoltageDropPercent"].includes(key) && formData.has(key)).forEach((key) => {
       state.settings[key] = String(formData.get(key) || "").trim();
     });
+    state.settings.powerFactor = powerFactor;
+    state.settings.maxVoltageDropPercent = maxVoltageDropPercent;
     state.settings.scheduleStatus = selectedScheduleStatus === "custom"
       ? customScheduleStatus
       : selectedScheduleStatus;
@@ -997,10 +1413,41 @@ function handleSubmit(event) {
   const kind = form.dataset.form;
   if (kind === "new-cable-type" || kind === "new-cable-type-inline" || kind.startsWith("edit-cable-type:")) {
     const id = kind.startsWith("edit-cable-type:") ? kind.split(":")[1] : makeId();
+    const existingType = state.settings.cableTypes.find((item) => item.id === id);
     if (values.fillClassification && !CABLE_FILL_TYPES.some((fillType) => fillType.value === values.fillClassification)) {
       return showToast("Choose a supported cable fill type.", true);
     }
-    const type = { id, manufacturer: values.manufacturer.trim(), specNumber: values.specNumber.trim(), specType: values.specType.trim(), fillClassification: values.fillClassification.trim(), diameter: Number(values.diameter), netWeight: Number(values.netWeight), url: values.url.trim() };
+    if (values.cableMaterial && !CABLE_MATERIALS.includes(values.cableMaterial)) return showToast("Choose Aluminum or Copper for Cable Material.", true);
+    const specCount = values.specCount === "" ? null : Number(values.specCount);
+    if (specCount !== null && (!Number.isSafeInteger(specCount) || specCount < 1)) {
+      return showToast("Number of conductors or pairs must be a positive whole number.", true);
+    }
+    if (!CABLE_SPEC_CONSTRUCTIONS.includes(values.specConstruction)) return showToast("Choose Conductor or Pair for the Spec Type.", true);
+    if (values.specSize && !CABLE_SPEC_SIZES.includes(values.specSize)) return showToast("Choose a supported cable size.", true);
+    const specType = cableSpecTypeValue({
+      suffix: values.specSuffix,
+      count: specCount,
+      construction: values.specConstruction,
+      size: values.specSize,
+      includeGroundShield: formData.has("specGroundShield"),
+    }) || existingType?.specType || "";
+    if (!specType) return showToast("Complete the cable specification inputs before saving.", true);
+    const type = {
+      id,
+      manufacturer: values.manufacturer.trim(),
+      specNumber: values.specNumber.trim(),
+      specType,
+      specSuffix: values.specSuffix.trim(),
+      specCount,
+      specConstruction: values.specConstruction,
+      specSize: values.specSize,
+      specGroundShield: formData.has("specGroundShield"),
+      cableMaterial: values.cableMaterial,
+      fillClassification: values.fillClassification.trim(),
+      diameter: Number(values.diameter),
+      netWeight: Number(values.netWeight),
+      url: values.url.trim(),
+    };
     const detailsUrl = safeHttpUrl(type.url);
     if (type.url && !detailsUrl) return showToast("Enter an HTTP or HTTPS URL for cable details.", true);
     type.url = detailsUrl || "";
@@ -1010,23 +1457,114 @@ function handleSubmit(event) {
     else state.settings.cableTypes.push(type);
     if (kind === "new-cable-type-inline") {
       if (persist()) {
-        const draft = pendingCableDraft;
+          const returnContext = pendingCableDraft;
         pendingCableDraft = null;
         closeModal();
-        openCableForm(undefined, { ...draft, cableTypeId: id });
+          const draft = { ...returnContext.draft, cableTypeId: id };
+          if (returnContext.formKind.startsWith("edit-cable:")) {
+            openCableForm(returnContext.formKind.split(":")[1], draft);
+          } else {
+            openCableForm(undefined, draft);
+          }
         showToast("Cable type added. Finish creating your cable.");
       }
     } else {
       saveAndClose(index >= 0 ? "Cable type updated." : "Cable type added.");
     }
   } else if (kind === "new-cable" || kind.startsWith("edit-cable:")) {
-    const id = kind.startsWith("edit-cable:") ? kind.split(":")[1] : makeId();
-    const cable = { id, number: values.number.trim(), length: values.length === "" ? null : Number(values.length), cableTypeId: values.cableTypeId, fromLocationId: values.fromLocationId, toLocationId: values.toLocationId, purpose: values.purpose.trim() };
-    if (isDuplicate(state.cables, cable.number, id, "number")) return showToast("A cable with that number already exists.", true);
-    const index = state.cables.findIndex((item) => item.id === id);
-    if (index >= 0) state.cables[index] = cable;
-    else state.cables.push(cable);
-    saveAndClose(index >= 0 ? "Cable updated." : "Cable added.");
+    const existingId = kind.startsWith("edit-cable:") ? kind.split(":")[1] : "";
+    const existingCable = state.cables.find((item) => item.id === existingId);
+    if (existingId && !existingCable) return showToast("This cable is no longer available.", true);
+    const setCount = Number(values.parallelSets);
+    if (!Number.isSafeInteger(setCount) || setCount < 1 || setCount > MAX_PARALLEL_SETS) {
+      return showToast(`Parallel Sets must be a whole number from 1 to ${MAX_PARALLEL_SETS}.`, true);
+    }
+    if (values.cableRating && !CABLE_RATINGS.includes(values.cableRating)) return showToast("Choose a supported cable rating.", true);
+    if (values.phase && !CABLE_PHASES.includes(values.phase)) return showToast("Choose Single or Three for Phase.", true);
+    const enteredNumbers = formData.getAll("parallelNumbers").map((number) => String(number).trim());
+    const cableNumbers = enteredNumbers.length ? enteredNumbers : [String(values.number || "").trim()];
+    if (cableNumbers.length !== setCount || cableNumbers.some((number) => !number)) {
+      return showToast("Enter a cable number for every parallel set.", true);
+    }
+    const currentMembers = existingCable ? parallelGroupMembers(existingCable) : [];
+    const currentIds = new Set(currentMembers.map((member) => member.id));
+    const usedNumbers = new Set(state.cables
+      .filter((cable) => !currentIds.has(cable.id))
+      .map((cable) => String(cable.number || "").trim().toLocaleLowerCase()));
+    for (const number of cableNumbers) {
+      const normalizedNumber = number.toLocaleLowerCase();
+      if (usedNumbers.has(normalizedNumber)) return showToast(`A cable with number ${number} already exists.`, true);
+      usedNumbers.add(normalizedNumber);
+    }
+    const loadAmps = values.loadAmps === "" ? null : Number(values.loadAmps);
+    if (loadAmps !== null && (!Number.isFinite(loadAmps) || loadAmps < 0)) return showToast("Load (Amps) must be zero or greater.", true);
+    const sharedDetails = {
+      length: values.length === "" ? null : Number(values.length),
+      cableTypeId: values.cableTypeId,
+      fromLocationId: values.fromLocationId,
+      toLocationId: values.toLocationId,
+      purpose: values.purpose.trim(),
+      voltage: values.voltage.trim(),
+      loadAmps,
+      cableRating: values.cableRating,
+      phase: values.phase,
+    };
+    if (!existingCable) {
+      if (setCount === 1) {
+        const cable = { id: makeId(), number: cableNumbers[0], ...sharedDetails };
+        state.cables.push(cable);
+        saveAndClose("Cable added.");
+        return;
+      }
+      const parallelGroupId = makeId();
+      state.cables.push(...cableNumbers.map((number, index) => ({
+        id: makeId(),
+        number,
+        ...sharedDetails,
+        parallelGroupId,
+        parallelSetIndex: index + 1,
+      })));
+      saveAndClose(`${setCount} parallel cables added.`);
+      return;
+    }
+
+    if (currentMembers.length === 1 && setCount === 1) {
+      const cable = { ...existingCable, number: cableNumbers[0], ...sharedDetails };
+      Object.assign(existingCable, cable);
+      saveAndClose("Cable updated.");
+      return;
+    }
+    const retainedMembers = currentMembers.slice(0, setCount);
+    const retainedIds = new Set(retainedMembers.map((member) => member.id));
+    const removedMembers = currentMembers.filter((member) => !retainedIds.has(member.id));
+    const parallelGroupId = setCount > 1 ? existingCable.parallelGroupId || makeId() : "";
+    retainedMembers.forEach((member, index) => {
+      member.number = cableNumbers[index];
+      Object.assign(member, sharedDetails);
+      if (parallelGroupId) {
+        member.parallelGroupId = parallelGroupId;
+        member.parallelSetIndex = index + 1;
+      } else {
+        delete member.parallelGroupId;
+        delete member.parallelSetIndex;
+      }
+    });
+    const addedMembers = cableNumbers.slice(retainedMembers.length).map((number, index) => ({
+      id: makeId(),
+      number,
+      ...sharedDetails,
+      parallelGroupId,
+      parallelSetIndex: retainedMembers.length + index + 1,
+    }));
+    if (removedMembers.length) {
+      const removedIds = new Set(removedMembers.map((member) => member.id));
+      state.cables = state.cables.filter((member) => !removedIds.has(member.id));
+      state.conduits.forEach((conduit) => {
+        conduit.cableIds = conduit.cableIds.filter((cableId) => !removedIds.has(cableId));
+      });
+    }
+    state.cables.push(...addedMembers);
+    saveAndClose("Parallel cable set updated.");
   } else if (kind === "new-conduit" || kind.startsWith("edit-conduit:")) {
     const id = kind.startsWith("edit-conduit:") ? kind.split(":")[1] : makeId();
     const number = values.number.trim();
@@ -1163,10 +1701,13 @@ function handleAction(action, id, fieldName) {
     return;
   }
   if (action === "return-to-cable") {
-    const draft = pendingCableDraft;
+    const returnContext = pendingCableDraft;
     pendingCableDraft = null;
     closeModal();
-    return openCableForm(undefined, draft || {});
+    if (returnContext?.formKind.startsWith("edit-cable:")) {
+      return openCableForm(returnContext.formKind.split(":")[1], returnContext.draft);
+    }
+    return openCableForm(undefined, returnContext?.draft || {});
   }
   if (action === "return-to-route") {
     const returnContext = pendingLocationReturn;
@@ -1176,14 +1717,35 @@ function handleAction(action, id, fieldName) {
   }
   if (action === "new-cable") return openCableForm();
   if (action === "add-cable-type-inline") {
-    const formData = new FormData(modalRoot.querySelector(".modal-form"));
-    return openCableTypeForm(undefined, Object.fromEntries(formData.entries()));
+    const form = modalRoot.querySelector(".modal-form");
+    const formData = new FormData(form);
+    const draft = Object.fromEntries(formData.entries());
+    draft.parallelNumbers = formData.getAll("parallelNumbers");
+    draft.parallelNumbersCustomized = [...form.querySelectorAll('input[name="parallelNumbers"]')].map((input) => input.dataset.customized === "true");
+    return openCableTypeForm(undefined, { formKind: form.dataset.form, draft });
   }
   if (action === "edit-cable") return openCableForm(id);
   if (action === "duplicate-cable") {
     const cable = state.cables.find((item) => item.id === id);
     if (!cable) return;
-    return openCableForm(undefined, { ...cable, number: "", numberPrefix: numberPrefixFrom(cable.number) }, {
+    const groupMembers = parallelGroupMembers(cable);
+    const isParallelGroup = groupMembers.length > 1;
+    const draft = {
+      ...cable,
+      number: "",
+      numberPrefix: numberPrefixFrom(cable.number),
+      parallelSets: String(isParallelGroup ? groupMembers.length : 1),
+    };
+    delete draft.parallelGroupId;
+    delete draft.parallelSetIndex;
+    if (isParallelGroup) {
+      return openCableForm(undefined, draft, {
+        title: "Duplicate Parallel Set",
+        subtitle: `Copy of ${groupMembers.map((member) => member.number).join(", ")}. Enter new cable numbers and adjust the details before saving.`,
+        submitLabel: "Create duplicate set",
+      });
+    }
+    return openCableForm(undefined, draft, {
       title: "Duplicate Cable",
       subtitle: `Copy of ${cable.number}. Enter a new cable number and adjust the details before saving.`,
       submitLabel: "Create duplicate",
@@ -1213,9 +1775,23 @@ function handleAction(action, id, fieldName) {
   if (action === "edit-location") return openLocationForm(id);
   if (action === "delete-cable") {
     const cable = state.cables.find((item) => item.id === id);
-    if (cable && confirm(`Delete cable ${cable.number}? Assigned conduit references will be removed.`)) {
-      state.conduits.forEach((conduit) => { conduit.cableIds = conduit.cableIds.filter((cableId) => cableId !== id); });
-      removeRecord(state.cables, id, "Cable");
+    if (!cable) return;
+    const groupMembers = parallelGroupMembers(cable);
+    const isParallelGroup = groupMembers.length > 1;
+    const removedIds = new Set((isParallelGroup ? groupMembers : [cable]).map((member) => member.id));
+    const cableLabel = isParallelGroup ? `parallel set (${groupMembers.map((member) => member.number).join(", ")})` : `cable ${cable.number}`;
+    const confirmation = isParallelGroup
+      ? `Delete ${cableLabel}? This will remove ${groupMembers.length} cables and their assigned conduit references.`
+      : `Delete ${cableLabel}? Assigned conduit references will be removed.`;
+    if (confirm(confirmation)) {
+      state.cables = state.cables.filter((item) => !removedIds.has(item.id));
+      state.conduits.forEach((conduit) => {
+        conduit.cableIds = conduit.cableIds.filter((cableId) => !removedIds.has(cableId));
+      });
+      if (persist()) {
+        renderPage();
+        showToast(isParallelGroup ? "Parallel cable set deleted." : "Cable deleted.");
+      }
     }
   }
   if (action === "delete-conduit") {
@@ -1333,7 +1909,7 @@ function cableExportRows() {
     ["Cable Number", "Cable Length (ft)", "Manufacturer", "Spec Number", "Spec Type", "Overall Diameter (in)", "Net Weight (lbs/1000')", "From Location", "To Location", "Cable Purpose"],
     ...sortByNumber(state.cables).map((cable) => {
       const type = cableType(cable.cableTypeId);
-      return [cable.number, cable.length, type?.manufacturer, type?.specNumber, type?.specType, type?.diameter, type?.netWeight, cableLocationName(cable.fromLocationId), cableLocationName(cable.toLocationId), cable.purpose];
+      return [cable.number, cable.length, type?.manufacturer, type?.specNumber, type?.specType, type?.diameter, type?.netWeight, cableLocationName(cable.fromLocationId), cableLocationName(cable.toLocationId), cablePurposeDisplay(cable)];
     }),
   ];
 }
@@ -1421,7 +1997,7 @@ function conduitCableExportRows() {
         type?.specType || null,
         cableLocationName(cable.fromLocationId),
         cableLocationName(cable.toLocationId),
-        cable.purpose || null,
+        cablePurposeDisplay(cable) || null,
       ]);
     });
 
@@ -1493,13 +2069,28 @@ function validateBackupData(backup) {
   if (!textSettings.every((key) => typeof settings[key] === "string")) {
     throw new Error("The backup contains invalid project settings.");
   }
+  if (typeof settings.powerFactor !== "number" || !Number.isFinite(settings.powerFactor) ||
+      settings.powerFactor <= 0 || settings.powerFactor > 1 ||
+      typeof settings.maxVoltageDropPercent !== "number" || !Number.isFinite(settings.maxVoltageDropPercent) ||
+      settings.maxVoltageDropPercent < 0) {
+    throw new Error("The backup contains invalid voltage drop settings.");
+  }
   if (settings.necEdition && !NEC_EDITIONS.includes(settings.necEdition)) {
     throw new Error("The backup contains an unsupported NEC edition.");
   }
   validateItems(settings.cableTypes, "cable types", (item) =>
     isRecord(item) && isText(item.id) &&
+    (item.cableMaterial === undefined || item.cableMaterial === "" || CABLE_MATERIALS.includes(item.cableMaterial)) &&
     (item.fillClassification === undefined || item.fillClassification === "" ||
       CABLE_FILL_TYPES.some((fillType) => fillType.value === item.fillClassification)) &&
+    (item.specSuffix === undefined || typeof item.specSuffix === "string") &&
+    (item.specPrefix === undefined || typeof item.specPrefix === "string") &&
+    (item.specCount === undefined || item.specCount === null ||
+      (Number.isSafeInteger(item.specCount) && item.specCount >= 1)) &&
+    (item.specConstruction === undefined || CABLE_SPEC_CONSTRUCTIONS.includes(item.specConstruction)) &&
+    (item.specSize === undefined || item.specSize === "" || CABLE_SPEC_SIZES.includes(item.specSize)) &&
+    (item.specGroundShield === undefined || typeof item.specGroundShield === "boolean") &&
+    (item.customSpecType === undefined || typeof item.customSpecType === "boolean") &&
     (item.url === undefined || item.url === null ||
       (typeof item.url === "string" && (!item.url.trim() || Boolean(safeHttpUrl(item.url))))));
   validateItems(settings.locations, "locations", (item) => isRecord(item) && isText(item.id) && isText(item.name));
@@ -1514,11 +2105,11 @@ function validateBackupData(backup) {
     (item.nippleLengthInches === undefined || item.nippleLengthInches === null ||
       (typeof item.nippleLengthInches === "number" && Number.isFinite(item.nippleLengthInches) && item.nippleLengthInches > 0 && item.nippleLengthInches <= 24)));
 
-  return normalizeCableTrayLocations({
+  return normalizeCableTypeMaterials(normalizeCableTrayLocations({
     settings,
     cables: backup.cables,
     conduits: backup.conduits,
-  });
+  }));
 }
 
 async function importProjectBackup(file) {
@@ -1600,12 +2191,21 @@ document.addEventListener("click", (event) => {
 
 const appShell = document.querySelector(".app-shell");
 const sidebarToggle = document.querySelector("#sidebar-toggle");
+const sidebarTooltipItems = document.querySelectorAll(".sidebar [data-tooltip]");
+function syncSidebarTooltipTitles(isCollapsed) {
+  sidebarTooltipItems.forEach((item) => {
+    if (isCollapsed) item.title = item.dataset.tooltip;
+    else item.removeAttribute("title");
+  });
+}
+syncSidebarTooltipTitles(appShell.classList.contains("sidebar-collapsed"));
 sidebarToggle.addEventListener("click", () => {
   const isCollapsed = appShell.classList.toggle("sidebar-collapsed");
   const label = isCollapsed ? "Expand sidebar" : "Minimize sidebar";
   sidebarToggle.setAttribute("aria-label", label);
   sidebarToggle.setAttribute("aria-expanded", String(!isCollapsed));
   sidebarToggle.dataset.tooltip = label;
+  syncSidebarTooltipTitles(isCollapsed);
 });
 
 document.addEventListener("submit", handleSubmit);
@@ -1615,6 +2215,10 @@ document.addEventListener("change", (event) => {
     return;
   }
   const form = event.target.closest(".modal-form");
+  if (isCableTypeForm(form) && event.target.name === "specConstruction") {
+    updateCableSpecLabels(form);
+    return;
+  }
   if (isConduitForm(form) && ["size", "racewayType"].includes(event.target.name)) {
     updateConduitRacewayArea(form);
     return;
@@ -1639,17 +2243,26 @@ document.addEventListener("change", (event) => {
   const prefixSelect = event.target.closest("[data-number-records]");
   if (!prefixSelect) return;
   const items = prefixSelect.dataset.numberRecords === "cables" ? state.cables : state.conduits;
+  const prefixForm = prefixSelect.closest(".modal-form");
   const numberInput = modalRoot.querySelector("#modal-number");
   if (numberInput) {
-    numberInput.value = nextScheduleNumber(items, prefixSelect.value);
+    if (prefixSelect.dataset.numberRecords === "cables" && Number(prefixForm?.elements.namedItem("parallelSets")?.value) > 1) {
+      updateParallelNumberPreview(prefixForm, true);
+    } else {
+      numberInput.value = nextScheduleNumber(items, prefixSelect.value);
+      if (prefixSelect.dataset.numberRecords === "cables") numberInput.dataset.customized = "false";
+    }
     if (prefixSelect.dataset.numberRecords === "conduits") {
-      updateConduitCableOptions(modalRoot.querySelector(".modal-form"));
+      updateConduitCableOptions(prefixForm);
     }
   }
 });
 
 document.addEventListener("input", (event) => {
   const form = event.target.closest(".modal-form");
+  if (form && event.target.name === "number") event.target.dataset.customized = "true";
+  if (form && event.target.name === "parallelNumbers") event.target.dataset.customized = "true";
+  if (form && event.target.name === "parallelSets") updateParallelNumberPreview(form);
   if (isConduitForm(form) && event.target.name === "number") {
     updateConduitCableOptions(form);
   }

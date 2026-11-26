@@ -24,7 +24,7 @@ button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 .app-shell { display: flex; min-height: 100vh; }
 
-.sidebar { position: sticky; top: 0; align-self: flex-start; width: 248px; height: 100vh; height: 100dvh; flex: 0 0 248px; display: flex; flex-direction: column; overflow-y: auto; padding: 27px 16px 18px; background: #fff; border-right: 1px solid var(--line); }
+.sidebar { position: sticky; top: 0; align-self: flex-start; width: 248px; height: 100vh; height: 100dvh; flex: 0 0 248px; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; padding: 27px 16px 18px; background: #fff; border-right: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 11px; margin: 0 0 43px 8px; color: var(--ink); text-decoration: none; }
 .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--navy); }
 .brand-mark svg { width: 23px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
@@ -35,10 +35,9 @@ button { cursor: pointer; }
 .nav-item { width: 100%; display: flex; align-items: center; gap: 12px; border: 0; border-radius: 7px; padding: 11px 12px; background: transparent; color: #657184; text-align: left; font-weight: 500; transition: background .15s, color .15s; }
 .nav-item:hover { background: #f6f7fa; color: var(--ink); }
 .nav-item.active { background: #eff3ff; color: #385bd1; font-weight: 700; }
-.nav-icon { display: inline-flex; width: 18px; justify-content: center; color: #8b95a4; font-size: 19px; line-height: 1; }
+.nav-icon { display: inline-flex; flex: 0 0 18px; align-items: center; justify-content: center; width: 18px; height: 18px; color: #8b95a4; }
+.nav-icon svg { display: block; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .nav-item.active .nav-icon { color: #4268e8; }
-.cable-icon { font-size: 23px; transform: rotate(90deg); }
-.conduit-icon { font-size: 15px; }
 .nav-count { margin-left: auto; min-width: 22px; border-radius: 5px; padding: 2px 6px; background: #f0f2f5; color: #768193; font-size: 11px; text-align: center; }
 .nav-item.active .nav-count { background: #dfe7ff; color: #4268e8; }
 .sidebar-bottom { margin-top: auto; }
@@ -63,34 +62,8 @@ button { cursor: pointer; }
 .sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 .sidebar-collapsed .main-nav, .sidebar-collapsed .sidebar-bottom { width: 100%; }
 .sidebar-collapsed .nav-item { justify-content: center; gap: 0; padding: 12px 4px; font-size: 0; }
-.sidebar-collapsed .nav-icon { font-size: 20px; }
 .sidebar-collapsed .sidebar-project { justify-content: center; margin: 0 0 12px; border-color: transparent; padding: 5px; }
 .sidebar-collapsed .settings-link { margin-bottom: 12px; }
-.sidebar .nav-item[data-tooltip], .sidebar .sidebar-toggle[data-tooltip] { position: relative; }
-.sidebar .nav-item[data-tooltip]::after, .sidebar .sidebar-toggle[data-tooltip]::after {
-  position: absolute;
-  z-index: 30;
-  top: 50%;
-  left: calc(100% + 10px);
-  transform: translate(-4px, -50%);
-  border-radius: 5px;
-  padding: 7px 10px;
-  background: #1d2b40;
-  box-shadow: 0 4px 12px #11182726;
-  color: #fff;
-  content: attr(data-tooltip);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
-}
-.sidebar-collapsed .nav-item[data-tooltip]:hover::after, .sidebar-collapsed .nav-item[data-tooltip]:focus-visible::after,
-.sidebar-collapsed .sidebar-toggle[data-tooltip]:hover::after, .sidebar-collapsed .sidebar-toggle[data-tooltip]:focus-visible::after { transform: translate(0, -50%); opacity: 1; visibility: visible; }
-
 .main-area { min-width: 0; flex: 1; }
 .topbar { position: sticky; z-index: 5; top: 0; height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 42px; border-bottom: 1px solid var(--line); background: #fff; }
 .breadcrumbs { display: flex; align-items: center; gap: 11px; color: #9aa3af; font-size: 12px; }
@@ -182,6 +155,7 @@ tbody tr:hover { background: #fcfcfd; }
 .settings-section { overflow: hidden; }
 .settings-form { padding: 20px; }
 .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cable-spec-builder-row { grid-template-columns: minmax(70px, .65fr) minmax(105px, 1fr) minmax(120px, 1.1fr) minmax(95px, .8fr) minmax(135px, .95fr); align-items: end; gap: 10px; }
 .form-divider { height: 1px; margin: 21px 0; background: var(--line); }
 .settings-inline-heading { margin: 0 0 16px; padding: 0 0 12px; border-bottom: 1px solid var(--line); }
 .settings-inline-heading h3 { margin: 0; font-size: 12px; font-weight: 700; }
@@ -190,9 +164,13 @@ tbody tr:hover { background: #fcfcfd; }
 .field label { color: #697587; font-size: 11px; font-weight: 600; }
 .field label .optional { color: #a3acb7; font-weight: 400; }
 .field input, .field select, .field textarea { width: 100%; min-height: 39px; border: 1px solid #e2e6ec; border-radius: 6px; outline: 0; padding: 0 11px; background: #fff; color: #394659; font-size: 12px; }
+.field .cable-spec-checkbox { display: flex; align-items: center; gap: 8px; min-height: 39px; color: var(--ink); font-size: 12px; }
+.cable-spec-checkbox input { width: 16px; height: 16px; min-height: 16px; margin: 0; padding: 0; border: 0; accent-color: var(--blue); }
 .number-prefix-entry { display: flex; min-width: 0; gap: 7px; }
 .number-prefix-entry select { min-width: 0; flex: 0 0 132px; }
 .number-prefix-entry input { min-width: 0; flex: 1; }
+.parallel-number-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.number-auto-note { color: #929cab; font-size: 10px; line-height: 1.4; }
 .inline-select-action { display: flex; gap: 7px; }
 .inline-select-action select { min-width: 0; flex: 1; }
 .inline-select-action .button { flex: 0 0 auto; padding: 0 9px; white-space: nowrap; font-size: 10px; }
@@ -233,6 +211,12 @@ tbody tr:hover { background: #fcfcfd; }
 .bom-section .table-wrap { overflow-x: auto; }
 .bom-section td { vertical-align: top; }
 .bom-empty { padding: 24px 20px; color: #8993a1; font-size: 11px; }
+.voltage-drop-table { min-width: 1100px; }
+.voltage-drop-table th,
+.voltage-drop-table td { text-align: center; }
+.voltage-drop-table th:nth-child(-n + 2),
+.voltage-drop-table td:nth-child(-n + 2) { text-align: left; }
+.voltage-drop-table .table-actions { justify-content: center; }
 .bom-note { margin: 4px 2px 0; color: #8993a1; font-size: 10px; line-height: 1.5; }
 
 .modal-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: #15203470; }
@@ -284,10 +268,9 @@ tbody tr:hover { background: #fcfcfd; }
   .brand-name, .workspace-label, .nav-count, .sidebar-project, .sidebar-footer { display: none; }
   .main-nav { width: 100%; }
   .nav-item { justify-content: center; gap: 0; padding: 12px 4px; }
-  .nav-icon { font-size: 20px; }
+
   .sidebar-bottom { width: 100%; }
   .settings-link { justify-content: center; padding: 12px 4px; font-size: 0; }
-  .sidebar .nav-item[data-tooltip]:hover::after, .sidebar .nav-item[data-tooltip]:focus-visible::after { transform: translate(0, -50%); opacity: 1; visibility: visible; }
   .topbar { height: 62px; padding: 0 17px; }
   .saved-state { display: none; }
   .topbar-actions { gap: 10px; }
@@ -300,6 +283,7 @@ tbody tr:hover { background: #fcfcfd; }
   .page-content { padding: 26px 17px 40px; }
   .page-heading { align-items: flex-start; flex-direction: column; margin-bottom: 20px; }
   h1 { font-size: 24px; }
+  .cable-spec-builder-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .overview-grid { gap: 9px; }
   .metric-card { min-height: 112px; padding: 13px; }
   .metric-top { font-size: 10px; }
@@ -328,6 +312,7 @@ tbody tr:hover { background: #fcfcfd; }
   .modal { max-height: calc(100vh - 20px); }
   .modal-header, .modal-form { padding-right: 17px; padding-left: 17px; }
   .number-prefix-entry select { flex-basis: 110px; }
+  .parallel-number-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .checkbox-list-header, .checkbox-option { grid-template-columns: 30px minmax(64px, .6fr) minmax(80px, 1fr) minmax(0, 1.2fr); gap: 6px; padding-right: 9px; padding-left: 9px; }
 }
 

@@ -14,7 +14,14 @@
         "id": "15307af5-32b4-4fe4-9018-64280cddcc86",
         "manufacturer": "Okonite",
         "specNumber": "115-23-3808",
-        "specType": "3/C #4/0AWG 15kV",
+        "specType": "3/C #4/0 AWG W/GND 15kV",
+        "specSuffix": "15kV",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "4/0 AWG",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 2.48,
         "netWeight": 4285,
@@ -24,7 +31,14 @@
         "id": "268ca807-1005-4f06-9416-2705d76c0ec0",
         "manufacturer": "Okonite",
         "specNumber": "115-23-3804",
-        "specType": "3/C #1/0AWG 15kV",
+        "specType": "3/C #1/0 AWG W/GND 15kV",
+        "specSuffix": "15kV",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "1/0 AWG",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 2.17,
         "netWeight": 2857,
@@ -34,7 +48,14 @@
         "id": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
         "manufacturer": "Anixter",
         "specNumber": "3H-5003",
-        "specType": "3/C #500MCM",
+        "specType": "3/C 500 KCMIL W/GND",
+        "specSuffix": "",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "500 KCMIL",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 2.25,
         "netWeight": 5980,
@@ -44,7 +65,14 @@
         "id": "308b8b17-f72a-4e3c-a5aa-f5f80d79e8e4",
         "manufacturer": "Anixter",
         "specNumber": "3MR-7503",
-        "specType": "3/C #750MCM",
+        "specType": "3/C 750 KCMIL W/GND",
+        "specSuffix": "",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "750 KCMIL",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 2.75,
         "netWeight": 8626,
@@ -54,7 +82,14 @@
         "id": "0b5baf61-d502-407e-b789-98a9c07cdcf8",
         "manufacturer": "Anixter",
         "specNumber": "3H-3503",
-        "specType": "3/C #350MCM",
+        "specType": "3/C 350 KCMIL W/GND",
+        "specSuffix": "",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "350 KCMIL",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 1.97,
         "netWeight": 4150,
@@ -64,7 +99,14 @@
         "id": "cca84952-2da8-457b-a49f-48d1699dd29a",
         "manufacturer": "Anxiter",
         "specNumber": "3H-2503",
-        "specType": "3/C #250MCM",
+        "specType": "3/C 250 KCMIL W/GND",
+        "specSuffix": "",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "250 KCMIL",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 1.75,
         "netWeight": 3190,
@@ -74,7 +116,14 @@
         "id": "8fa32b07-2b15-441f-9011-907c8e101db2",
         "manufacturer": "Anxiter",
         "specNumber": "3H-1013",
-        "specType": "3/C #1/0AWG",
+        "specType": "3/C #1/0 AWG W/GND",
+        "specSuffix": "",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "1/0 AWG",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 1.22,
         "netWeight": 1436,
@@ -84,7 +133,14 @@
         "id": "2ad5de79-624a-404f-80cc-965182e7b385",
         "manufacturer": "Anixter",
         "specNumber": "3H-0802",
-        "specType": "2/C #8AWG",
+        "specType": "2/C #8 AWG W/GND",
+        "specSuffix": "",
+        "specCount": 2,
+        "specConstruction": "conductor",
+        "specSize": "8 AWG",
+        "specGroundShield": true,
+        "customSpecType": false,
+        "cableMaterial": "Copper",
         "fillClassification": "multiconductor",
         "diameter": 0.445,
         "netWeight": 190,
@@ -207,7 +263,11 @@
       "cableTypeId": "15307af5-32b4-4fe4-9018-64280cddcc86",
       "fromLocationId": "8774cf1a-c396-4342-a498-5a3a06ea2209",
       "toLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
-      "purpose": "13.8kV, 3PH, 3W"
+      "purpose": "13.8kV, 3PH, 3W",
+      "voltage": "13800",
+      "loadAmps": 200,
+      "cableRating": "90",
+      "phase": "Three"
     },
     {
       "id": "46b49007-2d72-437b-8405-b9e212ba1b2b",
@@ -216,7 +276,13 @@
       "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
       "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
       "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
-      "purpose": "480V, 3PH, 3W, Set 1-3"
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "b11a1070-99f8-44f4-b828-d072da3723d2",
+      "parallelSetIndex": 1
     },
     {
       "id": "ca83aa6b-cb64-4b62-8ee9-385867707c6f",
@@ -225,25 +291,11 @@
       "cableTypeId": "268ca807-1005-4f06-9416-2705d76c0ec0",
       "fromLocationId": "dce753fd-0947-47cb-9993-70108b23103f",
       "toLocationId": "aa9be09b-ea47-4c09-80ef-29ecec0bb630",
-      "purpose": "13.8kV, 3PH, 3W"
-    },
-    {
-      "id": "1fbe6734-30d4-4da8-8d95-06c26cf67589",
-      "number": "P1696",
-      "length": null,
-      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
-      "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
-      "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
-      "purpose": "480V, 3PH, 3W, Set 2-3"
-    },
-    {
-      "id": "36fd5c08-a38a-4397-86f4-6a2a02fe379d",
-      "number": "P1698",
-      "length": null,
-      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
-      "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
-      "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
-      "purpose": "480V, 3PH, 3W, Set 3-3"
+      "purpose": "13.8kV, 3PH, 3W",
+      "voltage": "13800",
+      "loadAmps": 150,
+      "cableRating": "90",
+      "phase": "Three"
     },
     {
       "id": "a1a695da-c941-4d5e-b74a-ccc9a349b04e",
@@ -252,16 +304,13 @@
       "cableTypeId": "308b8b17-f72a-4e3c-a5aa-f5f80d79e8e4",
       "fromLocationId": "84353b1b-500d-4af8-a954-ee2f44abee39",
       "toLocationId": "b81a7761-1258-4d93-b220-24f1d3e87fcc",
-      "purpose": "480V, 3PH, 3W, Set 1-2"
-    },
-    {
-      "id": "bc456490-0eca-478a-b7c4-c38f9c46d000",
-      "number": "P1702",
-      "length": null,
-      "cableTypeId": "308b8b17-f72a-4e3c-a5aa-f5f80d79e8e4",
-      "fromLocationId": "84353b1b-500d-4af8-a954-ee2f44abee39",
-      "toLocationId": "b81a7761-1258-4d93-b220-24f1d3e87fcc",
-      "purpose": "480V, 3PH, 3W, Set 2-2"
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "cf41ab60-4945-49d6-8411-84c60e4cbd2b",
+      "parallelSetIndex": 1
     },
     {
       "id": "17145feb-1647-42ba-b608-58faca3e638b",
@@ -270,25 +319,13 @@
       "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
       "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
       "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
-      "purpose": "480V, 3PH, 3W, Set 1-3"
-    },
-    {
-      "id": "c84136e2-2421-4d6f-9c54-0aa5d71de94b",
-      "number": "P1706",
-      "length": null,
-      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
-      "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
-      "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
-      "purpose": "480V, 3PH, 3W, Set 2-3"
-    },
-    {
-      "id": "aeb71f05-a26f-41a1-aa41-ac21ac2a0ab7",
-      "number": "P1708",
-      "length": null,
-      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
-      "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
-      "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
-      "purpose": "480V, 3PH, 3W, Set 3-3"
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "9c1b4db9-863f-4247-b777-651c76d66b04",
+      "parallelSetIndex": 1
     },
     {
       "id": "acab35ea-ae46-4384-bb79-d1546a7df925",
@@ -297,16 +334,13 @@
       "cableTypeId": "0b5baf61-d502-407e-b789-98a9c07cdcf8",
       "fromLocationId": "9094312d-dc7f-4ab1-be20-21f8133016c9",
       "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
-      "purpose": "480V, 3PH, 3W, Set 1-2"
-    },
-    {
-      "id": "3591f28e-caac-48ff-9c06-2997d9b6823f",
-      "number": "P1712",
-      "length": null,
-      "cableTypeId": "0b5baf61-d502-407e-b789-98a9c07cdcf8",
-      "fromLocationId": "9094312d-dc7f-4ab1-be20-21f8133016c9",
-      "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
-      "purpose": "480V, 3PH, 3W, Set 2-2"
+      "purpose": "480V, 3PH, 3W, Set 1-2",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "ddea3ebd-2206-4b68-a067-77b89e4644de",
+      "parallelSetIndex": 1
     },
     {
       "id": "ac64c486-04df-4f93-9d8c-3136bef7d0db",
@@ -315,7 +349,11 @@
       "cableTypeId": "cca84952-2da8-457b-a49f-48d1699dd29a",
       "fromLocationId": "0f6c8504-d1b0-470f-8238-92d61fe77182",
       "toLocationId": "56a786a0-8763-483a-966c-6c25542ea7b4",
-      "purpose": "480V, 3PH, 3W"
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three"
     },
     {
       "id": "e5fffb76-8a9d-4062-9591-d31fca083a74",
@@ -324,7 +362,11 @@
       "cableTypeId": "8fa32b07-2b15-441f-9011-907c8e101db2",
       "fromLocationId": "b7ff8399-68ed-44b1-a76d-317e49b9a4f1",
       "toLocationId": "460f5b1f-89fe-4c71-bc61-344c7f8a0e23",
-      "purpose": "480V, 3PH, 3W"
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three"
     },
     {
       "id": "071c54a9-8bf7-4d2a-8d48-05aaacfb9b9d",
@@ -333,7 +375,11 @@
       "cableTypeId": "8fa32b07-2b15-441f-9011-907c8e101db2",
       "fromLocationId": "55dad2e8-cfb3-4657-b0ad-5795aa2ff5b6",
       "toLocationId": "c58c4808-7732-4459-bfe1-6cdd6e16e408",
-      "purpose": "480V, 3PH, 3W"
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three"
     },
     {
       "id": "1d2bda46-9265-4a58-8821-b2872bb1fcb9",
@@ -342,7 +388,11 @@
       "cableTypeId": "2ad5de79-624a-404f-80cc-965182e7b385",
       "fromLocationId": "45c92a31-7377-42b9-bfc2-66c3a80c0016",
       "toLocationId": "ec8b620e-d5b0-4bfe-95df-8284203b46a5",
-      "purpose": "480V, 1PH, 3W"
+      "purpose": "480V, 1PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Single"
     },
     {
       "id": "1fb7e125-4b19-46b3-b182-0cc9b925625c",
@@ -351,7 +401,101 @@
       "cableTypeId": "2ad5de79-624a-404f-80cc-965182e7b385",
       "fromLocationId": "45c92a31-7377-42b9-bfc2-66c3a80c0016",
       "toLocationId": "4433de49-e3e2-47ac-8c13-0031eb1d0dd1",
-      "purpose": "480V, 1PH, 3W"
+      "purpose": "480V, 1PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Single"
+    },
+    {
+      "id": "fd2081ea-f218-4483-8e3e-3662a06d67ed",
+      "number": "P1696",
+      "length": null,
+      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
+      "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
+      "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "b11a1070-99f8-44f4-b828-d072da3723d2",
+      "parallelSetIndex": 2
+    },
+    {
+      "id": "1bd9427c-7d21-4e04-9d5d-3e218d09d9d5",
+      "number": "P1698",
+      "length": null,
+      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
+      "fromLocationId": "5f5cf7a7-99db-48ae-9e4a-b80016265563",
+      "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "b11a1070-99f8-44f4-b828-d072da3723d2",
+      "parallelSetIndex": 3
+    },
+    {
+      "id": "e02c34b1-a82e-4323-82f6-7bae3eb00183",
+      "number": "P1702",
+      "length": null,
+      "cableTypeId": "308b8b17-f72a-4e3c-a5aa-f5f80d79e8e4",
+      "fromLocationId": "84353b1b-500d-4af8-a954-ee2f44abee39",
+      "toLocationId": "b81a7761-1258-4d93-b220-24f1d3e87fcc",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "cf41ab60-4945-49d6-8411-84c60e4cbd2b",
+      "parallelSetIndex": 2
+    },
+    {
+      "id": "7c3eb0a7-6fdf-4cea-8d5c-0e961390f098",
+      "number": "P1706",
+      "length": null,
+      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
+      "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
+      "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "9c1b4db9-863f-4247-b777-651c76d66b04",
+      "parallelSetIndex": 2
+    },
+    {
+      "id": "9546d13f-7d5e-46a6-aee1-e555306e5d43",
+      "number": "P1708",
+      "length": null,
+      "cableTypeId": "11dee487-dda0-408a-b7a6-f877e62ca5b9",
+      "fromLocationId": "45de87e8-e2f5-425a-acf1-4138a3086807",
+      "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "9c1b4db9-863f-4247-b777-651c76d66b04",
+      "parallelSetIndex": 3
+    },
+    {
+      "id": "d0ef0eef-66d3-494d-bf7e-c794c6d469bf",
+      "number": "P1712",
+      "length": null,
+      "cableTypeId": "0b5baf61-d502-407e-b789-98a9c07cdcf8",
+      "fromLocationId": "9094312d-dc7f-4ab1-be20-21f8133016c9",
+      "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
+      "purpose": "480V, 3PH, 3W, Set 1-2",
+      "voltage": "480",
+      "loadAmps": null,
+      "cableRating": "60",
+      "phase": "Three",
+      "parallelGroupId": "ddea3ebd-2206-4b68-a067-77b89e4644de",
+      "parallelSetIndex": 2
     }
   ],
   "conduits": [
@@ -457,7 +601,7 @@
       "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
-        "1fbe6734-30d4-4da8-8d95-06c26cf67589"
+        "fd2081ea-f218-4483-8e3e-3662a06d67ed"
       ]
     },
     {
@@ -472,7 +616,7 @@
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
       "cableIds": [
-        "1fbe6734-30d4-4da8-8d95-06c26cf67589"
+        "fd2081ea-f218-4483-8e3e-3662a06d67ed"
       ]
     },
     {
@@ -487,7 +631,7 @@
       "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
-        "36fd5c08-a38a-4397-86f4-6a2a02fe379d"
+        "1bd9427c-7d21-4e04-9d5d-3e218d09d9d5"
       ]
     },
     {
@@ -502,7 +646,7 @@
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "5f3d1afd-3858-4ed5-887b-61581c57ade3",
       "cableIds": [
-        "36fd5c08-a38a-4397-86f4-6a2a02fe379d"
+        "1bd9427c-7d21-4e04-9d5d-3e218d09d9d5"
       ]
     },
     {
@@ -547,7 +691,7 @@
       "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
-        "bc456490-0eca-478a-b7c4-c38f9c46d000"
+        "e02c34b1-a82e-4323-82f6-7bae3eb00183"
       ]
     },
     {
@@ -562,7 +706,7 @@
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "b81a7761-1258-4d93-b220-24f1d3e87fcc",
       "cableIds": [
-        "bc456490-0eca-478a-b7c4-c38f9c46d000"
+        "e02c34b1-a82e-4323-82f6-7bae3eb00183"
       ]
     },
     {
@@ -607,7 +751,7 @@
       "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
-        "c84136e2-2421-4d6f-9c54-0aa5d71de94b"
+        "7c3eb0a7-6fdf-4cea-8d5c-0e961390f098"
       ]
     },
     {
@@ -622,7 +766,7 @@
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
       "cableIds": [
-        "c84136e2-2421-4d6f-9c54-0aa5d71de94b"
+        "7c3eb0a7-6fdf-4cea-8d5c-0e961390f098"
       ]
     },
     {
@@ -637,7 +781,7 @@
       "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
-        "aeb71f05-a26f-41a1-aa41-ac21ac2a0ab7"
+        "9546d13f-7d5e-46a6-aee1-e555306e5d43"
       ]
     },
     {
@@ -652,7 +796,7 @@
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "02b74e75-86d2-4997-8e43-465759dd9944",
       "cableIds": [
-        "aeb71f05-a26f-41a1-aa41-ac21ac2a0ab7"
+        "9546d13f-7d5e-46a6-aee1-e555306e5d43"
       ]
     },
     {
@@ -697,7 +841,7 @@
       "fromLocationId": "448a6f98-852c-402a-86e2-b6971211fceb",
       "toLocationId": "__wireframe_cable_tray__",
       "cableIds": [
-        "3591f28e-caac-48ff-9c06-2997d9b6823f"
+        "d0ef0eef-66d3-494d-bf7e-c794c6d469bf"
       ]
     },
     {
@@ -712,7 +856,7 @@
       "fromLocationId": "__wireframe_cable_tray__",
       "toLocationId": "8eec56b4-2bc0-468a-8354-ae4fe38378d8",
       "cableIds": [
-        "3591f28e-caac-48ff-9c06-2997d9b6823f"
+        "d0ef0eef-66d3-494d-bf7e-c794c6d469bf"
       ]
     },
     {
@@ -808,6 +952,6 @@
       ]
     }
   ],
-  "exportedAt": "2026-11-26T16:32:45.404Z",
+  "exportedAt": "2026-11-26T21:50:12.510Z",
   "formatVersion": 1
 }
