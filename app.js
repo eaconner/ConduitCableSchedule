@@ -3,62 +3,6 @@ const THEME_PREFERENCE_KEY = "wireframe-theme-preference-v1";
 const THEME_PREFERENCES = ["system", "light", "dark"];
 const CONDUIT_SIZES = ['1/2"', '3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '4"'];
 const NEC_EDITIONS = ["2017", "2020", "2023", "2026"];
-const RACEWAY_TYPES = [
-  { value: "emt", label: "EMT" },
-  { value: "imc", label: "IMC" },
-  { value: "rmc", label: "RMC" },
-  { value: "pvc-schedule-40", label: "PVC Schedule 40" },
-  { value: "pvc-schedule-80", label: "PVC Schedule 80" },
-  { value: "fmc", label: "FMC" },
-  { value: "lfmc", label: "LFMC" },
-  { value: "other", label: "Other / custom" },
-];
-const RACEWAY_INTERNAL_AREAS = {
-  emt: {
-    "1/2": 0.304,
-    "3/4": 0.533,
-    "1": 0.864,
-    "1-1/2": 2.036,
-    "2": 3.356,
-    "2-1/2": 5.858,
-    "3": 8.846,
-    "3-1/2": 11.545,
-    "4": 14.753,
-  },
-  "pvc-schedule-40": {
-    "1/2": 0.285,
-    "3/4": 0.508,
-    "1": 0.832,
-    "1-1/2": 1.986,
-    "2": 3.291,
-    "2-1/2": 4.695,
-    "3": 7.268,
-    "3-1/2": 9.737,
-    "4": 12.554,
-  },
-  "pvc-schedule-80": {
-    "1/2": 0.217,
-    "3/4": 0.409,
-    "1": 0.688,
-    "1-1/2": 1.711,
-    "2": 2.874,
-    "2-1/2": 4.119,
-    "3": 6.442,
-    "3-1/2": 8.688,
-    "4": 11.258,
-  },
-  rmc: {
-    "1/2": 0.314,
-    "3/4": 0.549,
-    "1": 0.887,
-    "1-1/2": 2.071,
-    "2": 3.408,
-    "2-1/2": 4.866,
-    "3": 7.499,
-    "3-1/2": 10.010,
-    "4": 12.882,
-  },
-};
 const CABLE_FILL_TYPES = [
   { value: "individual", label: "Individual insulated conductor" },
   { value: "multiconductor", label: "Multiconductor cable assembly" },

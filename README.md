@@ -28,8 +28,11 @@ For conduit-fill analysis, select the adopted NEC edition in **Settings**. Racew
 
 - `index.html` — application entry point
 - `app.js` — application logic and project data handling
+- `raceway-data.js` — editable raceway options and internal-area values by trade size
 - `styles.css` — application and print styles
 - `example/example-project.ccs` — sample project backup
+
+The CSS and JavaScript asset URLs in `index.html` share the current version-history number as a cache-busting version. Update it with each release or asset change so browsers load the latest files.
 
 ## License
 
