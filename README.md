@@ -5,11 +5,11 @@ Wireframe is a lightweight browser app for creating and managing electrical cabl
 ## Features
 
 - Create and manage cable and conduit schedules, including conduit cable assignments.
-- Analyze conduit fill against NEC Table 1 limits and flag passing, failing, or incomplete checks.
+- Analyze conduit fill against NEC and flag passing, failing, or incomplete checks.
 - Maintain project information, cable specifications, and equipment locations.
 - Review cable length totals and identify entries with missing lengths.
 - Export schedules and the bill of materials as CSV files.
-- Print the bill of materials and a landscape Conduit Cable Schedule.
+- Print the bill of materials and Conduit Cable Schedule.
 - Choose a light or dark theme, or follow the device's appearance setting.
 
 ## Getting Started
@@ -31,8 +31,6 @@ For conduit-fill analysis, select the adopted NEC edition in **Settings**. Racew
 - `raceway-data.js` — editable raceway options and internal-area values by trade size
 - `styles.css` — application and print styles
 - `example/example-project.ccs` — sample project backup
-
-The CSS and JavaScript asset URLs in `index.html` share the current version-history number as a cache-busting version. Update it with each release or asset change so browsers load the latest files.
 
 ## License
 

@@ -73,6 +73,14 @@ const VERSION_HISTORY = [
     version: "2026.11.11",
     changes: ["Added NEC conduit-fill analysis with pass/fail/needs-data status and automatic raceway area lookups for the supplied EMT, RMC, and PVC tables."],
   },
+  {
+    version: "2026.11.12",
+    changes: [
+      "Added conduit type to the Bill of Materials and CSV export, grouping conduit totals by type and size.",
+      "Listed conduit size before type and sorted conduit materials by size, then type.",
+      "Added project and report names to saved project files, CSV exports, and print-to-PDF titles.",
+    ],
+  },
 ];
 let showAllVersionHistory = false;
 const emptyState = () => ({
@@ -544,17 +552,20 @@ function billOfMaterialsGroups() {
 
   const conduitGroups = new Map();
   state.conduits.forEach((conduit) => {
+    const racewayType = racewayTypeLabel(conduit.racewayType) || "Not set";
     const size = String(conduit.size || "").trim() || "TBD";
-    const key = size.toLocaleLowerCase();
-    if (!conduitGroups.has(key)) conduitGroups.set(key, { size, conduits: [] });
+    const key = JSON.stringify([racewayType.toLocaleLowerCase(), size.toLocaleLowerCase()]);
+    if (!conduitGroups.has(key)) conduitGroups.set(key, { racewayType, size, conduits: [] });
     conduitGroups.get(key).conduits.push(conduit);
   });
-  const usedConduitSizes = [...conduitGroups.values()].sort((a, b) => numberCollator.compare(a.size, b.size));
-  return { usedCableTypes, usedConduitSizes };
+  const usedConduitGroups = [...conduitGroups.values()].sort((a, b) =>
+    numberCollator.compare(a.size, b.size) || numberCollator.compare(a.racewayType, b.racewayType),
+  );
+  return { usedCableTypes, usedConduitGroups };
 }
 
 function renderBillOfMaterials() {
-  const { usedCableTypes, usedConduitSizes } = billOfMaterialsGroups();
+  const { usedCableTypes, usedConduitGroups } = billOfMaterialsGroups();
   const settings = state.settings;
 
   return `
@@ -579,10 +590,10 @@ function renderBillOfMaterials() {
         }).join("")}</tbody></table></div>` : `<div class="bom-empty">No cable types are currently used in the cable schedule.</div>`}
       </section>
       <section class="content-card bom-section">
-        <div class="card-heading"><div><h2>Conduit Materials</h2><p>Conduit sizes used in this project</p></div></div>
-        ${usedConduitSizes.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit size</th><th>Total Length<br>(ft)</th></tr></thead><tbody>${usedConduitSizes.map(({ size, conduits }) => {
-          return `<tr><td class="primary-cell">${size === "TBD" ? `<span class="tag tbd">TBD</span>` : escapeHtml(size)}</td><td>${renderLengthTotal(conduits)}</td></tr>`;
-        }).join("")}</tbody></table></div>` : `<div class="bom-empty">No conduit sizes are currently used in the conduit schedule.</div>`}
+        <div class="card-heading"><div><h2>Conduit Materials</h2><p>Conduit types and sizes used in this project</p></div></div>
+        ${usedConduitGroups.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit size</th><th>Conduit type</th><th>Total Length<br>(ft)</th></tr></thead><tbody>${usedConduitGroups.map(({ racewayType, size, conduits }) => {
+          return `<tr><td class="primary-cell">${size === "TBD" ? `<span class="tag tbd">TBD</span>` : escapeHtml(size)}</td><td>${escapeHtml(racewayType)}</td><td>${renderLengthTotal(conduits)}</td></tr>`;
+        }).join("")}</tbody></table></div>` : `<div class="bom-empty">No conduits are currently used in the conduit schedule.</div>`}
       </section>
       <p class="bom-note">Material lengths are based on scheduled totals. Confirm field requirements and installation allowances before ordering.</p>
     </div>`;
@@ -1213,7 +1224,7 @@ function handleAction(action, id, fieldName) {
     document.querySelector("#export-menu").hidden = true;
     document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
     setPage("bom");
-    window.print();
+    printReport("Bill of Materials");
   }
 }
 
@@ -1277,9 +1288,18 @@ function printConduitCableSchedule() {
   document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
   printRoot.innerHTML = renderConduitCablePrint();
   document.body.classList.add("printing-conduit-cable");
-  window.addEventListener("afterprint", () => {
+  printReport("Conduit Cable Schedule", () => {
     document.body.classList.remove("printing-conduit-cable");
     printRoot.replaceChildren();
+  });
+}
+
+function printReport(reportType, afterPrint = null) {
+  const originalTitle = document.title;
+  document.title = projectFileBaseName(reportType);
+  window.addEventListener("afterprint", () => {
+    document.title = originalTitle;
+    afterPrint?.();
   }, { once: true });
   window.print();
 }
@@ -1302,24 +1322,26 @@ function conduitExportRows() {
 }
 
 function billOfMaterialsExportRows() {
-  const { usedCableTypes, usedConduitSizes } = billOfMaterialsGroups();
+  const { usedCableTypes, usedConduitGroups } = billOfMaterialsGroups();
   return [
-    ["Material Type", "Spec Type", "Manufacturer", "Spec Number", "Conduit Size", "Total Known Length (ft)", "Missing Length Count"],
+    ["Material Type", "Spec Type", "Manufacturer", "Spec Number", "Conduit Size", "Conduit Type", "Total Known Length (ft)", "Missing Length Count"],
     ...usedCableTypes.map(({ type, cables }) => [
       "Cable",
       type?.specType || "—",
       type?.manufacturer || "Cable type unavailable",
       type?.specNumber || "Specification unavailable",
       "",
+      "",
       sumScheduledLengths(cables),
       cables.filter((cable) => !hasScheduledLength(cable.length)).length,
     ]),
-    ...usedConduitSizes.map(({ size, conduits }) => [
+    ...usedConduitGroups.map(({ racewayType, size, conduits }) => [
       "Conduit",
       "",
       "",
       "",
       size,
+      racewayType,
       sumScheduledLengths(conduits),
       conduits.filter((conduit) => !hasScheduledLength(conduit.length)).length,
     ]),
@@ -1406,18 +1428,22 @@ function exportCsv(filename, rows) {
 
 function exportJson() {
   const backup = { ...state, exportedAt: new Date().toISOString(), formatVersion: 1 };
-  download(projectFileName("ccs"), JSON.stringify(backup, null, 2), "application/json");
+  download(projectFileName("ccs", "Project"), JSON.stringify(backup, null, 2), "application/json");
 }
 
-function projectFileName(extension, scheduleName = "") {
+function projectFileName(extension, reportType = "") {
+  return `${projectFileBaseName(reportType)}.${extension}`;
+}
+
+function projectFileBaseName(reportType = "") {
   const fileNameParts = [
     state.settings.internalProjectNumber,
     state.settings.clientName,
     state.settings.projectName,
-    scheduleName,
+    reportType,
   ].map((part) => String(part || "").trim().replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").replace(/\s+/g, " ").replace(/[. ]+$/g, ""))
     .filter(Boolean);
-  return `${fileNameParts.join(" - ") || "project"}.${extension}`;
+  return fileNameParts.join(" - ") || "project";
 }
 
 function validateBackupData(backup) {
