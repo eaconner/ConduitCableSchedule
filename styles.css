@@ -109,7 +109,8 @@ button { cursor: pointer; }
 .project-file-actions { display: flex; align-items: center; gap: 6px; }
 .project-file-action { min-width: 82px; }
 .export-wrap { position: relative; }
-.chevron { margin-left: 2px; color: #929cab; font-size: 16px; }
+.chevron { flex: 0 0 12px; margin-left: 2px; color: #929cab; }
+.button svg.chevron { width: 12px; height: 12px; }
 .export-menu { position: absolute; z-index: 4; top: calc(100% + 8px); right: 0; width: 213px; padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 10px 32px #17202f1a; }
 .export-menu button { display: flex; width: 100%; justify-content: space-between; border: 0; border-radius: 5px; padding: 10px; background: transparent; color: #374254; font-size: 12px; text-align: left; }
 .export-menu button:hover { background: #f5f7fa; }
@@ -132,6 +133,7 @@ h1 { margin-bottom: 7px; font-family: "Avenir Next", "Segoe UI", sans-serif; fon
 .metric-card:nth-child(3) .metric-icon { background: #fff4e5; color: #c18429; }
 .metric-value { margin-top: 7px; font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 27px; font-weight: 700; letter-spacing: -.7px; }
 .metric-sub { margin-top: 2px; color: #a0a8b3; font-size: 10px; }
+.metric-warning { color: #946013; font-weight: 700; }
 .content-card { border: 1px solid var(--line); border-radius: 9px; background: #fff; }
 .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
 .card-heading h2 { margin: 0; font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 14px; font-weight: 700; }
@@ -145,6 +147,7 @@ h1 { margin-bottom: 7px; font-family: "Avenir Next", "Segoe UI", sans-serif; fon
 table { width: 100%; border-collapse: collapse; text-align: left; }
 thead { background: #fafbfd; }
 th { padding: 11px 17px; color: #929cab; font-size: 9px; font-weight: 700; letter-spacing: .65px; text-transform: uppercase; white-space: nowrap; }
+.wrapped-headers th { max-width: 112px; white-space: normal; line-height: 1.35; }
 td { padding: 13px 17px; border-top: 1px solid #f0f2f5; color: #576375; font-size: 11px; white-space: nowrap; }
 tbody tr:hover { background: #fcfcfd; }
 .primary-cell { color: #303d50; font-weight: 700; }
@@ -199,8 +202,21 @@ tbody tr:hover { background: #fcfcfd; }
 .settings-item-main strong { display: block; color: #435064; font-size: 11px; }
 .settings-item-main small { display: block; margin-top: 4px; color: #929cab; font-size: 10px; }
 .settings-empty { padding: 20px 0; color: #9aa3af; font-size: 11px; }
+.version-history { margin: 0; padding: 0 20px; list-style: none; }
+.version-entry { display: flex; align-items: flex-start; gap: 14px; padding: 17px 0; }
+.version-changes { margin: 2px 0 0; padding-left: 16px; color: #697587; font-size: 11px; line-height: 1.6; }
+.version-changes li + li { margin-top: 4px; }
+.version-history-toggle { margin: 0 20px 16px; padding: 0; }
+#print-root { display: none; }
+.conduit-cable-print-header { margin-bottom: 12px; }
+.conduit-cable-print-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 9px; border-bottom: 1px solid #aaa; }
+.conduit-cable-print-title .eyebrow { margin-bottom: 4px; }
+.conduit-cable-print-title h1 { margin: 0; font-size: 20px; }
+.conduit-cable-print-title > span { color: #555; font-size: 10px; }
+.conduit-cable-print-header h2 { margin: 9px 0; font-size: 14px; }
+.conduit-cable-print-project-meta { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .section-description { margin: 4px 0 0; color: #929cab; font-size: 11px; }
-.bom-page { page: bom; }
+.appearance-field { max-width: 320px; }
 .bom-project-card { margin-bottom: 16px; }
 .bom-project-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
 .bom-project-title h2 { margin: 0; color: #303d50; font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 15px; }
@@ -214,11 +230,10 @@ tbody tr:hover { background: #fcfcfd; }
 .bom-note { margin: 4px 2px 0; color: #8993a1; font-size: 10px; line-height: 1.5; }
 
 .modal-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: #15203470; }
-.modal { width: min(100%, 570px); max-height: calc(100vh - 48px); overflow: auto; border-radius: 10px; background: #fff; box-shadow: 0 20px 60px #10182838; }
+.modal { width: min(100%, 760px); max-height: calc(100vh - 48px); overflow: auto; border-radius: 10px; background: #fff; box-shadow: 0 20px 60px #10182838; }
 .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
 .modal-header h2 { margin: 0; font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 17px; }
 .modal-header p { margin: 5px 0 0; color: #929cab; font-size: 11px; }
-.modal-close { border: 0; background: transparent; color: #8590a0; font-size: 20px; line-height: 1; }
 .modal-form { padding: 20px 22px 22px; }
 .modal-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .modal-form .field.full { grid-column: 1 / -1; }
@@ -308,9 +323,155 @@ tbody tr:hover { background: #fcfcfd; }
   .checkbox-list-header, .checkbox-option { grid-template-columns: 30px minmax(64px, .6fr) minmax(80px, 1fr) minmax(0, 1.2fr); gap: 6px; padding-right: 9px; padding-left: 9px; }
 }
 
-@page bom { size: letter landscape; margin: 0.45in; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e4eaf3;
+  --muted: #a0adbf;
+  --line: #344155;
+  --surface: #1e2938;
+  --canvas: #141c27;
+  --navy: #263a5c;
+  --blue: #91aaff;
+  --blue-dark: #a9bbff;
+  --blue-soft: #28395f;
+  --green: #65cba3;
+  --green-soft: #1e4136;
+  --amber: #e5b35e;
+  --amber-soft: #44371f;
+}
+:root[data-theme="dark"] body { background: var(--canvas); color: var(--ink); }
+:root[data-theme="dark"] .sidebar,
+:root[data-theme="dark"] .topbar,
+:root[data-theme="dark"] .content-card,
+:root[data-theme="dark"] .metric-card,
+:root[data-theme="dark"] .modal,
+:root[data-theme="dark"] .button-secondary,
+:root[data-theme="dark"] .export-menu,
+:root[data-theme="dark"] .search-box input,
+:root[data-theme="dark"] .field input,
+:root[data-theme="dark"] .field select,
+:root[data-theme="dark"] .field textarea { border-color: var(--line); background: var(--surface); }
+:root[data-theme="dark"] .brand,
+:root[data-theme="dark"] .project-label strong,
+:root[data-theme="dark"] .breadcrumbs strong,
+:root[data-theme="dark"] .nav-item:hover,
+:root[data-theme="dark"] .card-heading h2,
+:root[data-theme="dark"] .metric-value,
+:root[data-theme="dark"] .detail-item span,
+:root[data-theme="dark"] td,
+:root[data-theme="dark"] .primary-cell,
+:root[data-theme="dark"] .settings-item-main strong,
+:root[data-theme="dark"] .export-menu button,
+:root[data-theme="dark"] .field input,
+:root[data-theme="dark"] .field select,
+:root[data-theme="dark"] .field textarea,
+:root[data-theme="dark"] .checkbox-cable-number,
+:root[data-theme="dark"] .checkbox-cable-type strong,
+:root[data-theme="dark"] .bom-project-title h2 { color: var(--ink); }
+:root[data-theme="dark"] .brand-name span,
+:root[data-theme="dark"] .workspace-label,
+:root[data-theme="dark"] .sidebar-footer,
+:root[data-theme="dark"] .nav-item,
+:root[data-theme="dark"] .project-label small,
+:root[data-theme="dark"] .breadcrumbs,
+:root[data-theme="dark"] .crumb-chevron,
+:root[data-theme="dark"] .saved-state,
+:root[data-theme="dark"] .eyebrow,
+:root[data-theme="dark"] .page-heading p,
+:root[data-theme="dark"] .metric-top,
+:root[data-theme="dark"] .metric-sub,
+:root[data-theme="dark"] .card-heading p,
+:root[data-theme="dark"] .detail-item label,
+:root[data-theme="dark"] th,
+:root[data-theme="dark"] .secondary-cell,
+:root[data-theme="dark"] .empty-state p,
+:root[data-theme="dark"] .schedule-info,
+:root[data-theme="dark"] .table-footer,
+:root[data-theme="dark"] .field label,
+:root[data-theme="dark"] .field label .optional,
+:root[data-theme="dark"] .settings-item-main small,
+:root[data-theme="dark"] .version-changes,
+:root[data-theme="dark"] .settings-empty,
+:root[data-theme="dark"] .section-description,
+:root[data-theme="dark"] .bom-project-title p,
+:root[data-theme="dark"] .bom-generated,
+:root[data-theme="dark"] .bom-empty,
+:root[data-theme="dark"] .bom-note,
+:root[data-theme="dark"] .modal-header p,
+:root[data-theme="dark"] .form-note,
+:root[data-theme="dark"] .checkbox-list-empty,
+:root[data-theme="dark"] .checkbox-cable-route,
+:root[data-theme="dark"] .checkbox-cable-type small,
+:root[data-theme="dark"] .search-icon,
+:root[data-theme="dark"] .chevron { color: var(--muted); }
+:root[data-theme="dark"] .metric-warning { color: #e5b35e; }
+:root[data-theme="dark"] .sidebar { border-right-color: var(--line); }
+:root[data-theme="dark"] .nav-item:hover,
+:root[data-theme="dark"] .sidebar-toggle:hover,
+:root[data-theme="dark"] .export-menu button:hover,
+:root[data-theme="dark"] tbody tr:hover,
+:root[data-theme="dark"] .icon-button:hover,
+:root[data-theme="dark"] .checkbox-option:hover { background: #293648; }
+:root[data-theme="dark"] .nav-item.active { background: #263653; color: #a9bbff; }
+:root[data-theme="dark"] .nav-item.active .nav-icon,
+:root[data-theme="dark"] .text-button,
+:root[data-theme="dark"] .form-note a { color: var(--blue); }
+:root[data-theme="dark"] .nav-count,
+:root[data-theme="dark"] .tag.neutral { background: #303d4f; color: #c0cad8; }
+:root[data-theme="dark"] .nav-item.active .nav-count { background: #344a73; color: #c2ceff; }
+:root[data-theme="dark"] .project-avatar { background: #453522; color: #e5b35e; }
+:root[data-theme="dark"] .avatar { background: #303d52; color: #c2ceff; }
+:root[data-theme="dark"] .button-secondary { color: var(--ink); }
+:root[data-theme="dark"] .button-secondary:hover { border-color: #53647b; background: #293648; }
+:root[data-theme="dark"] .button-primary { background: #4268e8; color: #fff; }
+:root[data-theme="dark"] .button-primary:hover { background: #3156d3; }
+:root[data-theme="dark"] .export-menu button span { color: var(--muted); }
+:root[data-theme="dark"] .metric-icon { background: #28395f; color: #a9bbff; }
+:root[data-theme="dark"] .metric-card:nth-child(2) .metric-icon { background: #1e4136; color: #65cba3; }
+:root[data-theme="dark"] .metric-card:nth-child(3) .metric-icon { background: #44371f; color: #e5b35e; }
+:root[data-theme="dark"] thead,
+:root[data-theme="dark"] .checkbox-list-header { background: #263244; }
+:root[data-theme="dark"] td,
+:root[data-theme="dark"] .settings-list-row,
+:root[data-theme="dark"] .checkbox-option,
+:root[data-theme="dark"] .checkbox-list-header,
+:root[data-theme="dark"] .modal-actions { border-color: #344155; }
+:root[data-theme="dark"] .tag.blue { background: #28395f; color: #b6c5ff; }
+:root[data-theme="dark"] .tag.tbd { background: #492c32; color: #ffaaa4; }
+:root[data-theme="dark"] .length-tbd-text,
+:root[data-theme="dark"] .checkbox-cable-type small.checkbox-cable-incompatible { color: #ffaaa4; }
+:root[data-theme="dark"] .icon-button { color: #a0adbf; }
+:root[data-theme="dark"] .icon-button:hover { color: #a9bbff; }
+:root[data-theme="dark"] .icon-button.delete:hover { background: #492c32; color: #ffaaa4; }
+:root[data-theme="dark"] .empty-icon { background: #28364b; color: #a9bbff; }
+:root[data-theme="dark"] .schedule-info strong { color: var(--ink); }
+:root[data-theme="dark"] .schedule-info .divider { background: #455267; }
+:root[data-theme="dark"] .field input::placeholder,
+:root[data-theme="dark"] .field textarea::placeholder { color: #8492a5; }
+:root[data-theme="dark"] .form-note { background: #293648; }
+:root[data-theme="dark"] .checkbox-list { border-color: var(--line); }
+:root[data-theme="dark"] .checkbox-option { color: var(--muted); }
+:root[data-theme="dark"] .checkbox-option.incompatible,
+:root[data-theme="dark"] .form-note.assignment-warning { background: #492c32; color: #ffaaa4; }
+:root[data-theme="dark"] .checkbox-option.incompatible:hover { background: #55333a; }
+:root[data-theme="dark"] .modal-backdrop { background: #080d16b8; }
+:root[data-theme="dark"] .toast { background: #293648; }
+:root[data-theme="dark"] .toast.error { background: #a33b37; }
+
+@page { size: auto; margin: 0.45in; }
+@page conduit-cable { size: landscape; margin: 0.4in; }
+body.printing-conduit-cable { page: conduit-cable; }
 @media print {
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --ink: #17202f;
+    --line: #e8ebf0;
+    --surface: #fff;
+    --canvas: #fff;
+  }
   body.printing-bom { min-width: 0; background: #fff; color: #111; font-size: 9pt; }
+  body.printing-bom,
+  body.printing-conduit-cable { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .printing-bom .app-shell { display: block; min-height: 0; }
   .printing-bom .sidebar, .printing-bom .topbar, .printing-bom .modal-backdrop, .printing-bom .toast, .printing-bom .print-hide { display: none !important; }
   .printing-bom .main-area { width: 100%; }
@@ -334,8 +495,42 @@ tbody tr:hover { background: #fcfcfd; }
   .printing-bom .bom-section table { width: 100%; table-layout: auto; }
   .printing-bom .bom-section th, .printing-bom .bom-section td { padding: 5px 6px; color: #111; font-size: 7pt; white-space: normal; }
   .printing-bom .bom-section th { background: #eee; }
+  .printing-bom .bom-section .wrapped-headers th { max-width: none; }
   .printing-bom .bom-section tbody tr { break-inside: avoid; }
   .printing-bom .bom-section .secondary-cell { color: #333; }
   .printing-bom .bom-empty { padding: 10px 12px; color: #333; font-size: 8pt; }
   .printing-bom .bom-note { margin-top: 6px; color: #333; font-size: 7pt; }
+  .printing-bom .bom-project-title { border-left: 4px solid #4268e8; border-bottom-color: #c3d1eb; background: #edf2ff; }
+  .printing-bom .bom-project-title h2 { color: #20395f; }
+  .printing-bom .bom-project-card,
+  .printing-bom .bom-section { border-color: #c3d1eb; }
+  .printing-bom .bom-section .card-heading { background: #f1f5fc; border-color: #c3d1eb; }
+  .printing-bom .bom-section .card-heading h2 { color: #20395f; }
+  .printing-bom .bom-section th { background: #dce7fa; border-color: #b7c8e5; color: #20395f; }
+  .printing-bom .bom-section td { border-color: #d7dfed; }
+  .printing-bom .bom-section tbody tr:nth-child(even) { background: #f6f8fc; }
+  body.printing-conduit-cable { min-width: 0; background: #fff; color: #111; font-family: Arial, sans-serif; font-size: 8pt; }
+  .printing-conduit-cable .app-shell, .printing-conduit-cable #modal-root { display: none !important; }
+  .printing-conduit-cable #print-root { display: block; }
+  .printing-conduit-cable .conduit-cable-print-header { padding: 8pt 10pt; border-left: 4px solid #4268e8; background: #edf2ff; }
+  .printing-conduit-cable .conduit-cable-print-title { border-bottom-color: #c3d1eb; }
+  .printing-conduit-cable .conduit-cable-print-title h1 { color: #20395f; font-size: 18pt; }
+  .printing-conduit-cable .conduit-cable-print-title .eyebrow { color: #4268e8; font-size: 8pt; }
+  .printing-conduit-cable .conduit-cable-print-title > span { color: #52627b; font-size: 8pt; }
+  .printing-conduit-cable .conduit-cable-print-header h2 { margin: 7pt 0; color: #20395f; font-size: 12pt; }
+  .printing-conduit-cable .conduit-cable-print-project-meta { gap: 8pt; }
+  .printing-conduit-cable .conduit-cable-print-project-meta .detail-item label { margin-bottom: 3pt; color: #52627b; font-size: 7pt; }
+  .printing-conduit-cable .conduit-cable-print-project-meta .detail-item span { color: #111; font-size: 8pt; }
+  .printing-conduit-cable .conduit-cable-print table { width: 100%; table-layout: auto; border-collapse: collapse; }
+  .printing-conduit-cable .conduit-cable-print th,
+  .printing-conduit-cable .conduit-cable-print td { padding: 4px 5px; border: 1px solid #d7dfed; color: #111; font-size: 6.5pt; text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+  .printing-conduit-cable .conduit-cable-print th:nth-child(8),
+  .printing-conduit-cable .conduit-cable-print td:nth-child(8),
+  .printing-conduit-cable .conduit-cable-print th:nth-child(9),
+  .printing-conduit-cable .conduit-cable-print td:nth-child(9) { white-space: nowrap; overflow-wrap: normal; }
+  .printing-conduit-cable .conduit-cable-print th { border-color: #b7c8e5; background: #dce7fa; color: #20395f; }
+  .printing-conduit-cable .conduit-cable-print .conduit-cable-group-row td { border-top: 1.5px solid #c3d1eb; background: #edf2ff; color: #20395f; font-weight: 700; }
+  .printing-conduit-cable .conduit-cable-group { break-inside: avoid; page-break-inside: avoid; }
+  .printing-conduit-cable .conduit-cable-group tr { break-inside: avoid; page-break-inside: avoid; }
+  .printing-conduit-cable .conduit-cable-print .conduit-cable-spacer td { height: 8pt; padding: 0; border: 0; }
 }

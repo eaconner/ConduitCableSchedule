@@ -6,7 +6,7 @@
     "internalProjectNumber": "12345678.00",
     "revisionNumber": "0",
     "editorName": "J. Designer",
-    "scheduleStatus": "In progress",
+    "scheduleStatus": "In Progress",
     "cableTypes": [
       {
         "id": "15307af5-32b4-4fe4-9018-64280cddcc86",
@@ -678,6 +678,6 @@
       ]
     }
   ],
-  "exportedAt": "2026-11-25T22:01:31.868Z",
+  "exportedAt": "2026-11-26T14:31:35.168Z",
   "formatVersion": 1
 }

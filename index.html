@@ -47,11 +47,14 @@
               <button class="button button-secondary project-file-action" data-action="export-project" title="Save Project"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 12.5v3h13v-3M10 3.5v8m0 0 3-3m-3 3-3-3" /></svg>Save</button>
             </div>
             <div class="export-wrap">
-              <button class="button button-secondary export-trigger" id="export-trigger" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0 3-3m-3 3L7 9M4 13v3h12v-3" /></svg>Export schedules<span class="chevron">⌄</span></button>
+              <button class="button button-secondary export-trigger" id="export-trigger" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0 3-3m-3 3L7 9M4 13v3h12v-3" /></svg>Export<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.25 3.5 3.5 3.5-3.5" /></svg></button>
               <div class="export-menu" id="export-menu" hidden>
                 <button data-action="export-cables">Cable Schedule <span>CSV</span></button>
                 <button data-action="export-conduits">Conduit Schedule <span>CSV</span></button>
                 <button data-action="export-conduit-cable-csv">Conduit Cable Schedule <span>CSV</span></button>
+                <button data-action="print-conduit-cable">Conduit Cable Schedule <span>PRINT</span></button>
+                <button data-action="export-bom">Bill of Materials <span>CSV</span></button>
+                <button data-action="print-bom">Bill of Materials <span>PRINT</span></button>
               </div>
               <input id="backup-import-input" type="file" accept=".ccs,.json,application/json" hidden>
             </div>
@@ -61,6 +64,7 @@
         <section id="page-content" class="page-content" aria-live="polite"></section>
       </main>
     </div>
+    <div id="print-root" aria-hidden="true"></div>
     <div id="modal-root"></div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script>

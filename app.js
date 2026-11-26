@@ -1,4 +1,6 @@
 const STORAGE_KEY = "wireframe-project-v1";
+const THEME_PREFERENCE_KEY = "wireframe-theme-preference-v1";
+const THEME_PREFERENCES = ["system", "light", "dark"];
 const CONDUIT_SIZES = ['3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '4"'];
 const CABLE_TRAY_LOCATION_ID = "__wireframe_cable_tray__";
 const CABLE_TRAY_LOCATION_NAME = "Cable Tray";
@@ -10,6 +12,59 @@ const SCHEDULE_STATUSES = [
   "Issued for Construction",
   "Complete",
 ];
+const VERSION_HISTORY = [
+  {
+    version: "2026.11.00",
+    changes: ["Project started as a basic, functioning prototype for creating cable and conduit schedules."],
+  },
+  {
+    version: "2026.11.01",
+    changes: ["Added the ability to duplicate conduits while retaining their details and cable assignments."],
+  },
+  {
+    version: "2026.11.02",
+    changes: ["Added system-aware light and dark themes, with a user-selectable appearance setting."],
+  },
+  {
+    version: "2026.11.03",
+    changes: ["Improved the cable-length summary to total defined lengths and warn when some cable lengths are missing."],
+  },
+  {
+    version: "2026.11.04",
+    changes: [
+      "Wrapped long table headings to improve schedule and BOM readability.",
+      "Split Cable Materials manufacturer and spec number into separate columns, with Spec Type first.",
+    ],
+  },
+  {
+    version: "2026.11.05",
+    changes: ["Widened modal windows and prevented backdrop clicks or text selection from dismissing them."],
+  },
+  {
+    version: "2026.11.06",
+    changes: ["Updated BOM printing to respect the print dialog's orientation and removed an unwanted trailing blank page."],
+  },
+  {
+    version: "2026.11.07",
+    changes: ["Added CSV export for the Bill of Materials."],
+  },
+  {
+    version: "2026.11.08",
+    changes: ["Centered the Export menu chevron and moved BOM printing into the Export menu."],
+  },
+  {
+    version: "2026.11.09",
+    changes: ["Added a landscape Conduit Cable Schedule printout with project details and spacing between conduits."],
+  },
+  {
+    version: "2026.11.10",
+    changes: [
+      "Unified report print colors, highlighted conduit rows, and added multiline CCS column headings.",
+      "Kept CCS From/To values on one line, compacted other columns, and prevented conduit groups from splitting across pages.",
+    ],
+  },
+];
+let showAllVersionHistory = false;
 const emptyState = () => ({
   settings: {
     projectName: "",
@@ -84,8 +139,49 @@ let pendingLocationReturn = null;
 const pageContent = document.querySelector("#page-content");
 const modalRoot = document.querySelector("#modal-root");
 const toast = document.querySelector("#toast");
+const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+let themePreference = loadThemePreference();
+applyTheme();
+systemTheme.addEventListener("change", () => {
+  if (themePreference === "system") applyTheme();
+});
 let state = loadState();
 const numberCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+function loadThemePreference() {
+  try {
+    const preference = localStorage.getItem(THEME_PREFERENCE_KEY);
+    return THEME_PREFERENCES.includes(preference) ? preference : "system";
+  } catch (error) {
+    console.error("Could not load the appearance preference.", error);
+    showToast("Could not load appearance preference. Using the system theme.", true);
+    return "system";
+  }
+}
+
+function applyTheme() {
+  const isDark = themePreference === "dark" || (themePreference === "system" && systemTheme.matches);
+  document.documentElement.dataset.theme = isDark ? "dark" : "light";
+  document.querySelector('meta[name="theme-color"]').content = isDark ? "#141c27" : "#f5f7fa";
+}
+
+function saveThemePreference(preference) {
+  if (!THEME_PREFERENCES.includes(preference)) {
+    showToast("Choose system, light, or dark appearance.", true);
+    return false;
+  }
+  try {
+    localStorage.setItem(THEME_PREFERENCE_KEY, preference);
+  } catch (error) {
+    console.error("Could not save the appearance preference.", error);
+    showToast("Could not save appearance preference in this browser.", true);
+    return false;
+  }
+  themePreference = preference;
+  applyTheme();
+  showToast("Theme preference saved.");
+  return true;
+}
 
 function persist() {
   try {
@@ -193,7 +289,7 @@ function setPage(page) {
   document.querySelectorAll("[data-page]").forEach((item) => {
     item.classList.toggle("active", item.dataset.page === page && item.classList.contains("nav-item"));
   });
-  const titles = { dashboard: "Overview", cables: "Cable schedule", conduits: "Conduit schedule", bom: "Bill of Materials", settings: "Settings" };
+  const titles = { dashboard: "Overview", cables: "Cable Schedule", conduits: "Conduit Schedule", bom: "Bill of Materials", settings: "Settings" };
   document.querySelector("#breadcrumb-page").textContent = titles[page];
   renderPage();
 }
@@ -245,7 +341,9 @@ function cableType(id) {
 function renderDashboard() {
   const settings = state.settings;
   const cableLength = sumScheduledLengths(state.cables);
-  const hasUnknownCableLength = state.cables.some((cable) => !hasScheduledLength(cable.length));
+  const definedCableLengthCount = state.cables.filter((cable) => hasScheduledLength(cable.length)).length;
+  const missingCableLengthCount = state.cables.length - definedCableLengthCount;
+  const hasDefinedCableLength = definedCableLengthCount > 0;
   const recent = [...state.cables].slice(-5).reverse();
   return `
     <div class="page-heading">
@@ -253,12 +351,12 @@ function renderDashboard() {
       <div class="heading-actions"><button class="button button-secondary" data-page="settings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Project settings</button><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>New cable</button></div>
     </div>
     <div class="overview-grid">
-      <article class="metric-card"><div class="metric-top">Total cables <span class="metric-icon">⌁</span></div><div class="metric-value">${state.cables.length}</div><div class="metric-sub">Across the project schedule</div></article>
-      <article class="metric-card"><div class="metric-top">Total conduits <span class="metric-icon">▤</span></div><div class="metric-value">${state.conduits.length}</div><div class="metric-sub">With ${state.conduits.reduce((sum, conduit) => sum + conduit.cableIds.length, 0)} cable assignments</div></article>
-      <article class="metric-card"><div class="metric-top">Scheduled cable length <span class="metric-icon">↔</span></div><div class="metric-value">${hasUnknownCableLength ? `<span class="tag tbd">TBD</span>` : `${formatNumber(cableLength)}<span style="font-size:13px;font-weight:500;letter-spacing:0"> ft</span>`}</div><div class="metric-sub">${hasUnknownCableLength ? "One or more cable lengths not set" : "Combined cable footage"}</div></article>
+      <article class="metric-card"><div class="metric-top">Total Cables <span class="metric-icon">⌁</span></div><div class="metric-value">${state.cables.length}</div><div class="metric-sub">Across the project schedule</div></article>
+      <article class="metric-card"><div class="metric-top">Total Conduits <span class="metric-icon">▤</span></div><div class="metric-value">${state.conduits.length}</div><div class="metric-sub">With ${state.conduits.reduce((sum, conduit) => sum + conduit.cableIds.length, 0)} cable assignments</div></article>
+      <article class="metric-card"><div class="metric-top">Total Cable Length <span class="metric-icon">↔</span></div><div class="metric-value">${hasDefinedCableLength ? `${formatNumber(cableLength)}<span style="font-size:13px;font-weight:500;letter-spacing:0"> ft</span>` : "TBD"}</div><div class="metric-sub">${hasDefinedCableLength && missingCableLengthCount ? `<span class="metric-warning">⚠ ${missingCableLengthCount} cable ${missingCableLengthCount === 1 ? "length" : "lengths"} not set</span>` : hasDefinedCableLength ? "Combined cable footage" : "No cable lengths defined"}</div></article>
     </div>
     <section class="content-card" style="margin-bottom:18px">
-      <div class="card-heading"><div><h2>Project details</h2><p>Project identifiers and schedule ownership</p></div><button class="text-button" data-page="settings">Edit details →</button></div>
+      <div class="card-heading"><div><h2>Project Details</h2><p>Project identifiers and schedule ownership</p></div><button class="text-button" data-page="settings">Edit details →</button></div>
       <div class="project-details">
         ${detail("Client Name", settings.clientName)}
         ${detail("Client Project #", settings.clientProjectNumber)}
@@ -271,7 +369,7 @@ function renderDashboard() {
       </div>
     </section>
     <section class="content-card">
-      <div class="card-heading"><div><h2>Recently added cables</h2><p>Your latest cable schedule entries</p></div><button class="text-button" data-page="cables">View cable schedule →</button></div>
+      <div class="card-heading"><div><h2>Recently Added Cables</h2><p>Your latest cable schedule entries</p></div><button class="text-button" data-page="cables">View cable schedule →</button></div>
       ${recent.length ? `<div class="table-wrap"><table><thead><tr><th>Cable number</th><th>Type</th><th>Length</th><th>Route</th><th>Purpose</th></tr></thead><tbody>${recent.map((cable) => {
         const type = cableType(cable.cableTypeId);
         return `<tr><td class="primary-cell">${escapeHtml(cable.number)}</td><td>${escapeHtml(type?.specNumber || "—")}<span class="secondary-cell">${escapeHtml(type?.specType || "Cable type unavailable")}</span></td><td>${renderScheduledLength(cable.length)}</td><td>${escapeHtml(cableLocationName(cable.fromLocationId))} <span style="color:#a6aeba">→</span> ${escapeHtml(cableLocationName(cable.toLocationId))}</td><td>${escapeHtml(cable.purpose || "—")}</td></tr>`;
@@ -291,12 +389,12 @@ function renderCables() {
   const rows = sortByNumber(state.cables);
   return `
     <div class="page-heading">
-      <div><div class="eyebrow">SCHEDULES / CABLES</div><h1>Cable schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
-      <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add cable</button></div>
+      <div><div class="eyebrow">SCHEDULES / CABLES</div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
+      <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table><thead><tr><th>Cable number</th><th>Manufacturer / spec</th><th>Spec type</th><th>Length</th><th>From</th><th>To</th><th>Purpose</th><th>Conduit assignment</th><th></th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} cables</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon">⌁</div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Cable<br>number</th><th>Mfr. / Spec</th><th>Spec<br>Type</th><th>Cable<br>Length</th><th>Cable Routing From</th><th>Cable Routing To</th><th>Purpose</th><th>Conduit<br>Assignment</th><th></th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} cables</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon">⌁</div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
     </section>`;
 }
 
@@ -319,20 +417,20 @@ function renderConduits() {
   const rows = sortByNumber(state.conduits);
   return `
     <div class="page-heading">
-      <div><div class="eyebrow">SCHEDULES / CONDUITS</div><h1>Conduit schedule</h1><p>Document conduit routes and assign scheduled cables to each run.</p></div>
-      <div class="heading-actions"><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add conduit</button></div>
+      <div><div class="eyebrow">SCHEDULES / CONDUITS</div><h1>Conduit Schedule</h1><p>Document conduit routes and assign scheduled cables to each run.</p></div>
+      <div class="heading-actions"><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Conduit</button></div>
     </div>
     <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All conduits</h2><p>Review routing and cable assignments</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table><thead><tr><th>Conduit number</th><th>Size</th><th>Length</th><th>From</th><th>To</th><th>Assigned cables</th><th></th></tr></thead><tbody>${rows.map((conduit) => `<tr data-searchable="${escapeHtml([conduit.number, conduit.size, locationName(conduit.fromLocationId), locationName(conduit.toLocationId), ...conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number)].join(" ").toLowerCase())}">
+      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing and cable assignments</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit<br>number</th><th>Size</th><th>Conduit<br>Length</th><th>Conduit Routing From</th><th>Conduit Routing To</th><th>Assigned<br>cables</th><th></th></tr></thead><tbody>${rows.map((conduit) => `<tr data-searchable="${escapeHtml([conduit.number, conduit.size, locationName(conduit.fromLocationId), locationName(conduit.toLocationId), ...conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number)].join(" ").toLowerCase())}">
         <td class="primary-cell">${escapeHtml(conduit.number)}</td><td>${conduit.size ? `<span class="tag neutral">${escapeHtml(conduit.size)}</span>` : `<span class="tag tbd">TBD</span>`}</td><td>${renderScheduledLength(conduit.length)}</td><td>${escapeHtml(locationName(conduit.fromLocationId))}</td><td>${escapeHtml(locationName(conduit.toLocationId))}</td>
         <td>${conduit.cableIds.length ? `<span class="tag blue">${conduit.cableIds.length} ${conduit.cableIds.length === 1 ? "cable" : "cables"}</span><span class="secondary-cell">${escapeHtml(conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number || "Removed").join(", "))}</span>` : `<span class="tag neutral">Unassigned</span>`}</td>
-        <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}">✎</button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}">×</button></div></td>
+        <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}">✎</button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}" title="Duplicate conduit">⧉</button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}">×</button></div></td>
       </tr>`).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} conduits</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon">▤</div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first conduit</button></div>`}
     </section>`;
 }
 
-function renderBillOfMaterials() {
+function billOfMaterialsGroups() {
   const cableGroups = new Map();
   state.cables.forEach((cable) => {
     const key = cable.cableTypeId || "missing-cable-type";
@@ -352,13 +450,17 @@ function renderBillOfMaterials() {
     conduitGroups.get(key).conduits.push(conduit);
   });
   const usedConduitSizes = [...conduitGroups.values()].sort((a, b) => numberCollator.compare(a.size, b.size));
+  return { usedCableTypes, usedConduitSizes };
+}
+
+function renderBillOfMaterials() {
+  const { usedCableTypes, usedConduitSizes } = billOfMaterialsGroups();
   const settings = state.settings;
 
   return `
     <div class="bom-page">
       <div class="page-heading">
         <div><div class="eyebrow">PROJECT MATERIALS</div><h1>Bill of Materials</h1><p>Material totals summarized from the cable and conduit schedules for purchasing and field coordination.</p></div>
-        <div class="heading-actions print-hide"><button class="button button-primary" data-action="print-bom"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7V3h10v4M5 14H3V8h14v6h-2M5 11h10v6H5z" /></svg>Print bill of materials</button></div>
       </div>
       <section class="content-card bom-project-card">
         <div class="bom-project-title"><div><h2>${escapeHtml(projectName())}</h2><p>Bill of Materials</p></div><span class="bom-generated">Generated ${escapeHtml(new Date().toLocaleDateString())}</span></div>
@@ -371,14 +473,14 @@ function renderBillOfMaterials() {
         </div>
       </section>
       <section class="content-card bom-section">
-        <div class="card-heading"><div><h2>Cable materials</h2><p>Cable types used in this project</p></div></div>
-        ${usedCableTypes.length ? `<div class="table-wrap"><table><thead><tr><th>Manufacturer / spec number</th><th>Spec type</th><th>Total length (ft)</th></tr></thead><tbody>${usedCableTypes.map(({ type, cables }) => {
-          return `<tr><td class="primary-cell">${escapeHtml(type?.manufacturer || "Cable type unavailable")}<span class="secondary-cell">${escapeHtml(type?.specNumber || "Specification unavailable")}</span></td><td>${escapeHtml(type?.specType || "—")}</td><td>${renderLengthTotal(cables)}</td></tr>`;
+        <div class="card-heading"><div><h2>Cable Materials</h2><p>Cable types used in this project</p></div></div>
+        ${usedCableTypes.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Spec Type</th><th>Mfr.</th><th>Spec Number</th><th>Total Length<br>(ft)</th></tr></thead><tbody>${usedCableTypes.map(({ type, cables }) => {
+          return `<tr><td>${escapeHtml(type?.specType || "—")}</td><td class="primary-cell">${escapeHtml(type?.manufacturer || "Cable type unavailable")}</td><td>${escapeHtml(type?.specNumber || "Specification unavailable")}</td><td>${renderLengthTotal(cables)}</td></tr>`;
         }).join("")}</tbody></table></div>` : `<div class="bom-empty">No cable types are currently used in the cable schedule.</div>`}
       </section>
       <section class="content-card bom-section">
-        <div class="card-heading"><div><h2>Conduit materials</h2><p>Conduit sizes used in this project</p></div></div>
-        ${usedConduitSizes.length ? `<div class="table-wrap"><table><thead><tr><th>Conduit size</th><th>Total length (ft)</th></tr></thead><tbody>${usedConduitSizes.map(({ size, conduits }) => {
+        <div class="card-heading"><div><h2>Conduit Materials</h2><p>Conduit sizes used in this project</p></div></div>
+        ${usedConduitSizes.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit size</th><th>Total Length<br>(ft)</th></tr></thead><tbody>${usedConduitSizes.map(({ size, conduits }) => {
           return `<tr><td class="primary-cell">${size === "TBD" ? `<span class="tag tbd">TBD</span>` : escapeHtml(size)}</td><td>${renderLengthTotal(conduits)}</td></tr>`;
         }).join("")}</tbody></table></div>` : `<div class="bom-empty">No conduit sizes are currently used in the conduit schedule.</div>`}
       </section>
@@ -408,14 +510,45 @@ function renderSettings() {
         </form>
       </section>
       <section class="content-card settings-section">
-        <div class="card-heading section-title-row"><div><h2>Cable types <span class="tag neutral">${settings.cableTypes.length}</span></h2><p>Reusable manufacturer and specification details for cable entries</p></div><button class="button button-secondary" data-action="new-cable-type"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add cable type</button></div>
+        <div class="card-heading"><div><h2>Appearance</h2><p>Choose how Wireframe looks on this device</p></div></div>
+        <div class="settings-form">
+          <div class="field appearance-field">
+            <label for="theme-preference">Theme</label>
+            <select id="theme-preference" aria-describedby="theme-preference-description">
+              <option value="system" ${themePreference === "system" ? "selected" : ""}>Use system setting</option>
+              <option value="light" ${themePreference === "light" ? "selected" : ""}>Light</option>
+              <option value="dark" ${themePreference === "dark" ? "selected" : ""}>Dark</option>
+            </select>
+            <small id="theme-preference-description" class="section-description">System setting follows your device's appearance preference.</small>
+          </div>
+        </div>
+      </section>
+      <section class="content-card settings-section">
+        <div class="card-heading section-title-row"><div><h2>Cable Types <span class="tag neutral">${settings.cableTypes.length}</span></h2><p>Reusable manufacturer and specification details for cable entries</p></div><button class="button button-secondary" data-action="new-cable-type"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable Type</button></div>
         <div class="settings-list">${settings.cableTypes.length ? settings.cableTypes.map((type) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(type.manufacturer)} <span style="color:#a1a9b4;font-weight:400">·</span> ${escapeHtml(type.specNumber)}</strong><small>${escapeHtml(type.specType)} · ${formatNumber(type.diameter)} in OD · ${formatNumber(type.netWeight)} lbs/1000'${safeHttpUrl(type.url) ? ` · <a href="${escapeHtml(safeHttpUrl(type.url))}" target="_blank" rel="noopener noreferrer" style="color:#4268e8">Details ↗</a>` : ""}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-cable-type" data-id="${type.id}" aria-label="Edit ${escapeHtml(type.specNumber)}">✎</button><button class="icon-button delete" data-action="delete-cable-type" data-id="${type.id}" aria-label="Delete ${escapeHtml(type.specNumber)}">×</button></div></div>`).join("") : `<div class="settings-empty">No cable types yet. Add a specification to use it in the cable schedule.</div>`}</div>
       </section>
       <section class="content-card settings-section">
         <div class="card-heading section-title-row"><div><h2>Equipment <span class="tag neutral">${equipmentLocations.length}</span></h2><p>Equipment appears in the From and To dropdowns on schedules</p></div><button class="button button-secondary" data-action="new-location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Equipment</button></div>
         <div class="settings-list">${equipmentLocations.length ? equipmentLocations.map((location) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(locationDisplayName(location))}</strong></div><div class="table-actions"><button class="icon-button" data-action="edit-location" data-id="${location.id}" aria-label="Edit ${escapeHtml(location.name)}">✎</button><button class="icon-button delete" data-action="delete-location" data-id="${location.id}" aria-label="Delete ${escapeHtml(location.name)}">×</button></div></div>`).join("") : `<div class="settings-empty">No equipment yet. Add equipment to use it on schedules.</div>`}</div>
       </section>
+      <section class="content-card settings-section">
+        <div class="card-heading"><div><h2>Version History</h2><p>Updates and changes made to Wireframe</p></div></div>
+        <div id="version-history-content">${renderVersionHistory()}</div>
+      </section>
     </div>`;
+}
+
+function renderVersionHistory() {
+  const newestFirst = [...VERSION_HISTORY].reverse();
+  const visibleVersions = showAllVersionHistory ? newestFirst : newestFirst.slice(0, 4);
+  return `
+    <ol class="version-history" id="version-history-list">${visibleVersions.map(({ version, changes }) => `
+      <li class="version-entry">
+        <span class="tag blue">v${escapeHtml(version)}</span>
+        <ul class="version-changes">${changes.map((change) => `<li>${escapeHtml(change)}</li>`).join("")}</ul>
+      </li>`).join("")}
+    </ol>
+    ${VERSION_HISTORY.length > 4 ? `<button type="button" class="text-button version-history-toggle" data-action="toggle-version-history" aria-controls="version-history-list" aria-expanded="${showAllVersionHistory}">${showAllVersionHistory ? "Show Less" : "Show More"}</button>` : ""}`;
 }
 
 function settingsField(name, label, value, placeholder) {
@@ -434,14 +567,11 @@ function options(items, selectedId) {
 }
 
 function openModal(title, subtitle, formKind, fields, submitLabel = "Save") {
-  modalRoot.innerHTML = `<div class="modal-backdrop" data-action="backdrop-close"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div><button type="button" class="modal-close" data-action="close-modal" aria-label="Close dialog">×</button></div>
+  modalRoot.innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+    <div class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div></div>
     <form class="modal-form" data-form="${formKind}">${fields}<div class="modal-actions"><button type="button" class="button button-secondary" data-action="close-modal">Cancel</button><button type="submit" class="button button-primary">${escapeHtml(submitLabel)}</button></div></form>
   </section></div>`;
-  modalRoot.querySelector(".modal-backdrop").addEventListener("click", (event) => {
-    if (event.target.classList.contains("modal-backdrop")) closeModal();
-  });
-  modalRoot.querySelector(".modal-close").focus();
+  modalRoot.querySelector(".modal").focus();
 }
 
 function closeModal() {
@@ -538,11 +668,11 @@ function openCableForm(id, draft = {}, modalOptions = {}) {
     ${routeLocationField("toLocationId", "To location", draft.toLocationId || cable?.toLocationId, true)}
     ${textField("purpose", "Cable purpose", draft.purpose ?? cable?.purpose ?? "", "e.g. Feeder, control, instrumentation", { required: false, full: true })}
   </div>`;
-  openModal(modalOptions.title || (cable ? "Edit cable" : "Add cable"), modalOptions.subtitle || "Enter the cable schedule details and route.", cable ? `edit-cable:${id}` : "new-cable", fields, modalOptions.submitLabel || (cable ? "Save changes" : "Add cable"));
+  openModal(modalOptions.title || (cable ? "Edit cable" : "Add Cable"), modalOptions.subtitle || "Enter the cable schedule details and route.", cable ? `edit-cable:${id}` : "new-cable", fields, modalOptions.submitLabel || (cable ? "Save changes" : "Add Cable"));
   if (needsLocations) modalRoot.querySelector('[type="submit"]').disabled = true;
 }
 
-function openConduitForm(id, draft = {}) {
+function openConduitForm(id, draft = {}, modalOptions = {}) {
   const conduit = state.conduits.find((item) => item.id === id);
   const needsLocations = !state.settings.locations.length;
   const setupNote = needsLocations ? `<p class="form-note">Add at least one location using New location below or in <a href="#" data-page="settings">Settings</a>.</p>` : "";
@@ -567,7 +697,7 @@ function openConduitForm(id, draft = {}) {
     ${routeLocationField("toLocationId", "To location", draft.toLocationId || conduit?.toLocationId, false, true, true)}
     ${cableOptions}
   </div>`;
-  openModal(conduit ? "Edit conduit" : "Add conduit", "Define the conduit route and cable assignments.", conduit ? `edit-conduit:${id}` : "new-conduit", fields, conduit ? "Save changes" : "Add conduit");
+  openModal(modalOptions.title || (conduit ? "Edit Conduit" : "Add Conduit"), modalOptions.subtitle || "Define the conduit route and cable assignments.", conduit ? `edit-conduit:${id}` : "new-conduit", fields, modalOptions.submitLabel || (conduit ? "Save changes" : "Add Conduit"));
   updateConduitCableOptions(modalRoot.querySelector(".modal-form"));
   if (needsLocations) modalRoot.querySelector('[type="submit"]').disabled = true;
 }
@@ -624,7 +754,7 @@ function openCableTypeForm(id, returnToCableDraft = null) {
     ${textField("netWeight", "Net weight (lbs/1000')", type?.netWeight ?? "", "e.g. 1120", { type: "number", min: "0", step: "0.01" })}
     ${textField("url", "URL to details", type?.url || "", "https://...", { type: "url", required: false, full: true, optional: true })}
   </div>`;
-  openModal(type ? "Edit cable type" : "Add cable type", "Save a reusable cable specification for this project.", type ? `edit-cable-type:${id}` : returnToCableDraft ? "new-cable-type-inline" : "new-cable-type", fields, type ? "Save changes" : "Add cable type");
+  openModal(type ? "Edit Cable Type" : "Add Cable Type", "Save a reusable cable specification for this project.", type ? `edit-cable-type:${id}` : returnToCableDraft ? "new-cable-type-inline" : "new-cable-type", fields, type ? "Save changes" : "Add Cable Type");
   if (returnToCableDraft) {
     pendingCableDraft = returnToCableDraft;
     modalRoot.querySelectorAll('[data-action="close-modal"]').forEach((button) => {
@@ -636,7 +766,7 @@ function openCableTypeForm(id, returnToCableDraft = null) {
 function openLocationForm(id, returnContext = null) {
   const location = state.settings.locations.find((item) => item.id === id);
   const fields = `<div class="form-grid">${textField("name", "Equipment Name", location?.name || "", "e.g. MCC-01", { full: true })}${textField("description", "Equipment ID", location?.description || "", "e.g. EQ-001", { required: false, full: true, optional: true })}</div>`;
-  openModal(location ? "Edit location" : "Add location", "Locations are available as cable and conduit route endpoints.", location ? `edit-location:${id}` : returnContext ? "new-location-inline" : "new-location", fields, location ? "Save changes" : "Add location");
+  openModal(location ? "Edit Equipment" : "Add Equipment", "Equipment locations are available as cable and conduit route endpoints.", location ? `edit-location:${id}` : returnContext ? "new-location-inline" : "new-location", fields, location ? "Save changes" : "Add Equipment");
   if (returnContext) {
     pendingLocationReturn = returnContext;
     modalRoot.querySelectorAll('[data-action="close-modal"]').forEach((button) => {
@@ -790,6 +920,11 @@ function returnToRoute(returnContext) {
 
 function handleAction(action, id, fieldName) {
   if (action === "close-modal") return closeModal();
+  if (action === "toggle-version-history") {
+    showAllVersionHistory = !showAllVersionHistory;
+    document.querySelector("#version-history-content").innerHTML = renderVersionHistory();
+    return;
+  }
   if (action === "return-to-cable") {
     const draft = pendingCableDraft;
     pendingCableDraft = null;
@@ -819,6 +954,15 @@ function handleAction(action, id, fieldName) {
   }
   if (action === "new-conduit") return openConduitForm();
   if (action === "edit-conduit") return openConduitForm(id);
+  if (action === "duplicate-conduit") {
+    const conduit = state.conduits.find((item) => item.id === id);
+    if (!conduit) return;
+    return openConduitForm(undefined, { ...conduit, number: "", numberPrefix: numberPrefixFrom(conduit.number) }, {
+      title: "Duplicate conduit",
+      subtitle: `Copy of ${conduit.number}. Enter a new conduit number and adjust the details before saving.`,
+      submitLabel: "Create duplicate",
+    });
+  }
   if (action === "add-route-location") {
     const form = modalRoot.querySelector(".modal-form");
     const formData = new FormData(form);
@@ -855,13 +999,87 @@ function handleAction(action, id, fieldName) {
   if (action === "export-cables") exportCsv(projectFileName("csv", "Cable Schedule"), cableExportRows());
   if (action === "export-conduits") exportCsv(projectFileName("csv", "Conduit Schedule"), conduitExportRows());
   if (action === "export-conduit-cable-csv") exportConduitCableCsv();
+  if (action === "print-conduit-cable") printConduitCableSchedule();
+  if (action === "export-bom") exportCsv(projectFileName("csv", "Bill of Materials"), billOfMaterialsExportRows());
   if (action === "export-project") exportJson();
   if (action === "import-project") {
     document.querySelector("#export-menu").hidden = true;
     document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
     document.querySelector("#backup-import-input").click();
   }
-  if (action === "print-bom") window.print();
+  if (action === "print-bom") {
+    document.querySelector("#export-menu").hidden = true;
+    document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
+    setPage("bom");
+    window.print();
+  }
+}
+
+function renderConduitCablePrint() {
+  const rows = formattedConduitCableRows();
+  const [headers, ...scheduleRows] = rows;
+  const settings = state.settings;
+  const conduitGroups = [];
+  const headerLines = {
+    "CONDUIT #": ["CONDUIT", "#"],
+    "CONDUIT SIZE": ["CONDUIT", "SIZE"],
+    "CONDUIT / CABLE LENGTH": ["CONDUIT / CABLE", "LENGTH"],
+    "CABLE NUMBER": ["CABLE", "NUMBER"],
+    "CABLE MANUFACTURER": ["CABLE", "MANUFACTURER"],
+    "CABLE QTY": ["CABLE", "QTY"],
+    "CABLE TYPE": ["CABLE", "TYPE"],
+    "CONDUIT / CABLE ROUTING FROM": ["CONDUIT / CABLE ROUTING", "FROM"],
+    "CONDUIT / CABLE ROUTING TO": ["CONDUIT / CABLE ROUTING", "TO"],
+  };
+  let currentGroup = [];
+  scheduleRows.forEach((row) => {
+    if (row === null) {
+      if (currentGroup.length) conduitGroups.push(currentGroup);
+      currentGroup = [];
+    } else {
+      currentGroup.push(row);
+    }
+  });
+  if (currentGroup.length) conduitGroups.push(currentGroup);
+
+  return `
+    <main class="conduit-cable-print">
+      <header class="conduit-cable-print-header">
+        <div class="conduit-cable-print-title">
+          <div><div class="eyebrow">PROJECT SCHEDULE</div><h1>Conduit Cable Schedule</h1></div>
+          <span>Generated ${escapeHtml(new Date().toLocaleDateString())}</span>
+        </div>
+        <h2>${escapeHtml(projectName())}</h2>
+        <div class="conduit-cable-print-project-meta">
+          ${detail("Client", settings.clientName)}
+          ${detail("Client Project #", settings.clientProjectNumber)}
+          ${detail("Internal Project #", settings.internalProjectNumber)}
+          ${detail("Revision", settings.revisionNumber)}
+          ${detail("Designer", settings.editorName)}
+        </div>
+      </header>
+      <table>
+        <thead><tr>${headers.map((header) => `<th>${(headerLines[header] || [header]).map(escapeHtml).join("<br>")}</th>`).join("")}</tr></thead>
+        ${conduitGroups.map((group, index) => `
+          <tbody class="conduit-cable-group">
+            ${group.map((row) => `<tr class="${row[0] !== null ? "conduit-cable-group-row" : "conduit-cable-entry-row"}">${row.map((cell) => `<td>${escapeHtml(cell ?? "")}</td>`).join("")}</tr>`).join("")}
+            ${index < conduitGroups.length - 1 ? `<tr class="conduit-cable-spacer"><td colspan="${headers.length}"></td></tr>` : ""}
+          </tbody>`).join("")}
+      </table>
+    </main>`;
+}
+
+function printConduitCableSchedule() {
+  const printRoot = document.querySelector("#print-root");
+  document.querySelector("#export-menu").hidden = true;
+  document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
+  printRoot.innerHTML = renderConduitCablePrint();
+  document.body.classList.add("printing-conduit-cable");
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("printing-conduit-cable");
+    printRoot.replaceChildren();
+  }, { once: true });
+  window.print();
 }
 
 function cableExportRows() {
@@ -878,6 +1096,31 @@ function conduitExportRows() {
   return [
     ["Conduit Number", "Size", "Conduit Length (ft)", "From Location", "To Location", "Assigned Cable Numbers"],
     ...sortByNumber(state.conduits).map((conduit) => [conduit.number, conduit.size, conduit.length, locationName(conduit.fromLocationId), locationName(conduit.toLocationId), conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number).filter(Boolean).join("; ")]),
+  ];
+}
+
+function billOfMaterialsExportRows() {
+  const { usedCableTypes, usedConduitSizes } = billOfMaterialsGroups();
+  return [
+    ["Material Type", "Spec Type", "Manufacturer", "Spec Number", "Conduit Size", "Total Known Length (ft)", "Missing Length Count"],
+    ...usedCableTypes.map(({ type, cables }) => [
+      "Cable",
+      type?.specType || "—",
+      type?.manufacturer || "Cable type unavailable",
+      type?.specNumber || "Specification unavailable",
+      "",
+      sumScheduledLengths(cables),
+      cables.filter((cable) => !hasScheduledLength(cable.length)).length,
+    ]),
+    ...usedConduitSizes.map(({ size, conduits }) => [
+      "Conduit",
+      "",
+      "",
+      "",
+      size,
+      sumScheduledLengths(conduits),
+      conduits.filter((conduit) => !hasScheduledLength(conduit.length)).length,
+    ]),
   ];
 }
 
@@ -941,10 +1184,13 @@ function conduitCableExportRows() {
 }
 
 function exportConduitCableCsv() {
-  const rows = conduitCableExportRows().map((row, rowIndex) =>
+  exportCsv(projectFileName("csv", "Conduit Cable Schedule"), formattedConduitCableRows());
+}
+
+function formattedConduitCableRows() {
+  return conduitCableExportRows().map((row, rowIndex) =>
     row === null ? null : row.map((cell, columnIndex) =>
       typeof cell === "string" && !(rowIndex > 0 && columnIndex === 3) ? cell.toUpperCase() : cell));
-  exportCsv(projectFileName("csv", "Conduit Cable Schedule"), rows);
 }
 
 function exportCsv(filename, rows) {
@@ -1084,7 +1330,6 @@ document.addEventListener("click", (event) => {
   const actionElement = event.target.closest("[data-action]");
   if (actionElement) {
     const action = actionElement.dataset.action;
-    if (action === "backdrop-close") return;
     if (action === "export-trigger") return;
     handleAction(action, actionElement.dataset.id, actionElement.dataset.field);
   }
@@ -1102,6 +1347,10 @@ sidebarToggle.addEventListener("click", () => {
 
 document.addEventListener("submit", handleSubmit);
 document.addEventListener("change", (event) => {
+  if (event.target.id === "theme-preference") {
+    if (!saveThemePreference(event.target.value)) event.target.value = themePreference;
+    return;
+  }
   const form = event.target.closest(".modal-form");
   if (isConduitForm(form) && ["fromLocationId", "toLocationId", "cableIds"].includes(event.target.name)) {
     updateConduitCableOptions(form);
