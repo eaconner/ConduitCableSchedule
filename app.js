@@ -1166,11 +1166,27 @@ function renderVoltageDrop() {
 
   const paginatedRows = paginateRows(rows, "voltageDrop");
 
+  // Calculate voltage drop stats
+  const maxVoltageDropPercent = Number(state.settings.maxVoltageDropPercent);
+  let rowsWithErrors = 0;
+  let rowsPassing = 0;
+  rows.forEach((cables) => {
+    const row = voltageDropRowData(cables);
+    if (row.voltageDrop.percent === null) {
+      rowsWithErrors++;
+    } else if (voltageDropStatusClass(row.voltageDrop.percent, maxVoltageDropPercent) === "fill-fail") {
+      rowsWithErrors++;
+    } else if (voltageDropStatusClass(row.voltageDrop.percent, maxVoltageDropPercent) === "fill-pass") {
+      rowsPassing++;
+    }
+  });
+
   return `
     <div class="page-heading">
       <div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
+    ${totalRows ? `<div class="schedule-info"><strong>${rowsWithErrors} ${rowsWithErrors === 1 ? "row with errors" : "rows with errors"}</strong><span class="divider"></span><strong>${rowsPassing} ${rowsPassing === 1 ? "row passing" : "rows passing"}</strong><span class="divider"></span><span>${maxVoltageDropPercent}% voltage drop limit</span></div>` : ""}
     <section class="content-card">
       ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Spec Type", "specType")}${headerCell("Cable Material", "material")}${headerCell("Voltage", "voltage")}${headerCell("Load<br>(Amps)", "load")}${headerCell("Cable<br>Ampacity", "ampacity")}${headerCell("Ampacity<br>Overhead", "overhead")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Cable<br>Rating", "rating")}${headerCell("Phase", "phase")}${headerCell("Voltage<br>Drop %", "voltageDrop")}<th>Actions</th></tr></thead><tbody>${paginatedRows.map(renderVoltageDropRow).join("")}</tbody></table></div>${renderPaginationControls("voltageDrop", totalRows, paginatedRows.length)}` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
     </section>`;
