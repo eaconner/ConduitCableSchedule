@@ -1,5 +1,10 @@
 # <img src="icons/brand-icon.svg" alt="Wireframe Icon" width="32" height="32" /> Wireframe — Cable & Conduit Schedules
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Deploy to GitHub Pages](https://github.com/eaconner/ConduitCableSchedule/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/eaconner/ConduitCableSchedule/actions/workflows/deploy-pages.yml)
+[![Build macOS Desktop App](https://github.com/eaconner/ConduitCableSchedule/actions/workflows/build-desktop-macos.yml/badge.svg)](https://github.com/eaconner/ConduitCableSchedule/actions/workflows/build-desktop-macos.yml)
+[![Build Windows Desktop App](https://github.com/eaconner/ConduitCableSchedule/actions/workflows/build-desktop-windows.yml/badge.svg)](https://github.com/eaconner/ConduitCableSchedule/actions/workflows/build-desktop-windows.yml)
+
 Wireframe is a lightweight browser app for creating and managing electrical cable and conduit schedules, voltage drop calculations, conduit fill calculation, reviewing a bill of materials, and printing project reports.
 
 ## Features
