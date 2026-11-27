@@ -5,30 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f5f7fa" />
     <title>Wireframe — Cable & Conduit Schedules</title>
-    <link rel="stylesheet" href="styles.css?v=2026.11.15" />
+    <link rel="stylesheet" href="styles.css?v=2026.11.27-brand" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar" id="app-sidebar">
         <a class="brand" href="#" data-page="dashboard" aria-label="Wireframe home">
-          <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h13a5 5 0 0 1 0 10H9a5 5 0 0 0 0 10h18M5 4v8m22 12v8" /></svg></span>
+          <span class="brand-mark"><span class="mdi mdi-cable-data" aria-hidden="true"></span></span>
           <span class="brand-name">wireframe<span>Engineering Schedules</span></span>
         </a>
         <div class="sidebar-workspace">
           <div class="workspace-label">WORKSPACE</div>
           <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Minimize sidebar" aria-controls="app-sidebar" aria-expanded="true" data-tooltip="Minimize sidebar">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M4 3v14" /></svg>
+            <span class="mdi mdi-dock-left" aria-hidden="true"></span>
           </button>
         </div>
         <nav class="main-nav" aria-label="Main navigation">
-          <button class="nav-item active" data-page="dashboard" data-tooltip="Overview"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m3.5 8.5 6.5-5 6.5 5M5.5 7.5v9h9v-9M8.5 16.5v-5h3v5" /></svg></span>Overview</button>
-          <button class="nav-item" data-page="cables" data-tooltip="Cable schedule"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></span>Cable Schedule<span class="nav-count" id="cable-nav-count">0</span></button>
-          <button class="nav-item" data-page="conduits" data-tooltip="Conduit schedule"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4.5 3v8a4.5 4.5 0 0 0 4.5 4.5h7M2.5 3h4M13 13.5h4" /></svg></span>Conduit Schedule<span class="nav-count" id="conduit-nav-count">0</span></button>
-          <button class="nav-item" data-page="voltage-drop" data-tooltip="Voltage drop"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></span>Voltage Drop</button>
-          <button class="nav-item" data-page="bom" data-tooltip="Bill of Materials"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="13" rx="1.5" /><path d="M8 4V2.5h4V4M7 8h6M7 11h6M7 14h4" /></svg></span>Bill of Materials</button>
+          <button class="nav-item active" data-page="dashboard" data-tooltip="Overview"><span class="nav-icon mdi mdi-home-outline" aria-hidden="true"></span>Overview</button>
+          <button class="nav-item" data-page="cables" data-tooltip="Cable schedule"><span class="nav-icon mdi mdi-cable-data" aria-hidden="true"></span>Cable Schedule<span class="nav-count" id="cable-nav-count">0</span></button>
+          <button class="nav-item" data-page="conduits" data-tooltip="Conduit schedule"><span class="nav-icon mdi mdi-pipe" aria-hidden="true"></span>Conduit Schedule<span class="nav-count" id="conduit-nav-count">0</span></button>
+          <button class="nav-item" data-page="voltage-drop" data-tooltip="Voltage drop"><span class="nav-icon mdi mdi-chart-bar" aria-hidden="true"></span>Voltage Drop</button>
+          <button class="nav-item" data-page="bom" data-tooltip="Bill of Materials"><span class="nav-icon mdi mdi-clipboard-list-outline" aria-hidden="true"></span>Bill of Materials</button>
         </nav>
         <div class="sidebar-bottom">
-          <button class="nav-item settings-link" data-page="settings" data-tooltip="Settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" /><circle cx="7" cy="5" r="1.8" /><circle cx="12" cy="10" r="1.8" /><circle cx="9" cy="15" r="1.8" /></svg></span>Settings</button>
+          <button class="nav-item settings-link" data-page="settings" data-tooltip="Settings"><span class="nav-icon mdi mdi-tune-variant" aria-hidden="true"></span>Settings</button>
           <div class="sidebar-footer">WIREFRAME <span>·</span> <span id="sidebar-version"></span></div>
         </div>
       </aside>
@@ -38,12 +38,12 @@
           <div class="breadcrumbs"><span id="breadcrumb-project">New Project</span><span class="crumb-chevron">/</span><strong id="breadcrumb-page">Overview</strong></div>
           <div class="topbar-actions">
             <div class="project-file-actions" aria-label="Project file actions">
-              <button class="button button-secondary project-file-action" data-action="new-project" title="New Project"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>New</button>
-              <button class="button button-secondary project-file-action" data-action="import-project" title="Open Project"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3.5h7l4 4v9H4z" /><path d="M11 3.5v4h4M10 15V9m0 0-2.5 2.5M10 9l2.5 2.5" /></svg>Open</button>
-              <button class="button button-secondary project-file-action" data-action="export-project" title="Save Project"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 12.5v3h13v-3M10 3.5v8m0 0 3-3m-3 3-3-3" /></svg>Save</button>
+              <button class="button button-secondary project-file-action" data-action="new-project" title="New Project"><span class="mdi mdi-plus" aria-hidden="true"></span>New</button>
+              <button class="button button-secondary project-file-action" data-action="import-project" title="Open Project"><span class="mdi mdi-folder-open-outline" aria-hidden="true"></span>Open</button>
+              <button class="button button-secondary project-file-action" data-action="export-project" title="Save Project"><span class="mdi mdi-content-save-outline" aria-hidden="true"></span>Save</button>
             </div>
             <div class="export-wrap">
-              <button class="button button-secondary export-trigger" id="export-trigger" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0 3-3m-3 3L7 9M4 13v3h12v-3" /></svg>Export<svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.25 3.5 3.5 3.5-3.5" /></svg></button>
+              <button class="button button-secondary export-trigger" id="export-trigger" aria-expanded="false"><span class="mdi mdi-download" aria-hidden="true"></span>Export<span class="mdi mdi-chevron-down chevron" aria-hidden="true"></span></button>
               <div class="export-menu" id="export-menu" hidden>
                 <button data-action="export-cables">Cable Schedule <span>CSV</span></button>
                 <button data-action="export-conduits">Conduit Schedule <span>CSV</span></button>
@@ -68,6 +68,6 @@
     <script src="data/raceway-data.js?v=2026.11.15"></script>
     <script src="data/ampacity-data.js?v=2026.11.15"></script>
     <script src="data/voltage-drop-data.js?v=2026.11.15"></script>
-    <script src="app.js?v=2026.11.15"></script>
+    <script src="app.js?v=2026.11.27-icons"></script>
   </body>
 </html>

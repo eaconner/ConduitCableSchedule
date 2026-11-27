@@ -22,12 +22,33 @@
 body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); font-size: 14px; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
+.mdi { display: inline-block; flex: none; width: 17px; height: 17px; background-color: currentColor; mask: var(--mdi-icon) center / contain no-repeat; }
+/* Material Design Icons 7.4.47 by Pictogrammers; see icons/interface/MDI-LICENSE. */
+.mdi-home-outline { --mdi-icon: url("icons/interface/mdi-home-outline.svg"); }
+.mdi-cable-data { --mdi-icon: url("icons/interface/mdi-cable-data.svg"); }
+.mdi-pipe { --mdi-icon: url("icons/interface/mdi-pipe.svg"); }
+.mdi-chart-bar { --mdi-icon: url("icons/interface/mdi-chart-bar.svg"); }
+.mdi-clipboard-list-outline { --mdi-icon: url("icons/interface/mdi-clipboard-list-outline.svg"); }
+.mdi-tune-variant { --mdi-icon: url("icons/interface/mdi-tune-variant.svg"); }
+.mdi-dock-left { --mdi-icon: url("icons/interface/mdi-dock-left.svg"); }
+.mdi-plus { --mdi-icon: url("icons/interface/mdi-plus.svg"); }
+.mdi-folder-open-outline { --mdi-icon: url("icons/interface/mdi-folder-open-outline.svg"); }
+.mdi-content-save-outline { --mdi-icon: url("icons/interface/mdi-content-save-outline.svg"); }
+.mdi-download { --mdi-icon: url("icons/interface/mdi-download.svg"); }
+.mdi-chevron-down { --mdi-icon: url("icons/interface/mdi-chevron-down.svg"); }
+.mdi-pencil-outline { --mdi-icon: url("icons/interface/mdi-pencil-outline.svg"); }
+.mdi-content-copy { --mdi-icon: url("icons/interface/mdi-content-copy.svg"); }
+.mdi-delete-outline { --mdi-icon: url("icons/interface/mdi-delete-outline.svg"); }
+.mdi-magnify { --mdi-icon: url("icons/interface/mdi-magnify.svg"); }
+.mdi-ruler { --mdi-icon: url("icons/interface/mdi-ruler.svg"); }
+.mdi-alert-outline { --mdi-icon: url("icons/interface/mdi-alert-outline.svg"); }
+.mdi-open-in-new { --mdi-icon: url("icons/interface/mdi-open-in-new.svg"); }
 .app-shell { display: flex; min-height: 100vh; }
 
 .sidebar { position: sticky; top: 0; align-self: flex-start; width: 248px; height: 100vh; height: 100dvh; flex: 0 0 248px; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; padding: 27px 16px 18px; background: #fff; border-right: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 11px; margin: 0 0 43px 8px; color: var(--ink); text-decoration: none; }
 .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--navy); }
-.brand-mark svg { width: 23px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+.brand-mark .mdi { width: 23px; height: 23px; color: #fff; }
 .brand-name { font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -.7px; line-height: 1.05; }
 .brand-name span { display: block; margin-top: 4px; color: #97a0ad; font: 600 8px "Avenir Next", "Segoe UI", sans-serif; letter-spacing: 1.05px; text-transform: uppercase; }
 .workspace-label { padding: 0 12px; color: #a0a9b5; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; }
@@ -36,7 +57,6 @@ button { cursor: pointer; }
 .nav-item:hover { background: #f6f7fa; color: var(--ink); }
 .nav-item.active { background: #eff3ff; color: #385bd1; font-weight: 700; }
 .nav-icon { display: inline-flex; flex: 0 0 18px; align-items: center; justify-content: center; width: 18px; height: 18px; color: #8b95a4; }
-.nav-icon svg { display: block; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .nav-item.active .nav-icon { color: #4268e8; }
 .nav-count { margin-left: auto; min-width: 22px; border-radius: 5px; padding: 2px 6px; background: #f0f2f5; color: #768193; font-size: 11px; text-align: center; }
 .nav-item.active .nav-count { background: #dfe7ff; color: #4268e8; }
@@ -47,12 +67,12 @@ button { cursor: pointer; }
 .sidebar-workspace { display: flex; align-items: center; justify-content: space-between; }
 .sidebar-toggle { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #798596; }
 .sidebar-toggle:hover { border-color: var(--line); background: #f6f7fa; color: var(--ink); }
-.sidebar-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }
+.sidebar-toggle .mdi { width: 16px; height: 16px; transition: transform .18s ease; }
 .sidebar-collapsed .sidebar { z-index: 10; width: 72px; flex-basis: 72px; align-items: center; padding: 18px 8px 12px; }
 .sidebar-collapsed .brand { justify-content: center; margin: 0 0 22px; }
 .sidebar-collapsed .brand-name, .sidebar-collapsed .workspace-label, .sidebar-collapsed .nav-count, .sidebar-collapsed .sidebar-footer { display: none; }
 .sidebar-collapsed .sidebar-workspace { justify-content: center; }
-.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+.sidebar-collapsed .sidebar-toggle .mdi { transform: rotate(180deg); }
 .sidebar-collapsed .main-nav, .sidebar-collapsed .sidebar-bottom { width: 100%; }
 .sidebar-collapsed .nav-item { justify-content: center; gap: 0; padding: 12px 4px; font-size: 0; }
 .sidebar-collapsed .settings-link { margin-bottom: 12px; }
@@ -69,12 +89,11 @@ button { cursor: pointer; }
 .button-primary:hover { background: var(--blue-dark); }
 .button-secondary { border-color: #e3e7ed; background: #fff; color: #4c596b; }
 .button-secondary:hover { border-color: #cdd4df; background: #fafbfc; }
-.button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .project-file-actions { display: flex; align-items: center; gap: 6px; }
 .project-file-action { min-width: 82px; }
 .export-wrap { position: relative; }
 .chevron { flex: 0 0 12px; margin-left: 2px; color: #929cab; }
-.button svg.chevron { width: 12px; height: 12px; }
+.button .chevron { width: 12px; height: 12px; }
 .export-menu { position: absolute; z-index: 4; top: calc(100% + 8px); right: 0; width: 213px; padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 10px 32px #17202f1a; }
 .export-menu button { display: flex; width: 100%; justify-content: space-between; border: 0; border-radius: 5px; padding: 10px; background: transparent; color: #374254; font-size: 12px; text-align: left; }
 .export-menu button:hover { background: #f5f7fa; }
@@ -92,11 +111,13 @@ h1 { margin-bottom: 7px; font-family: "Avenir Next", "Segoe UI", sans-serif; fon
 .metric-card { position: relative; min-height: 125px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; padding: 19px 20px; background: #fff; }
 .metric-top { display: flex; align-items: center; justify-content: space-between; color: #7d8898; font-size: 11px; font-weight: 600; }
 .metric-icon { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 8px; background: #f0f3ff; color: #4268e8; font-size: 16px; }
+.metric-icon .mdi { width: 18px; height: 18px; }
 .metric-card:nth-child(2) .metric-icon { background: #eaf6f2; color: #239570; }
 .metric-card:nth-child(3) .metric-icon { background: #fff4e5; color: #c18429; }
 .metric-value { margin-top: 7px; font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 27px; font-weight: 700; letter-spacing: -.7px; }
 .metric-sub { margin-top: 2px; color: #a0a8b3; font-size: 10px; }
 .metric-warning { color: #946013; font-weight: 700; }
+.metric-warning .mdi { width: 12px; height: 12px; vertical-align: -2px; }
 .content-card { border: 1px solid var(--line); border-radius: 9px; background: #fff; }
 .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
 .card-heading h2 { margin: 0; font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 14px; font-weight: 700; }
@@ -131,7 +152,7 @@ tbody tr:hover { background: #fcfcfd; }
 .length-tbd-text { color: #c84743; font-weight: 700; }
 .empty-state { padding: 42px 20px; text-align: center; }
 .empty-icon { display: grid; place-items: center; width: 43px; height: 43px; margin: 0 auto 13px; border-radius: 12px; background: #f1f4fb; color: #6277a7; font-size: 21px; }
-.empty-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.empty-icon .mdi { width: 24px; height: 24px; }
 .empty-state h3 { margin-bottom: 6px; font-size: 13px; }
 .empty-state p { max-width: 360px; margin: 0 auto 16px; color: #8a94a2; font-size: 11px; line-height: 1.6; }
 .schedule-info { display: flex; align-items: center; gap: 8px; margin: -7px 0 17px; color: #818c9c; font-size: 11px; }
@@ -141,7 +162,8 @@ tbody tr:hover { background: #fcfcfd; }
 .search-box { position: relative; }
 .search-box input { width: 210px; height: 37px; border: 1px solid #e3e7ed; border-radius: 6px; outline: 0; padding: 0 12px 0 34px; background: #fff; color: var(--ink); font-size: 11px; }
 .search-box input:focus, .field input:focus, .field select:focus, .field textarea:focus { border-color: #92a7f3; box-shadow: 0 0 0 3px #4268e81a; }
-.search-icon { position: absolute; top: 10px; left: 12px; color: #9aa3af; font-size: 14px; }
+.search-icon { position: absolute; top: 10px; left: 12px; color: #9aa3af; pointer-events: none; }
+.external-link-icon { width: 12px; height: 12px; vertical-align: -2px; }
 .table-footer { display: flex; justify-content: space-between; padding: 12px 17px; border-top: 1px solid var(--line); color: #969fad; font-size: 10px; }
 
 .settings-layout { display: grid; gap: 18px; }

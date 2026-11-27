@@ -7,6 +7,7 @@ on:
       - "**.js"
       - "**.html"
       - "**.css"
+      - "icons/**"
       - ".github/workflows/build-desktop-macos.yml"
 
 jobs:
@@ -28,9 +29,11 @@ jobs:
       - name: Prepare static app files
         shell: bash
         run: |
-          mkdir -p dist/data
+          mkdir -p dist/data dist/icons/interface
           cp index.html styles.css app.js dist/
           cp data/raceway-data.js data/ampacity-data.js data/voltage-drop-data.js dist/data/
+          cp icons/interface/mdi-*.svg dist/icons/interface/
+          cp icons/interface/MDI-LICENSE icons/interface/APACHE-2.0-LICENSE dist/icons/interface/
 
       - name: Install Pake CLI
         run: npm install -g pake-cli
