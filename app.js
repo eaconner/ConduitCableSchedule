@@ -2446,6 +2446,7 @@ function handleAction(action, id, fieldName) {
     printReport("Bill of Materials");
   }
   if (action === "print-voltage-drop") printVoltageDropReport();
+  if (action === "print-master-report") printMasterReport();
 }
 
 /**
@@ -2505,6 +2506,76 @@ function renderConduitCablePrint() {
           </tbody>`).join("")}
       </table>
     </main>`;
+}
+
+/**
+ * Renders the master report combining Conduit Cable Schedule, Voltage Drop, and Bill of Materials.
+ * Each section appears on its own page when printed.
+ * @returns {string} HTML string for master report print layout
+ */
+function renderMasterReport() {
+  return `
+    <div class="master-report">
+      <main class="conduit-cable-print master-report-section">
+        ${renderConduitCablePrint()}
+      </main>
+      <main class="voltage-drop-print master-report-section">
+        ${renderVoltageDropPrint()}
+      </main>
+      <div class="master-report-section bom-print">
+        ${renderBillOfMaterialsPrint()}
+      </div>
+    </div>`;
+}
+
+/**
+ * Renders the bill of materials in print-ready format.
+ * @returns {string} HTML string for BOM print layout
+ */
+function renderBillOfMaterialsPrint() {
+  const { usedCableTypes, usedConduitGroups } = billOfMaterialsGroups();
+  const settings = state.settings;
+
+  return `
+    <section class="bom-project-card">
+      <div class="bom-project-title"><div><h2>${escapeHtml(titleCaseHeading(projectName()))}</h2><p>Bill of Materials</p></div><span class="bom-generated">Generated ${escapeHtml(new Date().toLocaleDateString())}</span></div>
+      <div class="bom-project-meta">
+        ${detail("Client", settings.clientName)}
+        ${detail("Client Project #", settings.clientProjectNumber)}
+        ${detail("Internal Project #", settings.internalProjectNumber)}
+        ${detail("Revision", settings.revisionNumber)}
+        ${detail("Designer", settings.editorName)}
+      </div>
+    </section>
+    <section class="bom-section">
+      <div class="card-heading"><div><h2>Cable Materials</h2><p>Cable types used in this project</p></div></div>
+      ${usedCableTypes.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Spec Type</th><th>Mfr.</th><th>Spec Number</th><th>Total Length (ft)</th></tr></thead><tbody>${usedCableTypes.map(({ type, cables }) => {
+        return `<tr><td>${escapeHtml(type?.specType || "—")}</td><td class="primary-cell">${escapeHtml(type?.manufacturer || "Cable type unavailable")}</td><td>${escapeHtml(type?.specNumber || "Specification unavailable")}</td><td>${renderLengthTotal(cables)}</td></tr>`;
+      }).join("")}</tbody></table></div>` : `<div class="bom-empty">No cable types are currently used in the cable schedule.</div>`}
+    </section>
+    <section class="bom-section">
+      <div class="card-heading"><div><h2>Conduit Materials</h2><p>Conduit types and sizes used in this project</p></div></div>
+      ${usedConduitGroups.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit size</th><th>Conduit type</th><th>Total Length (ft)</th></tr></thead><tbody>${usedConduitGroups.map(({ racewayType, size, conduits }) => {
+        return `<tr><td class="primary-cell">${size === "TBD" ? `<span class="tag tbd">TBD</span>` : escapeHtml(size)}</td><td>${escapeHtml(racewayType)}</td><td>${renderLengthTotal(conduits)}</td></tr>`;
+      }).join("")}</tbody></table></div>` : `<div class="bom-empty">No conduits are currently used in the conduit schedule.</div>`}
+    </section>
+    <p class="bom-note">Material lengths are based on scheduled totals. Confirm field requirements and installation allowances before ordering.</p>`;
+}
+
+/**
+ * Opens the browser print dialog for the master report.
+ * Displays the combined Conduit Cable Schedule, Voltage Drop, and Bill of Materials reports.
+ */
+function printMasterReport() {
+  const printRoot = document.querySelector("#print-root");
+  document.querySelector("#export-menu").hidden = true;
+  document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
+  printRoot.innerHTML = renderMasterReport();
+  document.body.classList.add("printing-master-report");
+  printReport("Master Report", () => {
+    document.body.classList.remove("printing-master-report");
+    printRoot.replaceChildren();
+  });
 }
 
 /**
