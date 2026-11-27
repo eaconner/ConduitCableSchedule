@@ -1,3 +1,5 @@
+// NEC Chapter 9, Table 310.15(B)(16)
+// Allowable ampacities of insulated conductors rated up to 2000 volts
 // Ampacities are ordered by 60°C, 75°C, and 90°C.
 const CABLE_AMPACITY_TABLE = {
   "18 AWG": { Copper: [null, null, 14], Aluminum: [null, null, null] },

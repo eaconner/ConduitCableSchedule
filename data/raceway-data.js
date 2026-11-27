@@ -1,4 +1,5 @@
-// Editable raceway options and 100% internal areas (sq in) keyed by type and trade size.
+// NEC Chapter 9, Table 4
+// Raceway options and 100% internal areas (sq in) keyed by type and trade size.
 const RACEWAY_TYPES = [
   { value: "emt", label: "EMT" },
   { value: "rmc", label: "RMC" },

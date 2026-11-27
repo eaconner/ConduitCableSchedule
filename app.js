@@ -1261,7 +1261,9 @@ function voltageDropRowData(cables) {
   const rating = CABLE_RATINGS.includes(String(cable.cableRating)) ? `${cable.cableRating}°C` : "—";
   const phase = CABLE_PHASES.includes(cable.phase) ? cable.phase : "—";
   const cableNumbers = cables.map((member) => member.number).join(", ");
-  const singleCableAmpacity = lookupCableAmpacity(cableSpecSizeFromType(type), cableMaterial, cable.cableRating);
+  const singleCableAmpacity = type?.cableAmpacity !== null && type?.cableAmpacity !== undefined
+    ? type.cableAmpacity
+    : lookupCableAmpacity(cableSpecSizeFromType(type), cableMaterial, cable.cableRating);
   const cableAmpacityValue = singleCableAmpacity === null ? null : singleCableAmpacity * cables.length;
   const cableAmpacity = cableAmpacityValue === null ? "—" : `${formatNumber(cableAmpacityValue)} A`;
   const ampacityOverhead = cableAmpacityValue === null || numericLoadAmps === null || !Number.isFinite(numericLoadAmps)
@@ -2262,11 +2264,12 @@ function openCableTypeForm(id, returnToCableDraft = null) {
       <div class="field"><label for="modal-specGroundShield">Specification detail</label><label class="cable-spec-checkbox" for="modal-specGroundShield"><input id="modal-specGroundShield" name="specGroundShield" type="checkbox" ${type?.specGroundShield ? "checked" : ""} /><span id="spec-ground-shield-label">${type?.specConstruction === "pair" ? "Include shield" : "Include ground"}</span></label></div>
     </div>
     ${selectField("cableMaterial", "Cable Material", CABLE_MATERIALS.map((value) => ({ value, label: value })), type?.cableMaterial || "", { optional: true })}
+    ${textField("cableAmpacity", "Cable Ampacity (A)", type?.cableAmpacity ?? "", "e.g. 100", { type: "number", min: "0", step: "0.1", required: false, optional: true, full: true })}
     ${selectField("fillClassification", "Cable fill type", CABLE_FILL_TYPES, type?.fillClassification || "", { full: true, optional: true })}
     ${textField("diameter", "Overall diameter (in)", type?.diameter ?? "", "e.g. 1.42", { type: "number", min: "0", step: "0.001" })}
     ${textField("netWeight", "Net weight (lbs/1000')", type?.netWeight ?? "", "e.g. 1120", { type: "number", min: "0", step: "0.01" })}
     ${textField("url", "URL to details", type?.url || "", "https://...", { type: "url", required: false, full: true, optional: true })}
-    <p class="section-description field full">For fill checks, enter the actual outside diameter and identify whether this specification is one insulated conductor or one multiconductor cable assembly.</p>
+    <p class="section-description field full">For fill checks, enter the actual outside diameter and identify whether this specification is one insulated conductor or one multiconductor cable assembly. Cable Ampacity, if provided, overrides the automatic voltage drop ampacity lookup.</p>
   </div>`;
   openModal(type ? "Edit Cable Type" : "Add Cable Type", "Save a reusable cable specification for this project.", type ? `edit-cable-type:${id}` : returnToCableDraft ? "new-cable-type-inline" : "new-cable-type", fields, type ? "Save changes" : "Add Cable Type");
   updateCableSpecLabels(modalRoot.querySelector(".modal-form"));
@@ -2384,6 +2387,7 @@ function handleSubmit(event) {
       specSize: values.specSize,
       specGroundShield: formData.has("specGroundShield"),
       cableMaterial: values.cableMaterial,
+      cableAmpacity: values.cableAmpacity === "" ? null : Number(values.cableAmpacity),
       fillClassification: values.fillClassification.trim(),
       diameter: Number(values.diameter),
       netWeight: Number(values.netWeight),

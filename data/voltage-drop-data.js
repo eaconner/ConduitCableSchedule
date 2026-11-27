@@ -1,3 +1,4 @@
+// NEC Chapter 9, Table 9
 // Resistance and reactance values are in ohms per 1,000 ft at 75°C.
 const CABLE_AC_IMPEDANCE_TABLE = {
   "14 AWG": { reactance: { nm: 0.058, steel: 0.073 }, resistance: { Copper: { nm: 3.1, steel: 3.1 }, Aluminum: { nm: null, steel: null } } },
@@ -9,7 +10,7 @@ const CABLE_AC_IMPEDANCE_TABLE = {
   "3 AWG": { reactance: { nm: 0.047, steel: 0.059 }, resistance: { Copper: { nm: 0.25, steel: 0.25 }, Aluminum: { nm: 0.40, steel: 0.40 } } },
   "2 AWG": { reactance: { nm: 0.045, steel: 0.057 }, resistance: { Copper: { nm: 0.19, steel: 0.20 }, Aluminum: { nm: 0.32, steel: 0.32 } } },
   "1 AWG": { reactance: { nm: 0.046, steel: 0.057 }, resistance: { Copper: { nm: 0.15, steel: 0.16 }, Aluminum: { nm: 0.25, steel: 0.25 } } },
-  "1/0 AWG": { reactance: { nm: 0.044, steel: 0.055 }, resistance: { Copper: { nm: 0.12, steel: 0.12 }, Aluminum: { nm: 0.20, steel: 0.20 } } },
+  "1/0 AWG": { reactance: { nm: 0.044, steel: 0.055 }, resistance: { Copper: { nm: 0.12, steel: 0.12 }, Aluminum: { nm: 0.20, steel: 0.21 } } },
   "2/0 AWG": { reactance: { nm: 0.043, steel: 0.054 }, resistance: { Copper: { nm: 0.10, steel: 0.10 }, Aluminum: { nm: 0.16, steel: 0.16 } } },
   "3/0 AWG": { reactance: { nm: 0.042, steel: 0.052 }, resistance: { Copper: { nm: 0.077, steel: 0.079 }, Aluminum: { nm: 0.13, steel: 0.13 } } },
   "4/0 AWG": { reactance: { nm: 0.041, steel: 0.051 }, resistance: { Copper: { nm: 0.062, steel: 0.063 }, Aluminum: { nm: 0.10, steel: 0.10 } } },
