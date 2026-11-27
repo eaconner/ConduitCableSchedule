@@ -1,9 +1,13 @@
-name: Build Desktop App (Pake)
+name: Build Desktop Apps
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
+    branches: ["main"]
+    paths:
+      - "**.js"
+      - "**.html"
+      - "**.css"
+      - ".github/workflows/**"
 
 jobs:
   build-pake:
