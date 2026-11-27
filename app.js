@@ -1,5 +1,6 @@
 const STORAGE_KEY = "wireframe-project-v1";
 const THEME_PREFERENCE_KEY = "wireframe-theme-preference-v1";
+const SIDEBAR_PREFERENCE_KEY = "wireframe-sidebar-minimized-v1";
 const THEME_PREFERENCES = ["system", "light", "dark"];
 const CONDUIT_SIZES = ['1/2"', '3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '4"'];
 const NEC_EDITIONS = ["2017", "2020", "2023", "2026"];
@@ -203,6 +204,7 @@ const modalRoot = document.querySelector("#modal-root");
 const toast = document.querySelector("#toast");
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 let themePreference = loadThemePreference();
+let keepSidebarMinimized = loadSidebarPreference();
 applyTheme();
 systemTheme.addEventListener("change", () => {
   if (themePreference === "system") applyTheme();
@@ -219,6 +221,35 @@ function loadThemePreference() {
     showToast("Could not load appearance preference. Using the system theme.", true);
     return "system";
   }
+}
+
+function loadSidebarPreference() {
+  try {
+    const preference = localStorage.getItem(SIDEBAR_PREFERENCE_KEY);
+    if (preference === null || preference === "false") return false;
+    if (preference === "true") return true;
+    console.error("Invalid sidebar appearance preference:", preference);
+    showToast("Could not load sidebar preference. Starting expanded.", true);
+    return false;
+  } catch (error) {
+    console.error("Could not load the sidebar preference.", error);
+    showToast("Could not load sidebar preference. Starting expanded.", true);
+    return false;
+  }
+}
+
+function saveSidebarPreference(minimized) {
+  try {
+    localStorage.setItem(SIDEBAR_PREFERENCE_KEY, String(minimized));
+  } catch (error) {
+    console.error("Could not save the sidebar preference.", error);
+    showToast("Could not save sidebar preference in this browser.", true);
+    return false;
+  }
+  keepSidebarMinimized = minimized;
+  setSidebarCollapsed(minimized);
+  showToast("Sidebar preference saved.");
+  return true;
 }
 
 function applyTheme() {
@@ -933,6 +964,10 @@ function renderSettings() {
               <option value="dark" ${themePreference === "dark" ? "selected" : ""}>Dark</option>
             </select>
             <small id="theme-preference-description" class="section-description">System setting follows your device's appearance preference.</small>
+          </div>
+          <div class="field appearance-field sidebar-preference">
+            <label class="appearance-checkbox" for="sidebar-preference"><input id="sidebar-preference" type="checkbox" aria-describedby="sidebar-preference-description" ${keepSidebarMinimized ? "checked" : ""} />Keep sidebar minimized</label>
+            <small id="sidebar-preference-description" class="section-description">Start with the sidebar minimized. You can still expand it temporarily.</small>
           </div>
         </div>
       </section>
@@ -2320,20 +2355,27 @@ function syncSidebarTooltipTitles(isCollapsed) {
     else item.removeAttribute("title");
   });
 }
-syncSidebarTooltipTitles(appShell.classList.contains("sidebar-collapsed"));
-sidebarToggle.addEventListener("click", () => {
-  const isCollapsed = appShell.classList.toggle("sidebar-collapsed");
+function setSidebarCollapsed(isCollapsed) {
+  appShell.classList.toggle("sidebar-collapsed", isCollapsed);
   const label = isCollapsed ? "Expand sidebar" : "Minimize sidebar";
   sidebarToggle.setAttribute("aria-label", label);
   sidebarToggle.setAttribute("aria-expanded", String(!isCollapsed));
   sidebarToggle.dataset.tooltip = label;
   syncSidebarTooltipTitles(isCollapsed);
+}
+setSidebarCollapsed(keepSidebarMinimized);
+sidebarToggle.addEventListener("click", () => {
+  setSidebarCollapsed(!appShell.classList.contains("sidebar-collapsed"));
 });
 
 document.addEventListener("submit", handleSubmit);
 document.addEventListener("change", (event) => {
   if (event.target.id === "theme-preference") {
     if (!saveThemePreference(event.target.value)) event.target.value = themePreference;
+    return;
+  }
+  if (event.target.id === "sidebar-preference") {
+    if (!saveSidebarPreference(event.target.checked)) event.target.checked = keepSidebarMinimized;
     return;
   }
   const form = event.target.closest(".modal-form");
