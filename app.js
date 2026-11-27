@@ -1152,7 +1152,7 @@ function renderCableRow(cables) {
     <td>${escapeHtml(type?.manufacturer || "—")}<span class="secondary-cell">${escapeHtml(type?.specNumber || "Type unavailable")}</span></td>
     <td>${escapeHtml(type?.specType || "—")}</td><td>${renderScheduledLength(cable.length)}</td>
     <td>${escapeHtml(cableLocationName(cable.fromLocationId))}</td><td>${escapeHtml(cableLocationName(cable.toLocationId))}</td>
-    <td>${escapeHtml(cable.purpose || "—")}</td><td>${conduitStatus}</td><td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.edit)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button" data-action="duplicate-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.duplicate)}" title="${isParallelGroup ? "Duplicate parallel set" : "Duplicate cable"}"><span class="mdi mdi-content-copy" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.delete)}" title="${isParallelGroup ? "Delete parallel set" : "Delete cable"}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></td>
+    <td>${escapeHtml(cable.purpose || "—")}</td><td>${conduitStatus}</td><td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.edit)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button" data-action="duplicate-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.duplicate)}"><span class="mdi mdi-content-copy" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.delete)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></td>
   </tr>`;
 }
 
@@ -1459,7 +1459,7 @@ function renderConduits() {
         return `<tr data-searchable="${escapeHtml([conduit.number, conduit.size, racewayTypeLabel(conduit.racewayType), locationName(conduit.fromLocationId), locationName(conduit.toLocationId), ...conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number)].join(" ").toLowerCase())}">
         <td class="primary-cell">${escapeHtml(conduit.number)}</td><td><span class="tag ${sizeClass}" title="${escapeHtml(sizeTitle)}">${conduit.size ? escapeHtml(conduit.size) : "TBD"}</span><span class="secondary-cell">${escapeHtml(racewayTypeLabel(conduit.racewayType) || "Raceway type not set")}</span></td><td><span class="tag fill-status ${analysis.status === "pass" ? "fill-pass" : analysis.status === "fail" ? "fill-fail" : "neutral"}">${escapeHtml(analysis.label)}</span><span class="secondary-cell fill-details" title="${escapeHtml(fillDetails)}">${escapeHtml(fillDetails)}</span></td><td>${renderScheduledLength(conduit.length)}</td><td>${escapeHtml(locationName(conduit.fromLocationId))}</td><td>${escapeHtml(locationName(conduit.toLocationId))}</td>
         <td>${conduit.cableIds.length ? `<span class="tag blue">${conduit.cableIds.length} ${conduit.cableIds.length === 1 ? "cable" : "cables"}</span><span class="secondary-cell">${escapeHtml(conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number || "Removed").join(", "))}</span>` : `<span class="tag neutral">Unassigned</span>`}</td>
-        <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}" title="Duplicate conduit"><span class="mdi mdi-content-copy" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></td>
+        <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}"><span class="mdi mdi-content-copy" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></td>
       </tr>`;
       }).join("")}</tbody></table></div>${renderPaginationControls("conduits", totalRows, paginatedRows.length)}<div class="table-footer"><span>Showing ${paginatedRows.length} of ${totalRows} conduits</span><span>Fill checks use the selected NEC edition's Table 1 limits. Raceway area is entered per conduit.</span></div>` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-pipe" aria-hidden="true"></span></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first conduit</button></div>`}
     </section>`;
@@ -3463,20 +3463,63 @@ document.addEventListener("click", (event) => {
 
 const appShell = document.querySelector(".app-shell");
 const sidebarToggle = document.querySelector("#sidebar-toggle");
-const sidebarTooltipItems = document.querySelectorAll(".sidebar [data-tooltip]");
-function syncSidebarTooltipTitles(isCollapsed) {
-  sidebarTooltipItems.forEach((item) => {
-    if (isCollapsed) item.title = item.dataset.tooltip;
-    else item.removeAttribute("title");
-  });
+const iconTooltip = document.querySelector("#icon-tooltip");
+let tooltipAnchor = null;
+
+function hideIconTooltip() {
+  iconTooltip.hidden = true;
+  tooltipAnchor = null;
 }
+
+function showIconTooltip(anchor) {
+  if (!anchor || (anchor.classList.contains("nav-item") && !appShell.classList.contains("sidebar-collapsed"))) return;
+  const label = anchor.dataset.tooltip || anchor.getAttribute("aria-label");
+  if (!label) return;
+  const rect = anchor.getBoundingClientRect();
+  if (!anchor.isConnected || rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) {
+    hideIconTooltip();
+    return;
+  }
+  tooltipAnchor = anchor;
+  iconTooltip.textContent = label;
+  iconTooltip.hidden = false;
+  const tooltipRect = iconTooltip.getBoundingClientRect();
+  const left = Math.max(8, Math.min(rect.left + (rect.width - tooltipRect.width) / 2, window.innerWidth - tooltipRect.width - 8));
+  const top = rect.top >= tooltipRect.height + 8 ? rect.top - tooltipRect.height : rect.bottom;
+  iconTooltip.style.left = `${left}px`;
+  iconTooltip.style.top = `${Math.max(0, Math.min(top, window.innerHeight - tooltipRect.height))}px`;
+}
+
+function tooltipControl(target) {
+  return target instanceof Element ? target.closest(".icon-button, .sidebar [data-tooltip]") : null;
+}
+
+document.addEventListener("pointerover", (event) => {
+  const anchor = tooltipControl(event.target);
+  if (anchor && !anchor.contains(event.relatedTarget) && !iconTooltip.contains(event.relatedTarget)) showIconTooltip(anchor);
+});
+document.addEventListener("pointerout", (event) => {
+  if (!tooltipAnchor || (!tooltipAnchor.contains(event.target) && !iconTooltip.contains(event.target))) return;
+  if (tooltipAnchor.contains(event.relatedTarget) || iconTooltip.contains(event.relatedTarget) || (tooltipAnchor === document.activeElement && tooltipAnchor.matches(":focus-visible"))) return;
+  hideIconTooltip();
+});
+document.addEventListener("focusin", (event) => showIconTooltip(tooltipControl(event.target)));
+document.addEventListener("focusout", (event) => {
+  if (event.target === tooltipAnchor && !tooltipAnchor.matches(":hover") && !iconTooltip.matches(":hover")) hideIconTooltip();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") hideIconTooltip();
+});
+document.addEventListener("click", hideIconTooltip, true);
+document.addEventListener("scroll", () => { if (tooltipAnchor) showIconTooltip(tooltipAnchor); }, true);
+window.addEventListener("resize", () => { if (tooltipAnchor) showIconTooltip(tooltipAnchor); });
+
 function setSidebarCollapsed(isCollapsed) {
   appShell.classList.toggle("sidebar-collapsed", isCollapsed);
   const label = isCollapsed ? "Expand sidebar" : "Minimize sidebar";
   sidebarToggle.setAttribute("aria-label", label);
   sidebarToggle.setAttribute("aria-expanded", String(!isCollapsed));
   sidebarToggle.dataset.tooltip = label;
-  syncSidebarTooltipTitles(isCollapsed);
 }
 setSidebarCollapsed(keepSidebarMinimized);
 sidebarToggle.addEventListener("click", () => {
