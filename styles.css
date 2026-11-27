@@ -535,12 +535,15 @@ body.printing-voltage-drop { page: voltage-drop; }
   .printing-conduit-cable .conduit-cable-print-project-meta .detail-item span { color: #111; font-size: 8pt; }
   .printing-conduit-cable .conduit-cable-print table { width: 100%; table-layout: auto; border-collapse: collapse; }
   .printing-conduit-cable .conduit-cable-print th,
-  .printing-conduit-cable .conduit-cable-print td { padding: 4px 5px; border: 1px solid #d7dfed; color: #111; font-size: 6.5pt; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+  .printing-conduit-cable .conduit-cable-print td { padding: 4px 5px; border: 1px solid #d7dfed; color: #111; font-size: 6.5pt; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+  .printing-conduit-cable .conduit-cable-print th:nth-child(n+7):nth-child(-n+10),
+  .printing-conduit-cable .conduit-cable-print td:nth-child(n+7):nth-child(-n+10) { text-align: left; }
   .printing-conduit-cable .conduit-cable-print th:nth-child(8),
   .printing-conduit-cable .conduit-cable-print td:nth-child(8),
   .printing-conduit-cable .conduit-cable-print th:nth-child(9),
   .printing-conduit-cable .conduit-cable-print td:nth-child(9) { white-space: nowrap; overflow-wrap: normal; }
-  .printing-conduit-cable .conduit-cable-print th { border-color: #b7c8e5; background: #dce7fa; color: #20395f; }
+  .printing-conduit-cable .conduit-cable-print th { border-color: #b7c8e5; background: #dce7fa; color: #20395f; vertical-align: bottom; }
+  .printing-conduit-cable .conduit-cable-print td { vertical-align: middle; }
   .printing-conduit-cable .conduit-cable-print .conduit-cable-group-row td { border-top: 1.5px solid #c3d1eb; background: #edf2ff; color: #20395f; font-weight: 700; }
   .printing-conduit-cable .conduit-cable-group { break-inside: avoid; page-break-inside: avoid; }
   .printing-conduit-cable .conduit-cable-group tr { break-inside: avoid; page-break-inside: avoid; }
