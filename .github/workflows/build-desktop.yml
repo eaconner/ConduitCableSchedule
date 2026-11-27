@@ -1,0 +1,51 @@
+name: Build Desktop App (Pake)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-pake:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Prepare static app files
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp index.html styles.css app.js raceway-data.js ampacity-data.js voltage-drop-data.js dist/
+
+      - name: Install Pake CLI
+        run: npm install -g pake-cli
+
+      - name: Package static bundle with Pake
+        shell: bash
+        run: pake ./dist --name Wireframe
+
+      - name: Upload built artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wireframe-${{ matrix.os }}
+          path: |
+            ./Wireframe*
+            ./*.dmg
+            ./*.msi
+            ./*.exe
+          retention-days: 90
