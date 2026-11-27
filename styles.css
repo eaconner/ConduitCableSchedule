@@ -211,6 +211,15 @@ tbody tr:hover { background: #fcfcfd; }
 .voltage-drop-table th:nth-child(-n + 2),
 .voltage-drop-table td:nth-child(-n + 2) { text-align: left; }
 .voltage-drop-table .table-actions { justify-content: center; }
+.cable-schedule-table th,
+.cable-schedule-table td { text-align: left; }
+.cable-schedule-table th:nth-child(2),
+.cable-schedule-table td:nth-child(2),
+.cable-schedule-table th:nth-child(5),
+.cable-schedule-table td:nth-child(5),
+.cable-schedule-table th:nth-child(10),
+.cable-schedule-table td:nth-child(10) { text-align: center; }
+.cable-schedule-table .table-actions { justify-content: center; }
 .conduit-schedule-table th,
 .conduit-schedule-table td { text-align: left; }
 .conduit-schedule-table th:nth-child(2),
