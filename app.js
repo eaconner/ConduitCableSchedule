@@ -274,6 +274,12 @@ const tableSortState = {
   voltageDrop: { column: "number", direction: "asc" },
 };
 
+const paginationState = {
+  cables: { currentPage: 1, pageSize: 10 },
+  conduits: { currentPage: 1, pageSize: 10 },
+  voltageDrop: { currentPage: 1, pageSize: 10 },
+};
+
 /**
  * Loads the user's saved theme preference from browser localStorage.
  * Falls back to 'system' if no preference is stored or localStorage is unavailable.
@@ -987,6 +993,101 @@ function scheduleStatus() {
 }
 
 /**
+ * Renders pagination controls and page info for a table.
+ * @param {string} tableType - Type of table: 'cables', 'conduits', or 'voltageDrop'
+ * @param {number} totalRows - Total number of rows before pagination
+ * @param {number} displayedRows - Number of rows being displayed on current page
+ * @returns {string} HTML string for pagination controls
+ */
+function renderPaginationControls(tableType, totalRows, displayedRows) {
+  const pagination = paginationState[tableType];
+  const pageSize = pagination.pageSize === "all" ? totalRows : parseInt(pagination.pageSize);
+  const totalPages = Math.ceil(totalRows / pageSize);
+  const startRow = pagination.pageSize === "all" ? 1 : (pagination.currentPage - 1) * pageSize + 1;
+  const endRow = pagination.pageSize === "all" ? totalRows : Math.min(pagination.currentPage * pageSize, totalRows);
+  
+  if (totalRows <= 10) {
+    return "";
+  }
+
+  const pageSizeOptions = [
+    { value: "10", label: "10 rows" },
+    { value: "25", label: "25 rows" },
+    { value: "50", label: "50 rows" },
+    { value: "75", label: "75 rows" },
+    { value: "100", label: "100 rows" },
+    { value: "all", label: "All rows" },
+  ];
+
+  const pageSizeSelect = pageSizeOptions.map(opt => 
+    `<option value="${opt.value}" ${pagination.pageSize === parseInt(opt.value) || pagination.pageSize === opt.value ? "selected" : ""}>${opt.label}</option>`
+  ).join("");
+
+  const prevDisabled = pagination.currentPage === 1 ? "disabled" : "";
+  const nextDisabled = pagination.currentPage >= totalPages ? "disabled" : "";
+
+  return `<div class="pagination-controls">
+    <div class="pagination-info">
+      <span>Showing ${startRow}–${endRow} of ${totalRows} ${displayedRows === 1 ? "row" : "rows"}</span>
+      <select class="pagination-page-size" data-table="${tableType}" aria-label="Rows per page">
+        ${pageSizeSelect}
+      </select>
+    </div>
+    <div class="pagination-nav">
+      <button class="pagination-button" data-table="${tableType}" data-action="prev-page" ${prevDisabled} aria-label="Previous page">← Previous</button>
+      <span class="pagination-info-inline">Page ${pagination.currentPage} of ${totalPages}</span>
+      <button class="pagination-button" data-table="${tableType}" data-action="next-page" ${nextDisabled} aria-label="Next page">Next →</button>
+    </div>
+  </div>`;
+}
+
+/**
+ * Paginates an array of rows based on the table's current pagination state.
+ * @param {Array} rows - Array of rows to paginate
+ * @param {string} tableType - Type of table: 'cables', 'conduits', or 'voltageDrop'
+ * @returns {Array} Paginated rows for display
+ */
+function paginateRows(rows, tableType) {
+  const pagination = paginationState[tableType];
+  if (pagination.pageSize === "all") {
+    return rows;
+  }
+  const pageSize = parseInt(pagination.pageSize);
+  const startIndex = (pagination.currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return rows.slice(startIndex, endIndex);
+}
+
+/**
+ * Gets total pages for a table based on its current pagination state.
+ * @param {string} tableType - Type of table: 'cables', 'conduits', or 'voltageDrop'
+ * @returns {number} Total number of pages
+ */
+function getTotalPages(tableType) {
+  let totalRows = 0;
+  
+  if (tableType === "cables") {
+    let rows = cableDisplayGroups();
+    rows = sortCableGroups(rows, tableSortState.cables.column, tableSortState.cables.direction);
+    totalRows = rows.length;
+  } else if (tableType === "conduits") {
+    let rows = sortByNumber(state.conduits);
+    rows = sortConduits(rows, tableSortState.conduits.column, tableSortState.conduits.direction);
+    totalRows = rows.length;
+  } else if (tableType === "voltageDrop") {
+    let rows = cableDisplayGroups();
+    rows = sortVoltageDropRows(rows, tableSortState.voltageDrop.column, tableSortState.voltageDrop.direction);
+    totalRows = rows.length;
+  }
+
+  const pagination = paginationState[tableType];
+  if (pagination.pageSize === "all") {
+    return 1;
+  }
+  return Math.ceil(totalRows / parseInt(pagination.pageSize));
+}
+
+/**
  * Renders the cable schedule page with table of all cables and parallel sets.
  * @returns {string} HTML string for cable schedule page
  */
@@ -994,6 +1095,7 @@ function renderCables() {
   let rows = cableDisplayGroups();
   rows = sortCableGroups(rows, tableSortState.cables.column, tableSortState.cables.direction);
   const cableCount = state.cables.length;
+  const totalRows = rows.length;
   
   const sortIcon = (column) => {
     if (tableSortState.cables.column !== column) return "";
@@ -1002,6 +1104,8 @@ function renderCables() {
   
   const headerCell = (label, column) => `<th class="sortable-header" data-sort-column="${column}" data-table="cables" data-searchable="false">${label}${sortIcon(column)}</th>`;
 
+  const paginatedRows = paginateRows(rows, "cables");
+
   return `
     <div class="page-heading">
       <div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
@@ -1009,7 +1113,7 @@ function renderCables() {
     </div>
     <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Mfr. /<br>Spec", "type")}${headerCell("Spec<br>Type", "specType")}${headerCell("Cable<br>Length", "length")}${headerCell("Cable Routing <br>From", "fromLocation")}${headerCell("Cable Routing <br>To", "toLocation")}${headerCell("Purpose", "purpose")}${headerCell("Conduit<br>Assignment", "conduitAssignment")}<th>Actions</th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>${rows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Mfr. /<br>Spec", "type")}${headerCell("Spec<br>Type", "specType")}${headerCell("Cable<br>Length", "length")}${headerCell("Cable Routing <br>From", "fromLocation")}${headerCell("Cable Routing <br>To", "toLocation")}${headerCell("Purpose", "purpose")}${headerCell("Conduit<br>Assignment", "conduitAssignment")}<th>Actions</th></tr></thead><tbody id="cable-rows">${paginatedRows.map(renderCableRow).join("")}</tbody></table></div>${renderPaginationControls("cables", totalRows, paginatedRows.length)}<div class="table-footer"><span>${paginatedRows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
     </section>`;
 }
 
@@ -1051,6 +1155,7 @@ function renderCableRow(cables) {
 function renderVoltageDrop() {
   let rows = cableDisplayGroups();
   rows = sortVoltageDropRows(rows, tableSortState.voltageDrop.column, tableSortState.voltageDrop.direction);
+  const totalRows = rows.length;
   
   const sortIcon = (column) => {
     if (tableSortState.voltageDrop.column !== column) return "";
@@ -1059,13 +1164,15 @@ function renderVoltageDrop() {
   
   const headerCell = (label, column) => `<th class="sortable-header" data-sort-column="${column}" data-table="voltageDrop" data-searchable="false">${label}${sortIcon(column)}</th>`;
 
+  const paginatedRows = paginateRows(rows, "voltageDrop");
+
   return `
     <div class="page-heading">
       <div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Spec Type", "specType")}${headerCell("Cable Material", "material")}${headerCell("Voltage", "voltage")}${headerCell("Load<br>(Amps)", "load")}${headerCell("Cable<br>Ampacity", "ampacity")}${headerCell("Ampacity<br>Overhead", "overhead")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Cable<br>Rating", "rating")}${headerCell("Phase", "phase")}${headerCell("Voltage<br>Drop %", "voltageDrop")}<th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Spec Type", "specType")}${headerCell("Cable Material", "material")}${headerCell("Voltage", "voltage")}${headerCell("Load<br>(Amps)", "load")}${headerCell("Cable<br>Ampacity", "ampacity")}${headerCell("Ampacity<br>Overhead", "overhead")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Cable<br>Rating", "rating")}${headerCell("Phase", "phase")}${headerCell("Voltage<br>Drop %", "voltageDrop")}<th>Actions</th></tr></thead><tbody>${paginatedRows.map(renderVoltageDropRow).join("")}</tbody></table></div>${renderPaginationControls("voltageDrop", totalRows, paginatedRows.length)}` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
     </section>`;
 }
 
@@ -1295,6 +1402,7 @@ function cableSpecSizeFromType(type) {
 function renderConduits() {
   let rows = sortByNumber(state.conduits);
   rows = sortConduits(rows, tableSortState.conduits.column, tableSortState.conduits.direction);
+  const totalRows = rows.length;
   
   const sortIcon = (column) => {
     if (tableSortState.conduits.column !== column) return "";
@@ -1303,14 +1411,16 @@ function renderConduits() {
   
   const headerCell = (label, column) => `<th class="sortable-header" data-sort-column="${column}" data-table="conduits" data-searchable="false">${label}${sortIcon(column)}</th>`;
 
+  const paginatedRows = paginateRows(rows, "conduits");
+
   return `
     <div class="page-heading">
       <div><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Conduit</button></div>
     </div>
-    <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
+    <div class="schedule-info"><strong>${totalRows} ${totalRows === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing, cable assignments, and fill checks</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers conduit-schedule-table"><thead><tr>${headerCell("Conduit<br>number", "number")}${headerCell("Raceway <br>/ Size", "size")}${headerCell("NEC fill", "fill")}${headerCell("Conduit<br>Length", "length")}${headerCell("Conduit Routing <br>From", "fromLocation")}${headerCell("Conduit Routing <br>To", "toLocation")}${headerCell("Assigned<br>cables", "cables")}<th>Actions</th></tr></thead><tbody>${rows.map((conduit) => {
+      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing, cable assignments, and fill checks</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers conduit-schedule-table"><thead><tr>${headerCell("Conduit<br>number", "number")}${headerCell("Raceway <br>/ Size", "size")}${headerCell("NEC fill", "fill")}${headerCell("Conduit<br>Length", "length")}${headerCell("Conduit Routing <br>From", "fromLocation")}${headerCell("Conduit Routing <br>To", "toLocation")}${headerCell("Assigned<br>cables", "cables")}<th>Actions</th></tr></thead><tbody>${paginatedRows.map((conduit) => {
         const analysis = conduitFillAnalysis(conduit);
         const sizeClass = analysis.status === "pass" ? "fill-pass" : analysis.status === "fail" ? "fill-fail" : "neutral";
         const sizeTitle = analysis.status === "pass" || analysis.status === "fail"
@@ -1324,7 +1434,7 @@ function renderConduits() {
         <td>${conduit.cableIds.length ? `<span class="tag blue">${conduit.cableIds.length} ${conduit.cableIds.length === 1 ? "cable" : "cables"}</span><span class="secondary-cell">${escapeHtml(conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number || "Removed").join(", "))}</span>` : `<span class="tag neutral">Unassigned</span>`}</td>
         <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}">✎</button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}" title="Duplicate conduit">⧉</button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}">×</button></div></td>
       </tr>`;
-      }).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} conduits</span><span>Fill checks use the selected NEC edition's Table 1 limits. Raceway area is entered per conduit.</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 3v8a4.5 4.5 0 0 0 4.5 4.5h7M2.5 3h4M13 13.5h4" /></svg></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first conduit</button></div>`}
+      }).join("")}</tbody></table></div>${renderPaginationControls("conduits", totalRows, paginatedRows.length)}<div class="table-footer"><span>Showing ${paginatedRows.length} of ${totalRows} conduits</span><span>Fill checks use the selected NEC edition's Table 1 limits. Raceway area is entered per conduit.</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 3v8a4.5 4.5 0 0 0 4.5 4.5h7M2.5 3h4M13 13.5h4" /></svg></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first conduit</button></div>`}
     </section>`;
 }
 
@@ -3267,6 +3377,27 @@ document.addEventListener("click", (event) => {
     closeModal();
     return;
   }
+
+  // Handle pagination
+  const paginationButton = event.target.closest(".pagination-button");
+  if (paginationButton) {
+    const tableType = paginationButton.dataset.table;
+    const action = paginationButton.dataset.action;
+    const pagination = paginationState[tableType];
+
+    if (action === "prev-page" && pagination.currentPage > 1) {
+      pagination.currentPage--;
+      setPage(activePage);
+    } else if (action === "next-page") {
+      const totalPages = getTotalPages(tableType);
+      if (pagination.currentPage < totalPages) {
+        pagination.currentPage++;
+        setPage(activePage);
+      }
+    }
+    return;
+  }
+
   
   // Handle column sorting
   const sortableHeader = event.target.closest(".sortable-header");
@@ -3284,6 +3415,8 @@ document.addEventListener("click", (event) => {
         currentState.column = column;
         currentState.direction = "asc";
       }
+
+      paginationState[tableType].currentPage = 1;
       
       // Re-render the current page
       setPage(activePage);
@@ -3331,6 +3464,19 @@ document.addEventListener("change", (event) => {
     if (!saveSidebarPreference(event.target.checked)) event.target.checked = keepSidebarMinimized;
     return;
   }
+  
+  // Handle pagination page size changes
+  if (event.target.classList.contains("pagination-page-size")) {
+    const tableType = event.target.dataset.table;
+    const newPageSize = event.target.value;
+    const pagination = paginationState[tableType];
+
+    pagination.pageSize = newPageSize === "all" ? "all" : parseInt(newPageSize);
+    pagination.currentPage = 1;
+    setPage(activePage);
+    return;
+  }
+  
   const form = event.target.closest(".modal-form");
   if (isCableTypeForm(form) && event.target.name === "specConstruction") {
     updateCableSpecLabels(form);

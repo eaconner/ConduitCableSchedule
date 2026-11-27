@@ -679,4 +679,115 @@ body.printing-master-report { page: master-report; }
   .printing-master-report .bom-note { margin-top: 6px; color: #333; font-size: 7pt; }
 }
 
+/* Pagination controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  border-top: 1px solid #e1e7f0;
+  background: #f9fafb;
+  font-size: 13px;
+  color: #52627b;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-page-size {
+  padding: 6px 8px;
+  border: 1px solid #d1d9e6;
+  border-radius: 4px;
+  background: white;
+  color: #2c3e50;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pagination-page-size:hover {
+  border-color: #a8b3c7;
+}
+
+.pagination-page-size:focus {
+  outline: none;
+  border-color: #4268e8;
+  box-shadow: 0 0 0 2px rgba(66, 104, 232, 0.1);
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-button {
+  padding: 6px 12px;
+  border: 1px solid #d1d9e6;
+  border-radius: 4px;
+  background: white;
+  color: #2c3e50;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  border-color: #4268e8;
+  color: #4268e8;
+  background: #f0f4ff;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info-inline {
+  min-width: 100px;
+  text-align: center;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+/* Dark mode support for pagination */
+:root[data-theme="dark"] .pagination-controls {
+  border-top-color: var(--line);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .pagination-page-size {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .pagination-page-size:hover {
+  border-color: var(--blue);
+}
+
+:root[data-theme="dark"] .pagination-page-size:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(145, 170, 255, 0.2);
+}
+
+:root[data-theme="dark"] .pagination-button {
+  border-color: var(--line);
+  background: var(--navy);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .pagination-button:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+:root[data-theme="dark"] .pagination-info-inline {
+  color: var(--ink);
+}
 
