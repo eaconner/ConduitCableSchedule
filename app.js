@@ -1794,7 +1794,9 @@ function updateConduitCableOptions(form) {
   const allowedCablePrefixes = new Set(cablePrefixesForConduit(conduitNumber));
   const fromLocationId = form.elements.namedItem("fromLocationId").value;
   const toLocationId = form.elements.namedItem("toLocationId").value;
-  const selectedLocationNames = new Set([locationNameKey(fromLocationId), locationNameKey(toLocationId)].filter(Boolean));
+  const fromLocationName = fromLocationId ? locationNameKey(fromLocationId) : "";
+  const toLocationName = toLocationId ? locationNameKey(toLocationId) : "";
+  const cableTrayName = normalizedLocationName(CABLE_TRAY_LOCATION_NAME);
   const options = [...form.querySelectorAll(".checkbox-option")];
   let visibleCount = 0;
   let hasIncompatibleAssignments = false;
@@ -1803,9 +1805,21 @@ function updateConduitCableOptions(form) {
     const checkbox = option.querySelector('input[name="cableIds"]');
     const isCompatible = allowedCablePrefixes.has(option.dataset.cablePrefix);
     const isIncompatibleAssignment = checkbox.checked && !isCompatible;
-    const matchesLocation = selectedLocationNames.size === 0 ||
-      selectedLocationNames.has(option.dataset.fromLocationName) ||
-      selectedLocationNames.has(option.dataset.toLocationName);
+    const cableFromLocationName = option.dataset.fromLocationName;
+    const cableToLocationName = option.dataset.toLocationName;
+    
+    let matchesLocation = false;
+    if (fromLocationId && toLocationId) {
+      matchesLocation = (cableFromLocationName === fromLocationName && cableFromLocationName !== cableTrayName) ||
+                        (cableToLocationName === toLocationName && cableToLocationName !== cableTrayName);
+    } else if (fromLocationId) {
+      matchesLocation = cableFromLocationName === fromLocationName && cableFromLocationName !== cableTrayName;
+    } else if (toLocationId) {
+      matchesLocation = cableToLocationName === toLocationName && cableToLocationName !== cableTrayName;
+    } else {
+      matchesLocation = true;
+    }
+    
     option.hidden = !(isCompatible && matchesLocation) && !checkbox.checked;
     option.classList.toggle("incompatible", isIncompatibleAssignment);
     option.querySelector(".checkbox-cable-incompatible").hidden = !isIncompatibleAssignment;
