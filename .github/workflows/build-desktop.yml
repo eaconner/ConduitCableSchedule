@@ -35,17 +35,65 @@ jobs:
       - name: Install Pake CLI
         run: npm install -g pake-cli
 
-      - name: Package static bundle with Pake
+      - name: Package macOS app with Pake
+        if: runner.os == 'macOS'
         shell: bash
-        run: pake ./dist --name Wireframe
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "$(printenv "$name")" ]; then
+              echo "::error::Missing required secret: $name"
+              exit 1
+            fi
+          done
+          if [ "$APPLE_SIGNING_IDENTITY" = "-" ]; then
+            echo "::error::APPLE_SIGNING_IDENTITY must be a Developer ID Application identity, not ad-hoc signing"
+            exit 1
+          fi
+          pake ./dist --name Wireframe --icon ./brand-icon.svg
 
-      - name: Upload built artifact
+      - name: Verify macOS signature and notarization
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mountpoint="$RUNNER_TEMP/wireframe-dmg"
+          mkdir "$mountpoint"
+          hdiutil attach ./Wireframe.dmg -readonly -nobrowse -mountpoint "$mountpoint"
+          trap 'hdiutil detach "$mountpoint"; rmdir "$mountpoint"' EXIT
+          app="$mountpoint/Wireframe.app"
+          codesign --verify --deep --strict "$app"
+          if ! codesign -d --verbose=4 "$app" 2>&1 | grep -q '^Authority=Developer ID Application:'; then
+            echo "::error::The app is not signed with a Developer ID Application certificate"
+            exit 1
+          fi
+          xcrun stapler validate "$app"
+
+      - name: Package Windows portable app with Pake
+        if: runner.os == 'Windows'
+        shell: bash
+        run: pake ./dist --name Wireframe --icon ./brand-icon.svg --keep-binary
+
+      - name: Upload macOS artifact
+        if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: Wireframe-${{ matrix.os }}
           path: |
             ./Wireframe*
             ./*.dmg
-            ./*.msi
-            ./*.exe
+          retention-days: 90
+
+      - name: Upload Windows portable executable
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wireframe-${{ matrix.os }}
+          path: ./Wireframe.exe
+          if-no-files-found: error
           retention-days: 90
