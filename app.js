@@ -901,7 +901,7 @@ function renderVoltageDropRow(cables) {
     <td>${row.parallelSets}</td>
     <td>${escapeHtml(row.rating)}</td>
     <td>${escapeHtml(row.phase)}</td>
-    <td><span class="tag ${row.voltageDrop.percent === null ? "tbd" : row.voltageDropClass}"${row.voltageDropTitle ? ` title="${escapeHtml(row.voltageDropTitle)}"` : ""}>${row.voltageDrop.percent === null ? "Needs data" : `${row.voltageDrop.percent.toFixed(2)}%${row.voltageDrop.approximate ? " est." : ""}`}</span></td>
+    <td><span class="tag ${row.voltageDrop.percent === null ? "tbd" : row.voltageDropClass}"${row.voltageDropTitle ? ` title="${escapeHtml(row.voltageDropTitle)}"` : ""}>${row.voltageDrop.percent === null ? "Needs data" : `${row.voltageDrop.percent.toFixed(2)}%`}</span></td>
     <td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${row.cable.id}" aria-label="Edit ${escapeHtml(row.cableNumbers)}">✎</button></div></td>
   </tr>`;
 }
@@ -973,7 +973,7 @@ function voltageDropReportData() {
 
 function voltageDropExportRows() {
   return [
-    ["Cable Numbers", "Spec Type", "Cable Material", "Voltage (V)", "Load (A)", "Cable Ampacity (A)", "Ampacity Overhead (A)", "Parallel Sets", "Cable Rating (°C)", "Phase", "Voltage Drop (%)", "Calculation Status / Notes"],
+    ["Cable Numbers", "Spec Type", "Cable Material", "Voltage (V)", "Load (A)", "Cable Ampacity (A)", "Ampacity Overhead (A)", "Parallel Sets", "Cable Rating (°C)", "Phase", "Voltage Drop (%)"],
     ...voltageDropReportData().map((row) => [
       row.cableNumbers,
       row.type?.specType || "",
@@ -986,7 +986,6 @@ function voltageDropExportRows() {
       row.rating === "—" ? "" : Number(row.cable.cableRating),
       row.phase === "—" ? "" : row.phase,
       row.voltageDrop.percent === null ? "" : Number(row.voltageDrop.percent.toFixed(4)),
-      row.calculationNotes,
     ]),
   ];
 }
@@ -2534,7 +2533,7 @@ function renderVoltageDropPrint() {
   const settings = state.settings;
   const headers = [
     "Cable #", "Spec Type", "Cable Material", "Voltage", "Load (Amps)", "Cable Ampacity",
-    "Ampacity Overhead", "Parallel Sets", "Cable Rating", "Phase", "Voltage Drop %", "Calculation Notes",
+    "Ampacity Overhead", "Parallel Sets", "Cable Rating", "Phase", "Voltage Drop %",
   ];
   const headerLines = {
     "CABLE #": ["CABLE", "#"],
@@ -2547,7 +2546,6 @@ function renderVoltageDropPrint() {
     "PARALLEL SETS": ["PARALLEL", "SETS"],
     "CABLE RATING": ["CABLE", "RATING"],
     "VOLTAGE DROP %": ["VOLTAGE DROP", "%"],
-    "CALCULATION NOTES": ["CALCULATION", "NOTES"],
   };
   return `
     <main class="conduit-cable-print voltage-drop-print">
@@ -2572,7 +2570,7 @@ function renderVoltageDropPrint() {
         <tbody>${rows.length ? rows.map((row) => {
           const voltageDrop = row.voltageDrop.percent === null
             ? "Needs data"
-            : `${row.voltageDrop.percent.toFixed(2)}%${row.voltageDrop.approximate ? " est." : ""}`;
+            : `${row.voltageDrop.percent.toFixed(2)}%`;
           return `<tr>
             <td>${escapeHtml(row.cableNumbers || "—")}</td>
             <td>${escapeHtml(row.type?.specType || "—")}</td>
@@ -2585,7 +2583,6 @@ function renderVoltageDropPrint() {
             <td>${escapeHtml(row.rating)}</td>
             <td>${escapeHtml(row.phase)}</td>
             <td><span class="tag ${row.voltageDropClass}">${escapeHtml(voltageDrop)}</span></td>
-            <td>${escapeHtml(row.calculationNotes)}</td>
           </tr>`;
         }).join("") : `<tr><td class="voltage-drop-print-empty" colspan="${headers.length}">No cable entries available.</td></tr>`}</tbody>
       </table>

@@ -563,12 +563,12 @@ body.printing-voltage-drop { page: voltage-drop; }
   .printing-voltage-drop .conduit-cable-print-project-meta .detail-item span { color: #111; font-size: 8pt; }
   .printing-voltage-drop .voltage-drop-report-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
   .printing-voltage-drop .voltage-drop-report-table th,
-  .printing-voltage-drop .voltage-drop-report-table td { padding: 3px 4px; border: 1px solid #d7dfed; color: #111; font-size: 5.5pt; text-align: left; white-space: normal; overflow-wrap: anywhere; }
-  .printing-voltage-drop .voltage-drop-report-table th { border-color: #b7c8e5; background: #dce7fa; color: #20395f; }
+  .printing-voltage-drop .voltage-drop-report-table td { padding: 3px 4px; border: 1px solid #d7dfed; color: #111; font-size: 5.5pt; text-align: center; white-space: normal; overflow-wrap: anywhere; vertical-align: middle; }
+  .printing-voltage-drop .voltage-drop-report-table th { border-color: #b7c8e5; background: #dce7fa; color: #20395f; vertical-align: bottom; }
   .printing-voltage-drop .voltage-drop-report-table th:nth-child(1),
-  .printing-voltage-drop .voltage-drop-report-table td:nth-child(1) { width: 10%; }
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(1) { width: 10%; text-align: left; }
   .printing-voltage-drop .voltage-drop-report-table th:nth-child(2),
-  .printing-voltage-drop .voltage-drop-report-table td:nth-child(2) { width: 18%; }
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(2) { width: 18%; text-align: left; }
   .printing-voltage-drop .voltage-drop-report-table th:nth-child(3),
   .printing-voltage-drop .voltage-drop-report-table td:nth-child(3) { width: 7%; }
   .printing-voltage-drop .voltage-drop-report-table th:nth-child(4),
@@ -587,8 +587,6 @@ body.printing-voltage-drop { page: voltage-drop; }
   .printing-voltage-drop .voltage-drop-report-table td:nth-child(10) { width: 5%; }
   .printing-voltage-drop .voltage-drop-report-table th:nth-child(11),
   .printing-voltage-drop .voltage-drop-report-table td:nth-child(11) { width: 7%; }
-  .printing-voltage-drop .voltage-drop-report-table th:nth-child(12),
-  .printing-voltage-drop .voltage-drop-report-table td:nth-child(12) { width: 18%; }
   .printing-voltage-drop .voltage-drop-report-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
   .printing-voltage-drop .voltage-drop-print-empty { padding: 10pt; text-align: center; }
 }
