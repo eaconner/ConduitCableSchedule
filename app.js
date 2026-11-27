@@ -1395,7 +1395,7 @@ function cableRacewayClasses(cables) {
       const racewayClass = ["emt", "rmc"].includes(conduit.racewayType)
         ? "steel"
         : ["pvc-s40", "pvc-s80"].includes(conduit.racewayType)
-          ? "pvc"
+          ? "nm"
           : null;
       if (!racewayClass) {
         return { classes: [], reason: "Set each assigned conduit to EMT, RMC, or PVC." };
