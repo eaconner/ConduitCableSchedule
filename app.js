@@ -584,7 +584,7 @@ function renderVoltageDrop() {
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr><th>Cable #</th><th>Spec Type</th><th>Cable Material</th><th>Voltage</th><th>Load (Amps)</th><th>Cable<br>Ampacity</th><th>Ampacity<br>Overhead</th><th>Parallel Sets</th><th>Cable Rating</th><th>Phase</th><th>Voltage Drop %</th><th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr><th>Cable<br>Number</th><th>Spec Type</th><th>Cable Material</th><th>Voltage</th><th>Load<br>(Amps)</th><th>Cable<br>Ampacity</th><th>Ampacity<br>Overhead</th><th>Parallel<br>Sets</th><th>Cable<br>Rating</th><th>Phase</th><th>Voltage<br>Drop %</th><th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
     </section>`;
 }
 
@@ -869,13 +869,13 @@ function renderBillOfMaterials() {
       </section>
       <section class="content-card bom-section">
         <div class="card-heading"><div><h2>Cable Materials</h2><p>Cable types used in this project</p></div></div>
-        ${usedCableTypes.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Spec Type</th><th>Mfr.</th><th>Spec Number</th><th>Total Length<br>(ft)</th></tr></thead><tbody>${usedCableTypes.map(({ type, cables }) => {
+        ${usedCableTypes.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Spec Type</th><th>Mfr.</th><th>Spec Number</th><th>Total Length (ft)</th></tr></thead><tbody>${usedCableTypes.map(({ type, cables }) => {
           return `<tr><td>${escapeHtml(type?.specType || "—")}</td><td class="primary-cell">${escapeHtml(type?.manufacturer || "Cable type unavailable")}</td><td>${escapeHtml(type?.specNumber || "Specification unavailable")}</td><td>${renderLengthTotal(cables)}</td></tr>`;
         }).join("")}</tbody></table></div>` : `<div class="bom-empty">No cable types are currently used in the cable schedule.</div>`}
       </section>
       <section class="content-card bom-section">
         <div class="card-heading"><div><h2>Conduit Materials</h2><p>Conduit types and sizes used in this project</p></div></div>
-        ${usedConduitGroups.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit size</th><th>Conduit type</th><th>Total Length<br>(ft)</th></tr></thead><tbody>${usedConduitGroups.map(({ racewayType, size, conduits }) => {
+        ${usedConduitGroups.length ? `<div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Conduit size</th><th>Conduit type</th><th>Total Length (ft)</th></tr></thead><tbody>${usedConduitGroups.map(({ racewayType, size, conduits }) => {
           return `<tr><td class="primary-cell">${size === "TBD" ? `<span class="tag tbd">TBD</span>` : escapeHtml(size)}</td><td>${escapeHtml(racewayType)}</td><td>${renderLengthTotal(conduits)}</td></tr>`;
         }).join("")}</tbody></table></div>` : `<div class="bom-empty">No conduits are currently used in the conduit schedule.</div>`}
       </section>

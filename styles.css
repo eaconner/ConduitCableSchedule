@@ -204,6 +204,9 @@ tbody tr:hover { background: #fcfcfd; }
 .bom-project-meta { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; padding: 17px 20px; }
 .bom-section { margin-bottom: 16px; }
 .bom-section .table-wrap { overflow-x: auto; }
+.bom-section table { width: 100%; }
+.bom-section tr::after { content: ""; display: table-cell; width: 100%; }
+.bom-section tbody tr::after { border-top: 1px solid #f0f2f5; }
 .bom-empty { padding: 24px 20px; color: #8993a1; font-size: 11px; }
 .voltage-drop-table { min-width: 1100px; }
 .voltage-drop-table th,
@@ -435,6 +438,7 @@ tbody tr:hover { background: #fcfcfd; }
 :root[data-theme="dark"] thead,
 :root[data-theme="dark"] .checkbox-list-header { background: #263244; }
 :root[data-theme="dark"] td,
+:root[data-theme="dark"] .bom-section tbody tr::after,
 :root[data-theme="dark"] .settings-list-row,
 :root[data-theme="dark"] .checkbox-option,
 :root[data-theme="dark"] .checkbox-list-header,
@@ -503,7 +507,7 @@ body.printing-voltage-drop { page: voltage-drop; }
   .printing-bom .bom-section .card-heading p { color: #444; font-size: 7pt; }
   .printing-bom .bom-section .table-wrap { overflow: visible; }
   .printing-bom .bom-section table { width: 100%; table-layout: auto; }
-  .printing-bom .bom-section th, .printing-bom .bom-section td { padding: 5px 6px; color: #111; font-size: 7pt; white-space: normal; }
+  .printing-bom .bom-section th, .printing-bom .bom-section td { max-width: 180px; padding: 5px 6px; color: #111; font-size: 7pt; white-space: normal; overflow-wrap: break-word; }
   .printing-bom .bom-section th { background: #eee; }
   .printing-bom .bom-section .wrapped-headers th { max-width: none; }
   .printing-bom .bom-section tbody tr { break-inside: avoid; }
@@ -518,6 +522,9 @@ body.printing-voltage-drop { page: voltage-drop; }
   .printing-bom .bom-section .card-heading h2 { color: #20395f; }
   .printing-bom .bom-section th { background: #dce7fa; border-color: #b7c8e5; color: #20395f; }
   .printing-bom .bom-section td { border-color: #d7dfed; }
+  .printing-bom .bom-section thead tr::after { background: #dce7fa; }
+  .printing-bom .bom-section tbody tr::after,
+  :root[data-theme="dark"] .printing-bom .bom-section tbody tr::after { border-color: #d7dfed; }
   .printing-bom .bom-section tbody tr:nth-child(even) { background: #f6f8fc; }
   body.printing-conduit-cable { min-width: 0; background: #fff; color: #111; font-family: Arial, sans-serif; font-size: 8pt; }
   .printing-conduit-cable .app-shell, .printing-conduit-cable #modal-root { display: none !important; }
