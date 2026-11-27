@@ -361,8 +361,8 @@ function renderPage() {
   document.body.classList.toggle("printing-bom", activePage === "bom");
   if (activePage === "settings") pageContent.innerHTML = renderSettings();
   else if (activePage === "cables") pageContent.innerHTML = renderCables();
-  else if (activePage === "voltage-drop") pageContent.innerHTML = renderVoltageDrop();
   else if (activePage === "conduits") pageContent.innerHTML = renderConduits();
+  else if (activePage === "voltage-drop") pageContent.innerHTML = renderVoltageDrop();
   else if (activePage === "bom") pageContent.innerHTML = renderBillOfMaterials();
   else pageContent.innerHTML = renderDashboard();
 }
@@ -539,7 +539,7 @@ function renderCables() {
   const cableCount = state.cables.length;
   return `
     <div class="page-heading">
-      <div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
+      <div><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></span><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
@@ -576,7 +576,7 @@ function renderVoltageDrop() {
   const rows = cableDisplayGroups();
   return `
     <div class="page-heading">
-      <div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
+      <div><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></span><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <section class="content-card">
@@ -795,7 +795,7 @@ function renderConduits() {
   const rows = sortByNumber(state.conduits);
   return `
     <div class="page-heading">
-      <div><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
+      <div><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4.5 3v8a4.5 4.5 0 0 0 4.5 4.5h7M2.5 3h4M13 13.5h4" /></svg></span><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Conduit</button></div>
     </div>
     <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
