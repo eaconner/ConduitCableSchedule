@@ -28,8 +28,9 @@ jobs:
       - name: Prepare static app files
         shell: bash
         run: |
-          mkdir -p dist
-          cp index.html styles.css app.js raceway-data.js ampacity-data.js voltage-drop-data.js dist/
+          mkdir -p dist/data
+          cp index.html styles.css app.js dist/
+          cp data/raceway-data.js data/ampacity-data.js data/voltage-drop-data.js dist/data/
 
       - name: Install Pake CLI
         run: npm install -g pake-cli

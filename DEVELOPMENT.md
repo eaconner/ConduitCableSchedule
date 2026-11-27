@@ -11,9 +11,10 @@ cable-conductor-schedule/
 ├── index.html                 # Main HTML entry point
 ├── app.js                     # Core application logic (2500+ lines)
 ├── styles.css                 # Complete styling (600+ lines)
-├── ampacity-data.js           # Wire ampacity lookup tables
-├── raceway-data.js            # Conduit area lookup tables
-├── voltage-drop-data.js       # Voltage drop impedance tables
+├── data/
+│   ├── ampacity-data.js       # Wire ampacity lookup tables
+│   ├── raceway-data.js        # Conduit area lookup tables
+│   └── voltage-drop-data.js   # Voltage drop impedance tables
 ├── README.md                  # User documentation
 ├── CHANGELOG.md               # Version history and changes
 ├── SECURITY.md                # Security documentation
