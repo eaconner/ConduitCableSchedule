@@ -125,6 +125,15 @@ const VERSION_HISTORY = [
       "Enhanced error handling and state management consistency throughout the application.",
     ],
   },
+  {
+    version: "2026.11.15",
+    changes: [
+      "Added pagination functionality to tables with configurable rows per page (10, 25, 50, All options).",
+      "Implemented sortable table headers for Cables, Conduits, and Voltage Drop sections with visual indicators.",
+      "Added Master Report functionality combining all schedules and bill of materials into a single comprehensive report with print-to-PDF support.",
+      "Added voltage drop statistics info line to the Voltage Drop page showing count of rows with errors, rows passing voltage drop %, and the configured voltage drop limit percentage.",
+    ],
+  },
 ];
 let showAllVersionHistory = false;
 /**
