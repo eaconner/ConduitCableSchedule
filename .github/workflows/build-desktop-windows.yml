@@ -1,14 +1,11 @@
 name: Build Windows Desktop App
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "**.js"
-      - "**.html"
-      - "**.css"
-      - "icons/**"
-      - ".github/workflows/build-desktop-windows.yml"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   build-pake:
@@ -50,10 +47,92 @@ jobs:
         shell: bash
         run: pake ./dist --name Wireframe --icon ./icons/brand-icon.svg --keep-binary --app-version "$APP_VERSION"
 
-      - name: Upload Windows portable executable
+      - name: Sign Windows executable
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          $executablePath = (Resolve-Path ./Wireframe.exe).Path
+          $unsignedBackupPath = Join-Path $env:RUNNER_TEMP "Wireframe-unsigned.exe"
+          Copy-Item $executablePath $unsignedBackupPath
+          try {
+            if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_BASE64) -or
+                [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_PASSWORD)) {
+              Write-Output "::warning::Windows signing credentials are not configured; publishing the executable unsigned."
+              return
+            }
+
+            $certificatePath = Join-Path $env:RUNNER_TEMP "windows-signing.pfx"
+            [IO.File]::WriteAllBytes(
+              $certificatePath,
+              [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64)
+            )
+
+            try {
+              $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+                Sort-Object { [version]$_.Directory.Parent.Name } -Descending |
+                Select-Object -First 1
+              if (-not $signTool) {
+                throw "Could not find Windows SDK signtool.exe."
+              }
+
+              & $signTool.FullName sign /fd SHA256 /f $certificatePath /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td SHA256 $executablePath
+              if ($LASTEXITCODE -ne 0) {
+                throw "Windows executable signing failed."
+              }
+
+              & $signTool.FullName verify /pa /v $executablePath
+              if ($LASTEXITCODE -ne 0) {
+                throw "Windows executable signature verification failed."
+              }
+            }
+            finally {
+              Remove-Item $certificatePath -Force -ErrorAction SilentlyContinue
+            }
+
+            Write-Output "Windows executable signed and verified."
+          }
+          catch {
+            Copy-Item $unsignedBackupPath $executablePath -Force
+            Write-Output "::warning::Windows signing failed; publishing the executable unsigned. $($_.Exception.Message)"
+          }
+          finally {
+            Remove-Item $unsignedBackupPath -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Generate Windows checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash ./Wireframe.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Wireframe.exe" | Set-Content -Encoding ascii Wireframe-windows.sha256
+
+      - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: Wireframe-windows-latest
-          path: ./Wireframe.exe
+          path: |
+            ./Wireframe.exe
+            ./Wireframe-windows.sha256
           if-no-files-found: error
           retention-days: 90
+
+  publish-release:
+    if: github.event_name == 'release'
+    needs: build-pake
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Windows release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: Wireframe-windows-latest
+          path: release-assets
+
+      - name: Upload Windows assets to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" release-assets/Wireframe.exe release-assets/Wireframe-windows.sha256

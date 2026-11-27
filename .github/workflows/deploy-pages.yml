@@ -1,14 +1,8 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "**.js"
-      - "**.html"
-      - "**.css"
-      - "icons/**"
-      - ".github/workflows/deploy-pages.yml"
+  release:
+    types: [published]
 
 permissions:
   contents: read

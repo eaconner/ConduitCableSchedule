@@ -1,14 +1,11 @@
 name: Build macOS Desktop App
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "**.js"
-      - "**.html"
-      - "**.css"
-      - "icons/**"
-      - ".github/workflows/build-desktop-macos.yml"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   build-pake:
@@ -81,6 +78,10 @@ jobs:
           fi
           xcrun stapler validate "$app"
 
+      - name: Generate macOS checksum
+        shell: bash
+        run: shasum -a 256 Wireframe.dmg > Wireframe-macos.sha256
+
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
@@ -89,3 +90,22 @@ jobs:
             ./Wireframe*
             ./*.dmg
           retention-days: 90
+
+  publish-release:
+    if: github.event_name == 'release'
+    needs: build-pake
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download macOS release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: Wireframe-macos-latest
+          path: release-assets
+
+      - name: Upload macOS assets to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" release-assets/Wireframe.dmg release-assets/Wireframe-macos.sha256
