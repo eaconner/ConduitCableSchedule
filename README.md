@@ -8,7 +8,7 @@ Wireframe is a lightweight browser app for creating and managing electrical cabl
 - Define reusable cable types, generate conductor/pair specifications, and manage equipment.
 - Analyze NEC conduit fill, cable ampacity, and voltage drop.
 - Track project details and cable lengths from the overview dashboard.
-- Review the bill of materials, export schedules as CSV, and print project reports.
+- Review the bill of materials; export schedules, the BOM, and voltage-drop reports as CSV, and print project reports.
 - Choose a light, dark, or system-matched theme.
 
 ## Getting Started

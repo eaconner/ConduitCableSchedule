@@ -600,6 +600,24 @@ function cableDisplayGroups(cables = sortByNumber(state.cables)) {
 }
 
 function renderVoltageDropRow(cables) {
+  const row = voltageDropRowData(cables);
+  return `<tr>
+    <td class="primary-cell">${escapeHtml(row.cableNumbers || "—")}</td>
+    <td>${escapeHtml(row.type?.specType || "—")}</td>
+    <td>${escapeHtml(row.material)}</td>
+    <td>${escapeHtml(row.voltage)}</td>
+    <td>${escapeHtml(row.loadAmps)}</td>
+    <td>${escapeHtml(row.cableAmpacity)}</td>
+    <td><span class="tag ${row.overheadClass}">${row.ampacityOverhead === null ? "—" : `${formatNumber(row.ampacityOverhead)} A`}</span></td>
+    <td>${row.parallelSets}</td>
+    <td>${escapeHtml(row.rating)}</td>
+    <td>${escapeHtml(row.phase)}</td>
+    <td><span class="tag ${row.voltageDropClass}"${row.voltageDropTitle ? ` title="${escapeHtml(row.voltageDropTitle)}"` : ""}>${row.voltageDrop.percent === null ? "Needs data" : `${row.voltageDrop.percent.toFixed(2)}%${row.voltageDrop.approximate ? " est." : ""}`}</span></td>
+    <td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${row.cable.id}" aria-label="Edit ${escapeHtml(row.cableNumbers)}">✎</button></div></td>
+  </tr>`;
+}
+
+function voltageDropRowData(cables) {
   const cable = cables[0];
   const type = cableType(cable.cableTypeId);
   const cableMaterial = type && Object.hasOwn(type, "cableMaterial") ? type.cableMaterial : cable.cableMaterial;
@@ -614,13 +632,12 @@ function renderVoltageDropRow(cables) {
   const rating = CABLE_RATINGS.includes(String(cable.cableRating)) ? `${cable.cableRating}°C` : "—";
   const phase = CABLE_PHASES.includes(cable.phase) ? cable.phase : "—";
   const cableNumbers = cables.map((member) => member.number).join(", ");
-  const parallelSets = String(cables.length);
   const singleCableAmpacity = lookupCableAmpacity(cableSpecSizeFromType(type), cableMaterial, cable.cableRating);
-  const totalCableAmpacity = singleCableAmpacity === null ? null : singleCableAmpacity * cables.length;
-  const cableAmpacity = totalCableAmpacity === null ? "—" : `${formatNumber(totalCableAmpacity)} A`;
-  const ampacityOverhead = totalCableAmpacity === null || numericLoadAmps === null || !Number.isFinite(numericLoadAmps)
+  const cableAmpacityValue = singleCableAmpacity === null ? null : singleCableAmpacity * cables.length;
+  const cableAmpacity = cableAmpacityValue === null ? "—" : `${formatNumber(cableAmpacityValue)} A`;
+  const ampacityOverhead = cableAmpacityValue === null || numericLoadAmps === null || !Number.isFinite(numericLoadAmps)
     ? null
-    : totalCableAmpacity - numericLoadAmps;
+    : cableAmpacityValue - numericLoadAmps;
   const overheadClass = ampacityOverhead === null
     ? "neutral"
     : ampacityOverhead < 0
@@ -635,20 +652,54 @@ function renderVoltageDropRow(cables) {
     voltageDrop.reason,
     voltageDrop.approximate ? "Estimate: single-conductor Table 9 impedance is used for this cable." : "",
   ].filter(Boolean).join(" ");
-  return `<tr>
-    <td class="primary-cell">${escapeHtml(cableNumbers || "—")}</td>
-    <td>${escapeHtml(type?.specType || "—")}</td>
-    <td>${escapeHtml(material)}</td>
-    <td>${escapeHtml(voltage)}</td>
-    <td>${escapeHtml(loadAmps)}</td>
-    <td>${escapeHtml(cableAmpacity)}</td>
-    <td><span class="tag ${overheadClass}">${ampacityOverhead === null ? "—" : `${formatNumber(ampacityOverhead)} A`}</span></td>
-    <td>${escapeHtml(parallelSets)}</td>
-    <td>${escapeHtml(rating)}</td>
-    <td>${escapeHtml(phase)}</td>
-    <td><span class="tag ${voltageDropClass}"${voltageDropTitle ? ` title="${escapeHtml(voltageDropTitle)}"` : ""}>${voltageDrop.percent === null ? "Needs data" : `${voltageDrop.percent.toFixed(2)}%${voltageDrop.approximate ? " est." : ""}`}</span></td>
-    <td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${cable.id}" aria-label="Edit ${escapeHtml(cableNumbers)}">✎</button></div></td>
-  </tr>`;
+  const calculationNotes = [
+    voltageDrop.percent === null ? `Needs data: ${voltageDrop.reason}` : "",
+    voltageDrop.approximate ? "Estimate: single-conductor Table 9 impedance is used." : "",
+  ].filter(Boolean).join(" ") || "Calculated";
+  return {
+    cable,
+    type,
+    material,
+    voltage,
+    numericLoadAmps,
+    loadAmps,
+    rating,
+    phase,
+    cableNumbers,
+    parallelSets: cables.length,
+    cableAmpacityValue,
+    cableAmpacity,
+    ampacityOverhead,
+    overheadClass,
+    voltageDrop,
+    voltageDropClass,
+    voltageDropTitle,
+    calculationNotes,
+  };
+}
+
+function voltageDropReportData() {
+  return cableDisplayGroups().map(voltageDropRowData);
+}
+
+function voltageDropExportRows() {
+  return [
+    ["Cable Numbers", "Spec Type", "Cable Material", "Voltage (V)", "Load (A)", "Cable Ampacity (A)", "Ampacity Overhead (A)", "Parallel Sets", "Cable Rating (°C)", "Phase", "Voltage Drop (%)", "Calculation Status / Notes"],
+    ...voltageDropReportData().map((row) => [
+      row.cableNumbers,
+      row.type?.specType || "",
+      row.material === "—" ? "" : row.material,
+      row.voltage === "—" ? "" : row.voltage,
+      Number.isFinite(row.numericLoadAmps) ? row.numericLoadAmps : "",
+      row.cableAmpacityValue ?? "",
+      row.ampacityOverhead ?? "",
+      row.parallelSets,
+      row.rating === "—" ? "" : Number(row.cable.cableRating),
+      row.phase === "—" ? "" : row.phase,
+      row.voltageDrop.percent === null ? "" : Number(row.voltageDrop.percent.toFixed(4)),
+      row.calculationNotes,
+    ]),
+  ];
 }
 
 function calculateCableVoltageDrop(cables) {
@@ -1814,6 +1865,7 @@ function handleAction(action, id, fieldName) {
   if (action === "export-conduit-cable-csv") exportConduitCableCsv();
   if (action === "print-conduit-cable") printConduitCableSchedule();
   if (action === "export-bom") exportCsv(projectFileName("csv", "Bill of Materials"), billOfMaterialsExportRows());
+  if (action === "export-voltage-drop") exportCsv(projectFileName("csv", "Voltage Drop Report"), voltageDropExportRows());
   if (action === "export-project") exportJson();
   if (action === "import-project") {
     document.querySelector("#export-menu").hidden = true;
@@ -1826,6 +1878,7 @@ function handleAction(action, id, fieldName) {
     setPage("bom");
     printReport("Bill of Materials");
   }
+  if (action === "print-voltage-drop") printVoltageDropReport();
 }
 
 function renderConduitCablePrint() {
@@ -1890,6 +1943,81 @@ function printConduitCableSchedule() {
   document.body.classList.add("printing-conduit-cable");
   printReport("Conduit Cable Schedule", () => {
     document.body.classList.remove("printing-conduit-cable");
+    printRoot.replaceChildren();
+  });
+}
+
+function renderVoltageDropPrint() {
+  const rows = voltageDropReportData();
+  const settings = state.settings;
+  const headers = [
+    "Cable #", "Spec Type", "Cable Material", "Voltage", "Load (Amps)", "Cable Ampacity",
+    "Ampacity Overhead", "Parallel Sets", "Cable Rating", "Phase", "Voltage Drop %", "Calculation Notes",
+  ];
+  const headerLines = {
+    "CABLE #": ["CABLE", "#"],
+    "SPEC TYPE": ["SPEC", "TYPE"],
+    "CABLE MATERIAL": ["CABLE", "MATERIAL"],
+    "VOLTAGE": ["VOLTAGE", "(V)"],
+    "LOAD (AMPS)": ["LOAD", "(AMPS)"],
+    "CABLE AMPACITY": ["CABLE", "AMPACITY"],
+    "AMPACITY OVERHEAD": ["AMPACITY", "OVERHEAD"],
+    "PARALLEL SETS": ["PARALLEL", "SETS"],
+    "CABLE RATING": ["CABLE", "RATING"],
+    "VOLTAGE DROP %": ["VOLTAGE DROP", "%"],
+    "CALCULATION NOTES": ["CALCULATION", "NOTES"],
+  };
+  return `
+    <main class="conduit-cable-print voltage-drop-print">
+      <header class="conduit-cable-print-header">
+        <div class="conduit-cable-print-title">
+          <div><div class="eyebrow">PROJECT ANALYSIS</div><h1>Voltage Drop Report</h1></div>
+          <span>Generated ${escapeHtml(new Date().toLocaleDateString())}</span>
+        </div>
+        <h2>${escapeHtml(titleCaseHeading(projectName()))}</h2>
+        <div class="conduit-cable-print-project-meta">
+          ${detail("Client", settings.clientName)}
+          ${detail("Client Project #", settings.clientProjectNumber)}
+          ${detail("Internal Project #", settings.internalProjectNumber)}
+          ${detail("Revision", settings.revisionNumber)}
+          ${detail("Designer", settings.editorName)}
+          ${detail("Power Factor", settings.powerFactor)}
+          ${detail("Max Voltage Drop", `${settings.maxVoltageDropPercent}%`)}
+        </div>
+      </header>
+      <table class="voltage-drop-report-table">
+        <thead><tr>${headers.map((header) => `<th>${(headerLines[header.toLocaleUpperCase()] || [header.toLocaleUpperCase()]).map(escapeHtml).join("<br>")}</th>`).join("")}</tr></thead>
+        <tbody>${rows.length ? rows.map((row) => {
+          const voltageDrop = row.voltageDrop.percent === null
+            ? "Needs data"
+            : `${row.voltageDrop.percent.toFixed(2)}%${row.voltageDrop.approximate ? " est." : ""}`;
+          return `<tr>
+            <td>${escapeHtml(row.cableNumbers || "—")}</td>
+            <td>${escapeHtml(row.type?.specType || "—")}</td>
+            <td>${escapeHtml(row.material)}</td>
+            <td>${escapeHtml(row.voltage)}</td>
+            <td>${escapeHtml(row.loadAmps)}</td>
+            <td>${escapeHtml(row.cableAmpacity)}</td>
+            <td><span class="tag ${row.overheadClass}">${row.ampacityOverhead === null ? "—" : `${formatNumber(row.ampacityOverhead)} A`}</span></td>
+            <td>${row.parallelSets}</td>
+            <td>${escapeHtml(row.rating)}</td>
+            <td>${escapeHtml(row.phase)}</td>
+            <td><span class="tag ${row.voltageDropClass}">${escapeHtml(voltageDrop)}</span></td>
+            <td>${escapeHtml(row.calculationNotes)}</td>
+          </tr>`;
+        }).join("") : `<tr><td class="voltage-drop-print-empty" colspan="${headers.length}">No cable entries available.</td></tr>`}</tbody>
+      </table>
+    </main>`;
+}
+
+function printVoltageDropReport() {
+  const printRoot = document.querySelector("#print-root");
+  document.querySelector("#export-menu").hidden = true;
+  document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
+  printRoot.innerHTML = renderVoltageDropPrint();
+  document.body.classList.add("printing-voltage-drop");
+  printReport("Voltage Drop Report", () => {
+    document.body.classList.remove("printing-voltage-drop");
     printRoot.replaceChildren();
   });
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f5f7fa" />
     <title>Wireframe — Cable & Conduit Schedules</title>
-    <link rel="stylesheet" href="styles.css?v=2026.11.13.26" />
+    <link rel="stylesheet" href="styles.css?v=2026.11.13.27" />
   </head>
   <body>
     <div class="app-shell">
@@ -57,6 +57,8 @@
                 <button data-action="print-conduit-cable">Conduit Cable Schedule <span>PRINT</span></button>
                 <button data-action="export-bom">Bill of Materials <span>CSV</span></button>
                 <button data-action="print-bom">Bill of Materials <span>PRINT</span></button>
+                <button data-action="export-voltage-drop">Voltage Drop Report <span>CSV</span></button>
+                <button data-action="print-voltage-drop">Voltage Drop Report <span>PRINT</span></button>
               </div>
               <input id="backup-import-input" type="file" accept=".ccs,.json,application/json" hidden>
             </div>
@@ -69,9 +71,9 @@
     <div id="print-root" aria-hidden="true"></div>
     <div id="modal-root"></div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="raceway-data.js?v=2026.11.13.26"></script>
-    <script src="ampacity-data.js?v=2026.11.13.26"></script>
-    <script src="voltage-drop-data.js?v=2026.11.13.26"></script>
-    <script src="app.js?v=2026.11.13.26"></script>
+    <script src="raceway-data.js?v=2026.11.13.27"></script>
+    <script src="ampacity-data.js?v=2026.11.13.27"></script>
+    <script src="voltage-drop-data.js?v=2026.11.13.27"></script>
+    <script src="app.js?v=2026.11.13.27"></script>
   </body>
 </html>

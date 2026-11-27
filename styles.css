@@ -457,7 +457,9 @@ tbody tr:hover { background: #fcfcfd; }
 
 @page { size: auto; margin: 0.45in; }
 @page conduit-cable { size: landscape; margin: 0.4in; }
+@page voltage-drop { size: landscape; margin: 0.4in; }
 body.printing-conduit-cable { page: conduit-cable; }
+body.printing-voltage-drop { page: voltage-drop; }
 @media print {
   :root[data-theme="dark"] {
     color-scheme: light;
@@ -468,7 +470,8 @@ body.printing-conduit-cable { page: conduit-cable; }
   }
   body.printing-bom { min-width: 0; background: #fff; color: #111; font-size: 9pt; }
   body.printing-bom,
-  body.printing-conduit-cable { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.printing-conduit-cable,
+  body.printing-voltage-drop { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .printing-bom .app-shell { display: block; min-height: 0; }
   .printing-bom .sidebar, .printing-bom .topbar, .printing-bom .modal-backdrop, .printing-bom .toast, .printing-bom .print-hide { display: none !important; }
   .printing-bom .main-area { width: 100%; }
@@ -530,4 +533,46 @@ body.printing-conduit-cable { page: conduit-cable; }
   .printing-conduit-cable .conduit-cable-group { break-inside: avoid; page-break-inside: avoid; }
   .printing-conduit-cable .conduit-cable-group tr { break-inside: avoid; page-break-inside: avoid; }
   .printing-conduit-cable .conduit-cable-print .conduit-cable-spacer td { height: 8pt; padding: 0; border: 0; }
+  body.printing-voltage-drop { min-width: 0; background: #fff; color: #111; font-family: Arial, sans-serif; font-size: 8pt; }
+  .printing-voltage-drop .app-shell, .printing-voltage-drop #modal-root { display: none !important; }
+  .printing-voltage-drop #print-root { display: block; }
+  .printing-voltage-drop .conduit-cable-print-header { padding: 8pt 10pt; border-left: 4px solid #4268e8; background: #edf2ff; }
+  .printing-voltage-drop .conduit-cable-print-title { border-bottom-color: #c3d1eb; }
+  .printing-voltage-drop .conduit-cable-print-title h1 { color: #20395f; font-size: 18pt; }
+  .printing-voltage-drop .conduit-cable-print-title .eyebrow { color: #4268e8; font-size: 8pt; }
+  .printing-voltage-drop .conduit-cable-print-title > span { color: #52627b; font-size: 8pt; }
+  .printing-voltage-drop .conduit-cable-print-header h2 { margin: 7pt 0; color: #20395f; font-size: 12pt; }
+  .printing-voltage-drop .conduit-cable-print-project-meta { gap: 8pt; }
+  .printing-voltage-drop .conduit-cable-print-project-meta .detail-item label { margin-bottom: 3pt; color: #52627b; font-size: 7pt; }
+  .printing-voltage-drop .conduit-cable-print-project-meta .detail-item span { color: #111; font-size: 8pt; }
+  .printing-voltage-drop .voltage-drop-report-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  .printing-voltage-drop .voltage-drop-report-table th,
+  .printing-voltage-drop .voltage-drop-report-table td { padding: 3px 4px; border: 1px solid #d7dfed; color: #111; font-size: 5.5pt; text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+  .printing-voltage-drop .voltage-drop-report-table th { border-color: #b7c8e5; background: #dce7fa; color: #20395f; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(1),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(1) { width: 10%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(2),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(2) { width: 18%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(3),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(3) { width: 7%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(4),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(4) { width: 5%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(5),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(5) { width: 6%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(6),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(6),
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(7),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(7) { width: 7%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(8),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(8),
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(9),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(9),
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(10),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(10) { width: 5%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(11),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(11) { width: 7%; }
+  .printing-voltage-drop .voltage-drop-report-table th:nth-child(12),
+  .printing-voltage-drop .voltage-drop-report-table td:nth-child(12) { width: 18%; }
+  .printing-voltage-drop .voltage-drop-report-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
+  .printing-voltage-drop .voltage-drop-print-empty { padding: 10pt; text-align: center; }
 }
