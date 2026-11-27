@@ -267,6 +267,13 @@ systemTheme.addEventListener("change", () => {
 let state = loadState();
 const numberCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
+// Table sorting state
+const tableSortState = {
+  cables: { column: "number", direction: "asc" },
+  conduits: { column: "number", direction: "asc" },
+  voltageDrop: { column: "number", direction: "asc" },
+};
+
 /**
  * Loads the user's saved theme preference from browser localStorage.
  * Falls back to 'system' if no preference is stored or localStorage is unavailable.
@@ -480,6 +487,189 @@ function sortCablesByPrefix(items) {
  */
 function sortByName(items) {
   return [...items].sort((a, b) => numberCollator.compare(String(a.name ?? ""), String(b.name ?? "")));
+}
+
+/**
+ * Sorts cable display groups by the specified column and direction.
+ * Handles both single cables and parallel cable groups.
+ * @param {Array} groups - Cable display groups to sort
+ * @param {string} column - Column to sort by: number, parallelSets, type, length, fromLocation, toLocation, purpose, conduitAssignment
+ * @param {string} direction - Sort direction: 'asc' or 'desc'
+ * @returns {Array} Sorted cable groups
+ */
+function sortCableGroups(groups, column = "number", direction = "asc") {
+  const sorted = [...groups].sort((groupA, groupB) => {
+    const cableA = groupA[0];
+    const cableB = groupB[0];
+    let compareValue = 0;
+
+    switch (column) {
+      case "number": {
+        const numA = groupA.map((c) => c.number).join(", ");
+        const numB = groupB.map((c) => c.number).join(", ");
+        compareValue = numberCollator.compare(numA, numB);
+        break;
+      }
+      case "parallelSets":
+        compareValue = groupA.length - groupB.length;
+        break;
+      case "type": {
+        const typeA = cableType(cableA.cableTypeId)?.manufacturer || "";
+        const typeB = cableType(cableB.cableTypeId)?.manufacturer || "";
+        compareValue = numberCollator.compare(typeA, typeB);
+        break;
+      }
+      case "specType": {
+        const specTypeA = cableType(cableA.cableTypeId)?.specType || "";
+        const specTypeB = cableType(cableB.cableTypeId)?.specType || "";
+        compareValue = numberCollator.compare(specTypeA, specTypeB);
+        break;
+      }
+      case "length":
+        compareValue = (Number(cableA.length) || 0) - (Number(cableB.length) || 0);
+        break;
+      case "fromLocation":
+        compareValue = numberCollator.compare(cableLocationName(cableA.fromLocationId), cableLocationName(cableB.fromLocationId));
+        break;
+      case "toLocation":
+        compareValue = numberCollator.compare(cableLocationName(cableA.toLocationId), cableLocationName(cableB.toLocationId));
+        break;
+      case "purpose":
+        compareValue = numberCollator.compare(cableA.purpose || "", cableB.purpose || "");
+        break;
+      case "conduitAssignment": {
+        const conduitsA = state.conduits.filter((c) => groupA.some((ca) => c.cableIds.includes(ca.id))).length;
+        const conduitsB = state.conduits.filter((c) => groupB.some((cb) => c.cableIds.includes(cb.id))).length;
+        compareValue = conduitsA - conduitsB;
+        break;
+      }
+      default:
+        compareValue = 0;
+    }
+
+    return direction === "asc" ? compareValue : -compareValue;
+  });
+
+  return sorted;
+}
+
+/**
+ * Sorts conduit rows by the specified column and direction.
+ * @param {Array} conduits - Conduits to sort
+ * @param {string} column - Column to sort by: number, racewayType, fill, length, fromLocation, toLocation, cables
+ * @param {string} direction - Sort direction: 'asc' or 'desc'
+ * @returns {Array} Sorted conduits
+ */
+function sortConduits(conduits, column = "number", direction = "asc") {
+  const sorted = [...conduits].sort((a, b) => {
+    let compareValue = 0;
+
+    switch (column) {
+      case "number":
+        compareValue = numberCollator.compare(a.number || "", b.number || "");
+        break;
+      case "racewayType":
+        compareValue = numberCollator.compare(racewayTypeLabel(a.racewayType) || "", racewayTypeLabel(b.racewayType) || "");
+        break;
+      case "size":
+        compareValue = numberCollator.compare(a.size || "", b.size || "");
+        break;
+      case "fill": {
+        const statusOrder = { pass: 0, fail: 1, "needs-data": 2 };
+        const statusA = conduitFillAnalysis(a).status || "needs-data";
+        const statusB = conduitFillAnalysis(b).status || "needs-data";
+        compareValue = (statusOrder[statusA] || 2) - (statusOrder[statusB] || 2);
+        break;
+      }
+      case "length":
+        compareValue = (Number(a.length) || 0) - (Number(b.length) || 0);
+        break;
+      case "fromLocation":
+        compareValue = numberCollator.compare(locationName(a.fromLocationId), locationName(b.fromLocationId));
+        break;
+      case "toLocation":
+        compareValue = numberCollator.compare(locationName(a.toLocationId), locationName(b.toLocationId));
+        break;
+      case "cables":
+        compareValue = a.cableIds.length - b.cableIds.length;
+        break;
+      default:
+        compareValue = 0;
+    }
+
+    return direction === "asc" ? compareValue : -compareValue;
+  });
+
+  return sorted;
+}
+
+/**
+ * Sorts voltage drop rows by the specified column and direction.
+ * @param {Array} groups - Cable display groups to sort
+ * @param {string} column - Column to sort by: number, specType, material, voltage, load, ampacity, overhead, parallelSets, rating, phase, voltageDrop
+ * @param {string} direction - Sort direction: 'asc' or 'desc'
+ * @returns {Array} Sorted cable groups
+ */
+function sortVoltageDropRows(groups, column = "number", direction = "asc") {
+  const sorted = [...groups].sort((groupA, groupB) => {
+    const rowA = voltageDropRowData(groupA);
+    const rowB = voltageDropRowData(groupB);
+    let compareValue = 0;
+
+    switch (column) {
+      case "number": {
+        const numA = groupA.map((c) => c.number).join(", ");
+        const numB = groupB.map((c) => c.number).join(", ");
+        compareValue = numberCollator.compare(numA, numB);
+        break;
+      }
+      case "specType":
+        compareValue = numberCollator.compare(rowA.type?.specType || "", rowB.type?.specType || "");
+        break;
+      case "material":
+        compareValue = numberCollator.compare(rowA.material, rowB.material);
+        break;
+      case "voltage":
+        compareValue = numberCollator.compare(rowA.voltage, rowB.voltage);
+        break;
+      case "load":
+        compareValue = (rowA.numericLoadAmps || 0) - (rowB.numericLoadAmps || 0);
+        break;
+      case "ampacity": {
+        const ampacityA = rowA.cableAmpacity === "—" ? 0 : parseFloat(rowA.cableAmpacity);
+        const ampacityB = rowB.cableAmpacity === "—" ? 0 : parseFloat(rowB.cableAmpacity);
+        compareValue = ampacityA - ampacityB;
+        break;
+      }
+      case "overhead": {
+        const overheadA = rowA.ampacityOverhead ?? 0;
+        const overheadB = rowB.ampacityOverhead ?? 0;
+        compareValue = overheadA - overheadB;
+        break;
+      }
+      case "parallelSets":
+        compareValue = rowA.parallelSets - rowB.parallelSets;
+        break;
+      case "rating":
+        compareValue = numberCollator.compare(rowA.rating, rowB.rating);
+        break;
+      case "phase":
+        compareValue = numberCollator.compare(rowA.phase, rowB.phase);
+        break;
+      case "voltageDrop": {
+        const percentA = rowA.voltageDrop.percent ?? -1;
+        const percentB = rowB.voltageDrop.percent ?? -1;
+        compareValue = percentA - percentB;
+        break;
+      }
+      default:
+        compareValue = 0;
+    }
+
+    return direction === "asc" ? compareValue : -compareValue;
+  });
+
+  return sorted;
 }
 
 /**
@@ -801,8 +991,17 @@ function scheduleStatus() {
  * @returns {string} HTML string for cable schedule page
  */
 function renderCables() {
-  const rows = cableDisplayGroups();
+  let rows = cableDisplayGroups();
+  rows = sortCableGroups(rows, tableSortState.cables.column, tableSortState.cables.direction);
   const cableCount = state.cables.length;
+  
+  const sortIcon = (column) => {
+    if (tableSortState.cables.column !== column) return "";
+    return tableSortState.cables.direction === "asc" ? " ▲" : " ▼";
+  };
+  
+  const headerCell = (label, column) => `<th class="sortable-header" data-sort-column="${column}" data-table="cables" data-searchable="false">${label}${sortIcon(column)}</th>`;
+
   return `
     <div class="page-heading">
       <div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
@@ -810,7 +1009,7 @@ function renderCables() {
     </div>
     <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr><th>Cable<br>Number</th><th>Parallel<br>Sets</th><th>Mfr. /<br>Spec</th><th>Spec<br>Type</th><th>Cable<br>Length</th><th>Cable Routing <br>From</th><th>Cable Routing <br>To</th><th>Purpose</th><th>Conduit<br>Assignment</th><th>Actions</th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>${rows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Mfr. /<br>Spec", "type")}${headerCell("Spec<br>Type", "specType")}${headerCell("Cable<br>Length", "length")}${headerCell("Cable Routing <br>From", "fromLocation")}${headerCell("Cable Routing <br>To", "toLocation")}${headerCell("Purpose", "purpose")}${headerCell("Conduit<br>Assignment", "conduitAssignment")}<th>Actions</th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>${rows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
     </section>`;
 }
 
@@ -850,14 +1049,23 @@ function renderCableRow(cables) {
  * @returns {string} HTML string for voltage drop page
  */
 function renderVoltageDrop() {
-  const rows = cableDisplayGroups();
+  let rows = cableDisplayGroups();
+  rows = sortVoltageDropRows(rows, tableSortState.voltageDrop.column, tableSortState.voltageDrop.direction);
+  
+  const sortIcon = (column) => {
+    if (tableSortState.voltageDrop.column !== column) return "";
+    return tableSortState.voltageDrop.direction === "asc" ? " ▲" : " ▼";
+  };
+  
+  const headerCell = (label, column) => `<th class="sortable-header" data-sort-column="${column}" data-table="voltageDrop" data-searchable="false">${label}${sortIcon(column)}</th>`;
+
   return `
     <div class="page-heading">
       <div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr><th>Cable<br>Number</th><th>Spec Type</th><th>Cable Material</th><th>Voltage</th><th>Load<br>(Amps)</th><th>Cable<br>Ampacity</th><th>Ampacity<br>Overhead</th><th>Parallel<br>Sets</th><th>Cable<br>Rating</th><th>Phase</th><th>Voltage<br>Drop %</th><th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Spec Type", "specType")}${headerCell("Cable Material", "material")}${headerCell("Voltage", "voltage")}${headerCell("Load<br>(Amps)", "load")}${headerCell("Cable<br>Ampacity", "ampacity")}${headerCell("Ampacity<br>Overhead", "overhead")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Cable<br>Rating", "rating")}${headerCell("Phase", "phase")}${headerCell("Voltage<br>Drop %", "voltageDrop")}<th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
     </section>`;
 }
 
@@ -1085,7 +1293,16 @@ function cableSpecSizeFromType(type) {
  * @returns {string} HTML string for conduit schedule page
  */
 function renderConduits() {
-  const rows = sortByNumber(state.conduits);
+  let rows = sortByNumber(state.conduits);
+  rows = sortConduits(rows, tableSortState.conduits.column, tableSortState.conduits.direction);
+  
+  const sortIcon = (column) => {
+    if (tableSortState.conduits.column !== column) return "";
+    return tableSortState.conduits.direction === "asc" ? " ▲" : " ▼";
+  };
+  
+  const headerCell = (label, column) => `<th class="sortable-header" data-sort-column="${column}" data-table="conduits" data-searchable="false">${label}${sortIcon(column)}</th>`;
+
   return `
     <div class="page-heading">
       <div><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
@@ -1093,7 +1310,7 @@ function renderConduits() {
     </div>
     <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing, cable assignments, and fill checks</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers conduit-schedule-table"><thead><tr><th>Conduit<br>number</th><th>Raceway <br>/ Size</th><th>NEC fill</th><th>Conduit<br>Length</th><th>Conduit Routing <br>From</th><th>Conduit Routing <br>To</th><th>Assigned<br>cables</th><th>Actions</th></tr></thead><tbody>${rows.map((conduit) => {
+      ${rows.length ? `<div class="card-heading"><div><h2>All Conduits</h2><p>Review routing, cable assignments, and fill checks</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="conduit-search" type="search" placeholder="Search conduits..." aria-label="Search conduits" /></label></div></div><div class="table-wrap"><table class="wrapped-headers conduit-schedule-table"><thead><tr>${headerCell("Conduit<br>number", "number")}${headerCell("Raceway <br>/ Size", "size")}${headerCell("NEC fill", "fill")}${headerCell("Conduit<br>Length", "length")}${headerCell("Conduit Routing <br>From", "fromLocation")}${headerCell("Conduit Routing <br>To", "toLocation")}${headerCell("Assigned<br>cables", "cables")}<th>Actions</th></tr></thead><tbody>${rows.map((conduit) => {
         const analysis = conduitFillAnalysis(conduit);
         const sizeClass = analysis.status === "pass" ? "fill-pass" : analysis.status === "fail" ? "fill-fail" : "neutral";
         const sizeTitle = analysis.status === "pass" || analysis.status === "fail"
@@ -3050,6 +3267,30 @@ document.addEventListener("click", (event) => {
     closeModal();
     return;
   }
+  
+  // Handle column sorting
+  const sortableHeader = event.target.closest(".sortable-header");
+  if (sortableHeader) {
+    const column = sortableHeader.dataset.sortColumn;
+    const tableType = sortableHeader.dataset.table;
+    
+    if (column && tableType && tableSortState[tableType]) {
+      const currentState = tableSortState[tableType];
+      
+      // Toggle direction if same column, otherwise set to ascending
+      if (currentState.column === column) {
+        currentState.direction = currentState.direction === "asc" ? "desc" : "asc";
+      } else {
+        currentState.column = column;
+        currentState.direction = "asc";
+      }
+      
+      // Re-render the current page
+      setPage(activePage);
+    }
+    return;
+  }
+  
   const actionElement = event.target.closest("[data-action]");
   if (actionElement) {
     const action = actionElement.dataset.action;

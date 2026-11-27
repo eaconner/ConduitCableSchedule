@@ -110,6 +110,8 @@ h1 { margin-bottom: 7px; font-family: "Avenir Next", "Segoe UI", sans-serif; fon
 table { width: 100%; border-collapse: collapse; text-align: left; }
 thead { background: #fafbfd; }
 th { padding: 11px 17px; color: #929cab; font-size: 9px; font-weight: 700; letter-spacing: .65px; text-transform: uppercase; vertical-align: bottom; white-space: nowrap; }
+.sortable-header { cursor: pointer; user-select: none; transition: background-color .15s ease; }
+.sortable-header:hover { background-color: #f0f2f5; }
 .wrapped-headers th { max-width: 112px; white-space: normal; line-height: 1.35; }
 td { padding: 13px 17px; border-top: 1px solid #f0f2f5; color: #576375; font-size: 11px; vertical-align: middle; white-space: nowrap; }
 tbody tr:hover { background: #fcfcfd; }
