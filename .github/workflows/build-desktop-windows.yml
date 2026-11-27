@@ -1,0 +1,53 @@
+name: Build Windows Desktop App
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**.js"
+      - "**.html"
+      - "**.css"
+      - ".github/workflows/**"
+
+jobs:
+  build-pake:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Prepare static app files
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp index.html styles.css app.js raceway-data.js ampacity-data.js voltage-drop-data.js dist/
+
+      - name: Install Pake CLI
+        run: npm install -g pake-cli
+
+      - name: Set desktop app version
+        shell: bash
+        run: |
+          version=$(node .github/scripts/desktop-version.js)
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Package Windows portable app with Pake
+        shell: bash
+        run: pake ./dist --name Wireframe --icon ./brand-icon.svg --keep-binary --app-version "$APP_VERSION"
+
+      - name: Upload Windows portable executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wireframe-windows-latest
+          path: ./Wireframe.exe
+          if-no-files-found: error
+          retention-days: 90

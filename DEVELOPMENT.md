@@ -277,7 +277,9 @@ Versions follow the pattern: `YYYY.MM.NN`
 - `MM` - Month (e.g., 11 for November)
 - `NN` - Release within month (e.g., 14)
 
-The version is defined in `VERSION_HISTORY` array in `app.js`.
+The version is defined in `VERSION_HISTORY` array in `app.js`. Desktop builds
+use the latest entry for their package version, removing leading zeroes from
+each component (for example, `2026.01.00` becomes `2026.1.0`).
 
 ## Release Checklist
 
