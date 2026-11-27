@@ -41,7 +41,6 @@ button { cursor: pointer; }
 .nav-count { margin-left: auto; min-width: 22px; border-radius: 5px; padding: 2px 6px; background: #f0f2f5; color: #768193; font-size: 11px; text-align: center; }
 .nav-item.active .nav-count { background: #dfe7ff; color: #4268e8; }
 .sidebar-bottom { margin-top: auto; }
-.saved-dot { width: 7px; height: 7px; border-radius: 50%; background: #37b487; }
 .settings-link { margin: 0 0 17px; }
 .sidebar-footer { padding: 0 8px; color: #abb2bd; font-size: 9px; font-weight: 700; letter-spacing: .8px; }
 .sidebar-footer span:first-child { margin: 0 4px; color: #d2d6dc; }
@@ -65,9 +64,6 @@ button { cursor: pointer; }
 .breadcrumbs strong { color: #3e4a5b; font-weight: 600; }
 .crumb-chevron { color: #c2c8d0; }
 .topbar-actions { display: flex; align-items: center; gap: 18px; }
-.saved-state { display: flex; align-items: center; gap: 7px; color: #8993a1; font-size: 11px; }
-.saved-state.save-error { color: #b94a45; }
-.saved-dot { width: 6px; height: 6px; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; border: 1px solid transparent; border-radius: 6px; padding: 0 13px; font-size: 12px; font-weight: 700; transition: .15s ease; }
 .button-primary { background: var(--blue); color: #fff; box-shadow: 0 2px 4px #4268e829; }
 .button-primary:hover { background: var(--blue-dark); }
@@ -287,7 +283,6 @@ tbody tr:hover { background: #fcfcfd; }
   .sidebar-bottom { width: 100%; }
   .settings-link { justify-content: center; padding: 12px 4px; font-size: 0; }
   .topbar { height: 62px; padding: 0 17px; }
-  .saved-state { display: none; }
   .topbar-actions { gap: 10px; }
   .project-file-actions { gap: 5px; }
   .project-file-action { width: 38px; min-width: 38px; overflow: hidden; gap: 0; padding: 0; font-size: 0; }
@@ -383,7 +378,6 @@ tbody tr:hover { background: #fcfcfd; }
 :root[data-theme="dark"] .nav-item,
 :root[data-theme="dark"] .breadcrumbs,
 :root[data-theme="dark"] .crumb-chevron,
-:root[data-theme="dark"] .saved-state,
 :root[data-theme="dark"] .eyebrow,
 :root[data-theme="dark"] .page-heading p,
 :root[data-theme="dark"] .metric-top,

@@ -249,20 +249,12 @@ function persist() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     updateWorkspace();
-    updateSaveStatus("All changes saved");
     return true;
   } catch (error) {
     console.error("Could not save the project.", error);
-    updateSaveStatus("Save failed", true);
     showToast("Could not save changes in this browser. Check available storage.", true);
     return false;
   }
-}
-
-function updateSaveStatus(message, isError = false) {
-  const status = document.querySelector(".saved-state");
-  status.innerHTML = `<span class="saved-dot"></span>${escapeHtml(message)}`;
-  status.classList.toggle("save-error", isError);
 }
 
 function escapeHtml(value = "") {
@@ -2278,14 +2270,12 @@ async function importProjectBackup(file) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(importedState));
   } catch (error) {
     console.error("Could not save the imported project backup.", error);
-    updateSaveStatus("Import failed", true);
     showToast("Could not import the backup because browser storage could not save it.", true);
     return;
   }
 
   state = importedState;
   renderPage();
-  updateSaveStatus("All changes saved");
   showToast("Project backup imported.");
 }
 
