@@ -1,4 +1,4 @@
-# ![Wireframe Icon](icons/brand-icon.svg) Wireframe — Cable & Conduit Schedules
+# <img src="icons/brand-icon.svg" alt="Wireframe Icon" width="32" height="32" /> Wireframe — Cable & Conduit Schedules
 
 Wireframe is a lightweight browser app for creating and managing electrical cable and conduit schedules, voltage drop calculations, conduit fill calculation, reviewing a bill of materials, and printing project reports.
 
