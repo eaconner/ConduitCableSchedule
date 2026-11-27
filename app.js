@@ -494,7 +494,7 @@ function renderDashboard() {
   const recent = cableDisplayGroups([...state.cables].reverse()).slice(0, 5);
   return `
     <div class="page-heading">
-      <div><div class="eyebrow">PROJECT OVERVIEW</div><h1>${escapeHtml(projectName())}</h1><p>Your cable and conduit schedules, all in one place.</p></div>
+      <div><h1>${escapeHtml(projectName())}</h1><p>Your cable and conduit schedules, all in one place.</p></div>
       <div class="heading-actions"><button class="button button-secondary" data-page="settings"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Project settings</button><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>New cable</button></div>
     </div>
     <div class="overview-grid">
@@ -539,7 +539,7 @@ function renderCables() {
   const cableCount = state.cables.length;
   return `
     <div class="page-heading">
-      <div><div class="eyebrow">SCHEDULES / CABLES</div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
+      <div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
@@ -576,7 +576,7 @@ function renderVoltageDrop() {
   const rows = cableDisplayGroups();
   return `
     <div class="page-heading">
-      <div><div class="eyebrow">ANALYSIS / CABLES</div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
+      <div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <section class="content-card">
@@ -795,7 +795,7 @@ function renderConduits() {
   const rows = sortByNumber(state.conduits);
   return `
     <div class="page-heading">
-      <div><div class="eyebrow">SCHEDULES / CONDUITS</div><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
+      <div><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Conduit</button></div>
     </div>
     <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
@@ -851,7 +851,7 @@ function renderBillOfMaterials() {
   return `
     <div class="bom-page">
       <div class="page-heading">
-        <div><div class="eyebrow">PROJECT MATERIALS</div><h1>Bill of Materials</h1><p>Material totals summarized from the cable and conduit schedules for purchasing and field coordination.</p></div>
+        <div><h1>Bill of Materials</h1><p>Material totals summarized from the cable and conduit schedules for purchasing and field coordination.</p></div>
       </div>
       <section class="content-card bom-project-card">
         <div class="bom-project-title"><div><h2>${escapeHtml(titleCaseHeading(projectName()))}</h2><p>Bill of Materials</p></div><span class="bom-generated">Generated ${escapeHtml(new Date().toLocaleDateString())}</span></div>
@@ -883,7 +883,7 @@ function renderSettings() {
   const settings = state.settings;
   const equipmentLocations = sortByName(settings.locations.filter((location) => !isCableTrayLocation(location)));
   return `
-    <div class="page-heading"><div><div class="eyebrow">PROJECT CONFIGURATION</div><h1>Settings</h1><p>Manage project information, cable specifications, and equipment locations.</p></div></div>
+    <div class="page-heading"><div><h1>Settings</h1><p>Manage project information, cable specifications, and equipment locations.</p></div></div>
     <div class="settings-layout">
       <section class="content-card settings-section">
         <div class="card-heading"><div><h2>Project Information</h2><p>These details are included with your schedule exports</p></div></div>
@@ -1912,7 +1912,7 @@ function renderConduitCablePrint() {
     <main class="conduit-cable-print">
       <header class="conduit-cable-print-header">
         <div class="conduit-cable-print-title">
-          <div><div class="eyebrow">PROJECT SCHEDULE</div><h1>Conduit Cable Schedule</h1></div>
+          <div><h1>Conduit Cable Schedule</h1></div>
           <span>Generated ${escapeHtml(new Date().toLocaleDateString())}</span>
         </div>
         <h2>${escapeHtml(titleCaseHeading(projectName()))}</h2>
@@ -1971,7 +1971,7 @@ function renderVoltageDropPrint() {
     <main class="conduit-cable-print voltage-drop-print">
       <header class="conduit-cable-print-header">
         <div class="conduit-cable-print-title">
-          <div><div class="eyebrow">PROJECT ANALYSIS</div><h1>Voltage Drop Report</h1></div>
+          <div><h1>Voltage Drop Report</h1></div>
           <span>Generated ${escapeHtml(new Date().toLocaleDateString())}</span>
         </div>
         <h2>${escapeHtml(titleCaseHeading(projectName()))}</h2>
