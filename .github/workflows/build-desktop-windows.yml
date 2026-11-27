@@ -7,7 +7,7 @@ on:
       - "**.js"
       - "**.html"
       - "**.css"
-      - ".github/workflows/**"
+      - ".github/workflows/build-desktop-windows.yml"
 
 jobs:
   build-pake:
