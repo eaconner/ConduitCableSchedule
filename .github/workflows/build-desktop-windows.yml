@@ -135,4 +135,4 @@ jobs:
       - name: Upload Windows assets to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" release-assets/Wireframe.exe release-assets/Wireframe-windows.sha256
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/Wireframe.exe release-assets/Wireframe-windows.sha256
