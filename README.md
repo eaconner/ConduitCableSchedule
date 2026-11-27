@@ -11,6 +11,10 @@ Wireframe is a lightweight browser app for creating and managing electrical cabl
 - Review the bill of materials, export schedules, the BOM, and voltage-drop reports as CSV, and print project reports.
 - Choose a light, dark, or system-matched theme.
 
+## Demo
+
+Try the live web app: [https://eaconner.github.io/ConduitCableSchedule/](https://eaconner.github.io/ConduitCableSchedule/)
+
 ## Getting Started
 
 1. Download or clone this repository and open `index.html` in a modern browser. No build or installation is required.
