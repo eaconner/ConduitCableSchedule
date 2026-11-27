@@ -191,10 +191,21 @@ function loadState() {
  * @param {Object} location - Location object to check
  * @returns {boolean} True if location is cable tray
  */
+/**
+ * Checks if a location represents the cable tray special location.
+ * @param {Object} location - Location object to check
+ * @returns {boolean} True if location is the cable tray
+ */
 function isCableTrayLocation(location) {
   return String(location?.name || "").trim().toLocaleLowerCase() === CABLE_TRAY_LOCATION_NAME.toLocaleLowerCase();
 }
 
+/**
+ * Normalizes legacy cable tray locations by consolidating them into the standard CABLE_TRAY_LOCATION_ID.
+ * Updates all references in conduits to use the unified cable tray location ID.
+ * @param {Object} projectState - Current application state
+ * @returns {Object} Normalized project state with unified cable tray references
+ */
 function normalizeCableTrayLocations(projectState) {
   const cableTrayIds = new Set(projectState.settings.locations.filter(isCableTrayLocation).map((location) => location.id));
   if (!cableTrayIds.size) return projectState;
@@ -212,6 +223,12 @@ function normalizeCableTrayLocations(projectState) {
   };
 }
 
+/**
+ * Normalizes legacy cable type materials by infer missing material from cables if only one material is used.
+ * Handles upgrade path for projects created with older material assignment structure.
+ * @param {Object} projectState - Current application state
+ * @returns {Object} Normalized project state with cable materials assigned to types
+ */
 function normalizeCableTypeMaterials(projectState) {
   const legacyMaterials = new Map();
   projectState.cables.forEach((cable) => {
@@ -250,6 +267,11 @@ systemTheme.addEventListener("change", () => {
 let state = loadState();
 const numberCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
+/**
+ * Loads the user's saved theme preference from browser localStorage.
+ * Falls back to 'system' if no preference is stored or localStorage is unavailable.
+ * @returns {string} Theme preference: 'system', 'light', or 'dark'
+ */
 function loadThemePreference() {
   try {
     const preference = localStorage.getItem(THEME_PREFERENCE_KEY);
@@ -261,6 +283,11 @@ function loadThemePreference() {
   }
 }
 
+/**
+ * Loads the user's sidebar minimized preference from browser localStorage.
+ * Returns false (expanded) by default or if loading fails.
+ * @returns {boolean} True if sidebar should be minimized, false if expanded
+ */
 function loadSidebarPreference() {
   try {
     const preference = localStorage.getItem(SIDEBAR_PREFERENCE_KEY);
@@ -276,6 +303,12 @@ function loadSidebarPreference() {
   }
 }
 
+/**
+ * Saves the sidebar minimized preference to browser localStorage.
+ * Updates the application state and applies the visual changes.
+ * @param {boolean} minimized - True to minimize sidebar, false to expand
+ * @returns {boolean} True if save succeeded
+ */
 function saveSidebarPreference(minimized) {
   try {
     localStorage.setItem(SIDEBAR_PREFERENCE_KEY, String(minimized));
@@ -290,12 +323,22 @@ function saveSidebarPreference(minimized) {
   return true;
 }
 
+/**
+ * Applies the current theme preference to the application.
+ * Updates the HTML theme attribute and viewport theme color based on preference and system setting.
+ */
 function applyTheme() {
   const isDark = themePreference === "dark" || (themePreference === "system" && systemTheme.matches);
   document.documentElement.dataset.theme = isDark ? "dark" : "light";
   document.querySelector('meta[name="theme-color"]').content = isDark ? "#141c27" : "#f5f7fa";
 }
 
+/**
+ * Saves the theme preference to browser localStorage and applies it.
+ * Valid preferences are 'system', 'light', or 'dark'.
+ * @param {string} preference - Theme preference to save
+ * @returns {boolean} True if save succeeded, false otherwise
+ */
 function saveThemePreference(preference) {
   if (!THEME_PREFERENCES.includes(preference)) {
     showToast("Choose system, light, or dark appearance.", true);
@@ -350,18 +393,41 @@ function formatNumber(value) {
   return Number.isFinite(number) ? number.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—";
 }
 
+/**
+ * Checks if a value represents a valid scheduled length (finite number).
+ * Used to determine if a cable or conduit length has been defined.
+ * @param {*} value - Value to check
+ * @returns {boolean} True if value is a valid finite number
+ */
 function hasScheduledLength(value) {
   return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 }
 
+/**
+ * Renders a cable length value with units (ft) or TBD indicator.
+ * @param {number} value - Length value in feet
+ * @returns {string} HTML string with formatted length or TBD tag
+ */
 function renderScheduledLength(value) {
   return hasScheduledLength(value) ? `${formatNumber(value)} ft` : `<span class="tag tbd">TBD</span>`;
 }
 
+/**
+ * Sums all scheduled (defined) lengths from an array of records.
+ * Skips records with undefined or non-finite length values.
+ * @param {Array} records - Array of records with length property
+ * @returns {number} Sum of all scheduled lengths
+ */
 function sumScheduledLengths(records) {
   return records.reduce((sum, record) => sum + (hasScheduledLength(record.length) ? Number(record.length) : 0), 0);
 }
 
+/**
+ * Renders a length summary with total entered and count of missing values.
+ * Used in dashboard and overview sections.
+ * @param {Array} records - Array of records with length property
+ * @returns {string} HTML string with length summary and TBD count
+ */
 function renderLengthSummary(records) {
   const missingCount = records.filter((record) => !hasScheduledLength(record.length)).length;
   const knownLength = formatNumber(sumScheduledLengths(records));
@@ -370,6 +436,12 @@ function renderLengthSummary(records) {
     : `${knownLength} ft total length`;
 }
 
+/**
+ * Renders a length total for display, combining known and TBD values.
+ * Shows TBD indicator if any lengths are missing.
+ * @param {Array} records - Array of records with length property
+ * @returns {string} HTML string with total length or TBD indicator
+ */
 function renderLengthTotal(records) {
   const missingCount = records.filter((record) => !hasScheduledLength(record.length)).length;
   const knownLength = sumScheduledLengths(records);
@@ -378,10 +450,22 @@ function renderLengthTotal(records) {
     : `${formatNumber(knownLength)} ft`;
 }
 
+/**
+ * Sorts items by their numeric schedule number using locale-aware collation.
+ * Maintains original order for items with undefined numbers.
+ * @param {Array} items - Array of items with number property
+ * @returns {Array} New sorted array
+ */
 function sortByNumber(items) {
   return [...items].sort((a, b) => numberCollator.compare(String(a.number ?? ""), String(b.number ?? "")));
 }
 
+/**
+ * Sorts cables by prefix (P, C, S) then by numeric order within each prefix.
+ * Useful for grouping cable types in display.
+ * @param {Array} items - Array of cable items with number property
+ * @returns {Array} New sorted array grouped by prefix
+ */
 function sortCablesByPrefix(items) {
   const prefixOrder = { P: 0, C: 1, S: 2 };
   return [...items].sort((a, b) =>
@@ -389,10 +473,21 @@ function sortCablesByPrefix(items) {
     numberCollator.compare(String(a.number ?? ""), String(b.number ?? "")));
 }
 
+/**
+ * Sorts items alphabetically by name using locale-aware collation.
+ * @param {Array} items - Array of items with name property
+ * @returns {Array} New sorted array
+ */
 function sortByName(items) {
   return [...items].sort((a, b) => numberCollator.compare(String(a.name ?? ""), String(b.name ?? "")));
 }
 
+/**
+ * Displays a toast notification message to the user.
+ * Automatically hides after 3.2 seconds.
+ * @param {string} message - Message to display
+ * @param {boolean} isError - True to style as error, false for normal notification
+ */
 function showToast(message, isError = false) {
   toast.textContent = message;
   toast.classList.toggle("error", isError);
@@ -401,6 +496,10 @@ function showToast(message, isError = false) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
 }
 
+/**
+ * Updates the workspace section with current project information.
+ * Displays project name, client, and version in the sidebar.
+ */
 function updateWorkspace() {
   const settings = state.settings;
   const project = (settings.projectName || "").trim();
@@ -414,6 +513,11 @@ function updateWorkspace() {
   document.querySelector("#conduit-nav-count").textContent = state.conduits.length;
 }
 
+/**
+ * Sets the active page and updates the UI to display it.
+ * Updates navigation highlighting and breadcrumb display.
+ * @param {string} page - Page key: 'dashboard', 'cables', 'conduits', 'voltage-drop', 'bom', or 'settings'
+ */
 function setPage(page) {
   activePage = page;
   document.querySelectorAll("[data-page]").forEach((item) => {
@@ -424,6 +528,10 @@ function setPage(page) {
   renderPage();
 }
 
+/**
+ * Renders the current active page by calling the appropriate render function.
+ * Updates workspace information and applies page-specific classes.
+ */
 function renderPage() {
   updateWorkspace();
   document.body.classList.toggle("printing-bom", activePage === "bom");
@@ -435,31 +543,66 @@ function renderPage() {
   else pageContent.innerHTML = renderDashboard();
 }
 
+/**
+ * Returns the current project name from settings.
+ * Falls back to 'Untitled Project' if no name is set.
+ * @returns {string} Project name
+ */
 function projectName() {
   return state.settings.projectName || "Untitled Project";
 }
 
+/**
+ * Converts text to title case, preserving proper capitalization for headings.
+ * Uses Unicode-aware word boundary detection.
+ * @param {string} value - Value to convert
+ * @returns {string} Title-cased string
+ */
 function titleCaseHeading(value) {
   return String(value).toLocaleLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, separator, letter) =>
     `${separator}${letter.toLocaleUpperCase()}`,
   );
 }
 
+/**
+ * Gets the display name of a location by ID.
+ * Returns special handling for cable tray location.
+ * @param {string} id - Location ID
+ * @returns {string} Location name or "Location removed" if not found
+ */
 function locationName(id) {
   if (id === CABLE_TRAY_LOCATION_ID) return CABLE_TRAY_LOCATION_NAME;
   return state.settings.locations.find((location) => location.id === id)?.name || "Location removed";
 }
 
+/**
+ * Normalizes a location name to lowercase for comparison.
+ * Useful for case-insensitive lookups.
+ * @param {string} name - Location name
+ * @returns {string} Normalized (lowercase, trimmed) name
+ */
 function normalizedLocationName(name) {
   return String(name ?? "").trim().toLocaleLowerCase();
 }
 
+/**
+ * Gets a normalized location name key for comparison purposes.
+ * Handles cable tray special case.
+ * @param {string} id - Location ID
+ * @returns {string} Normalized location name key
+ */
 function locationNameKey(id) {
   if (id === CABLE_TRAY_LOCATION_ID) return normalizedLocationName(CABLE_TRAY_LOCATION_NAME);
   const location = state.settings.locations.find((item) => item.id === id);
   return location ? normalizedLocationName(location.name) : "";
 }
 
+/**
+ * Gets the display name of a location including optional equipment ID.
+ * Formats as "Name - Equipment" if equipment ID is specified.
+ * @param {Object} location - Location object
+ * @returns {string} Formatted location display name
+ */
 function locationDisplayName(location) {
   if (!location) return "Location removed";
   const name = location.name || "Location removed";
@@ -467,18 +610,41 @@ function locationDisplayName(location) {
   return equipmentId ? `${name} - ${equipmentId}` : name;
 }
 
+/**
+ * Gets the display name of a location by cable reference.
+ * Looks up location details from cable location ID.
+ * @param {string} id - Location ID from cable
+ * @returns {string} Formatted location display name
+ */
 function cableLocationName(id) {
   return locationDisplayName(state.settings.locations.find((location) => location.id === id));
 }
 
+/**
+ * Looks up a cable type by ID.
+ * @param {string} id - Cable type ID
+ * @returns {Object|undefined} Cable type object or undefined if not found
+ */
 function cableType(id) {
   return state.settings.cableTypes.find((type) => type.id === id);
 }
 
+/**
+ * Gets the label for a raceway type value.
+ * @param {string} value - Raceway type value
+ * @returns {string} Raceway type label
+ */
 function racewayTypeLabel(value) {
   return RACEWAY_TYPES.find((type) => type.value === value)?.label || "";
 }
 
+/**
+ * Looks up the internal area of a raceway by type and size.
+ * Returns the area in square inches for conduit fill calculations.
+ * @param {string} type - Raceway type (EMT, RMC, PVC)
+ * @param {string} size - Trade size (e.g., "1/2\"")
+ * @returns {number|null} Internal area in square inches or null if not found
+ */
 function racewayInternalAreaFor(type, size) {
   const tradeSize = String(size ?? "").replace(/["]/g, "").trim();
   const areas = Object.prototype.hasOwnProperty.call(RACEWAY_INTERNAL_AREAS, type)
@@ -487,10 +653,22 @@ function racewayInternalAreaFor(type, size) {
   return areas?.[tradeSize] ?? null;
 }
 
+/**
+ * Gets the label for a cable fill type value.
+ * @param {string} value - Cable fill type value
+ * @returns {string} Cable fill type label
+ */
 function cableFillTypeLabel(value) {
   return CABLE_FILL_TYPES.find((type) => type.value === value)?.label || "";
 }
 
+/**
+ * Analyzes a conduit's fill status according to NEC requirements.
+ * Validates all required inputs and calculates the fill percentage.
+ * Returns status (pass, fail, needs-data, or not-applicable) with detailed reasoning.
+ * @param {Object} conduit - Conduit object to analyze
+ * @returns {Object} Analysis result with status, label, reason, and optional percentage/allowed
+ */
 function conduitFillAnalysis(conduit) {
   const cableIds = Array.isArray(conduit.cableIds) ? conduit.cableIds : [];
   if (!cableIds.length) return { status: "not-applicable", label: "No cables", reason: "No cables assigned" };
@@ -553,6 +731,11 @@ function conduitFillAnalysis(conduit) {
   };
 }
 
+/**
+ * Renders the dashboard overview page.
+ * Displays project metrics, details, and recently added cables.
+ * @returns {string} HTML string for dashboard page
+ */
 function renderDashboard() {
   const settings = state.settings;
   const cableLength = sumScheduledLengths(state.cables);
@@ -594,14 +777,29 @@ function renderDashboard() {
     </section>`;
 }
 
+/**
+ * Renders a detail item for display in project details section.
+ * Escapes HTML for safety when rendering user input.
+ * @param {string} label - Detail label
+ * @param {*} value - Detail value
+ * @returns {string} HTML string for detail item
+ */
 function detail(label, value) {
   return `<div class="detail-item"><label>${escapeHtml(label)}</label><span>${escapeHtml(value === 0 ? "0" : value || "Not set")}</span></div>`;
 }
 
+/**
+ * Returns the current schedule status setting.
+ * @returns {string} Schedule status or "In progress" as default
+ */
 function scheduleStatus() {
   return state.settings.scheduleStatus || "In progress";
 }
 
+/**
+ * Renders the cable schedule page with table of all cables and parallel sets.
+ * @returns {string} HTML string for cable schedule page
+ */
 function renderCables() {
   const rows = cableDisplayGroups();
   const cableCount = state.cables.length;
@@ -616,6 +814,12 @@ function renderCables() {
     </section>`;
 }
 
+/**
+ * Renders a table row for a group of parallel cables.
+ * Shows combined information for cable sets including actions.
+ * @param {Array} cables - Array of cable objects in the same parallel group
+ * @returns {string} HTML string for table row
+ */
 function renderCableRow(cables) {
   const cable = cables[0];
   const type = cableType(cable.cableTypeId);
@@ -640,6 +844,11 @@ function renderCableRow(cables) {
   </tr>`;
 }
 
+/**
+ * Renders the voltage drop analysis page.
+ * Shows cable electrical details with ampacity and voltage drop calculations.
+ * @returns {string} HTML string for voltage drop page
+ */
 function renderVoltageDrop() {
   const rows = cableDisplayGroups();
   return `
@@ -652,6 +861,12 @@ function renderVoltageDrop() {
     </section>`;
 }
 
+/**
+ * Groups cables by their parallel set ID for display.
+ * Returns individual cables as single-element arrays and parallel sets grouped together.
+ * @param {Array} cables - Cables to group (defaults to sorted state.cables)
+ * @returns {Array} Array of cable groups (each group is an array of cables)
+ */
 function cableDisplayGroups(cables = sortByNumber(state.cables)) {
   const seenGroups = new Set();
   const groups = [];
@@ -667,6 +882,12 @@ function cableDisplayGroups(cables = sortByNumber(state.cables)) {
   return groups;
 }
 
+/**
+ * Renders a voltage drop table row for a cable or parallel set group.
+ * Shows electrical specifications, ampacity, and voltage drop calculations.
+ * @param {Array} cables - Cable group to render
+ * @returns {string} HTML string for voltage drop table row
+ */
 function renderVoltageDropRow(cables) {
   const row = voltageDropRowData(cables);
   return `<tr>
@@ -859,6 +1080,11 @@ function cableSpecSizeFromType(type) {
   return match ? `${match[1]} ${match[2].toUpperCase()}` : "";
 }
 
+/**
+ * Renders the conduit schedule page with table of all conduits.
+ * Shows raceway details, NEC fill analysis, and cable assignments.
+ * @returns {string} HTML string for conduit schedule page
+ */
 function renderConduits() {
   const rows = sortByNumber(state.conduits);
   return `
@@ -886,6 +1112,11 @@ function renderConduits() {
     </section>`;
 }
 
+/**
+ * Groups cables and conduits by their specifications for bill of materials.
+ * Returns organized arrays for rendering material summaries.
+ * @returns {Object} Object with usedCableTypes and usedConduitGroups arrays
+ */
 function billOfMaterialsGroups() {
   const cableGroups = new Map();
   state.cables.forEach((cable) => {
@@ -912,6 +1143,11 @@ function billOfMaterialsGroups() {
   return { usedCableTypes, usedConduitGroups };
 }
 
+/**
+ * Renders the bill of materials page.
+ * Shows cable types and conduit materials used in the project with totals.
+ * @returns {string} HTML string for bill of materials page
+ */
 function renderBillOfMaterials() {
   const { usedCableTypes, usedConduitGroups } = billOfMaterialsGroups();
   const settings = state.settings;
@@ -947,6 +1183,11 @@ function renderBillOfMaterials() {
     </div>`;
 }
 
+/**
+ * Renders the settings page.
+ * Manages project info, cable types, equipment locations, appearance, and voltage drop settings.
+ * @returns {string} HTML string for settings page
+ */
 function renderSettings() {
   const settings = state.settings;
   const equipmentLocations = sortByName(settings.locations.filter((location) => !isCableTrayLocation(location)));
@@ -1027,6 +1268,11 @@ function renderSettings() {
     </div>`;
 }
 
+/**
+ * Renders the version history list.
+ * Shows application version history with expandable/collapsible view.
+ * @returns {string} HTML string for version history section
+ */
 function renderVersionHistory() {
   const newestFirst = [...VERSION_HISTORY].reverse();
   const visibleVersions = showAllVersionHistory ? newestFirst : newestFirst.slice(0, 4);
@@ -1040,10 +1286,23 @@ function renderVersionHistory() {
     ${VERSION_HISTORY.length > 4 ? `<button type="button" class="text-button version-history-toggle" data-action="toggle-version-history" aria-controls="version-history-list" aria-expanded="${showAllVersionHistory}">${showAllVersionHistory ? "Show Less" : "Show More"}</button>` : ""}`;
 }
 
+/**
+ * Creates an HTML input field for settings.
+ * @param {string} name - Field name attribute
+ * @param {string} label - Field label text
+ * @param {string} value - Current field value
+ * @param {string} placeholder - Placeholder text
+ * @returns {string} HTML string for settings input field
+ */
 function settingsField(name, label, value, placeholder) {
   return `<div class="field"><label for="setting-${name}">${escapeHtml(label)}</label><input id="setting-${name}" name="${name}" value="${escapeHtml(value || "")}" placeholder="${escapeHtml(placeholder)}" /></div>`;
 }
 
+/**
+ * Creates an HTML select field for schedule status with optional custom value.
+ * @param {string} value - Current schedule status value
+ * @returns {string} HTML string for schedule status field with custom option
+ */
 function scheduleStatusField(value) {
   const isCustom = Boolean(value) && !SCHEDULE_STATUSES.includes(value);
   const selectedStatus = isCustom ? "custom" : value || "In progress";
@@ -1051,10 +1310,22 @@ function scheduleStatusField(value) {
     <div class="field" id="custom-schedule-status-field" ${isCustom ? "" : "hidden"}><label for="setting-custom-schedule-status">Custom Status</label><input id="setting-custom-schedule-status" name="customScheduleStatus" value="${escapeHtml(isCustom ? value : "")}" ${isCustom ? "required" : "disabled"} /></div>`;
 }
 
+/**
+ * Creates HTML option elements for a select field from items array.
+ * @param {Array} items - Array of items with id and name properties
+ * @param {string} selectedId - Currently selected item ID
+ * @returns {string} HTML string with options
+ */
 function options(items, selectedId) {
   return `<option value="">Select…</option>${items.map((item) => `<option value="${item.id}" ${item.id === selectedId ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
 }
 
+/**
+ * Formats cable specification type description from components.
+ * Example output: "3/C #12 AWG W/GND 15kV"
+ * @param {Object} spec - Cable spec object with count, construction, size, suffix, includeGroundShield
+ * @returns {string} Formatted cable specification type
+ */
 function cableSpecTypeValue({ suffix, count, construction, size, includeGroundShield }) {
   const conductorCount = Number(count);
   if (!Number.isSafeInteger(conductorCount) || conductorCount < 1 ||
@@ -1068,6 +1339,12 @@ function cableSpecTypeValue({ suffix, count, construction, size, includeGroundSh
   return [constructionLabel, sizeLabel, qualifier, String(suffix || "").trim()].filter(Boolean).join(" ");
 }
 
+/**
+ * Creates an HTML select field for cable specification size selection.
+ * Organizes sizes by unit (AWG and KCMIL).
+ * @param {string} selectedSize - Currently selected size (e.g., "12 AWG")
+ * @returns {string} HTML string for cable size field
+ */
 function cableSpecSizeField(selectedSize) {
   const sizes = (unit) => CABLE_SPEC_SIZES
     .filter((size) => size.endsWith(unit))
@@ -1076,12 +1353,22 @@ function cableSpecSizeField(selectedSize) {
   return `<div class="field"><label for="modal-specSize">Cable size</label><select id="modal-specSize" name="specSize"><option value="">Select size…</option><optgroup label="AWG">${sizes("AWG")}</optgroup><optgroup label="KCMIL">${sizes("KCMIL")}</optgroup></select></div>`;
 }
 
+/**
+ * Checks if a form is a cable type form (new or edit).
+ * @param {HTMLFormElement} form - Form element to check
+ * @returns {boolean} True if the form is a cable type form
+ */
 function isCableTypeForm(form) {
   return form?.dataset.form === "new-cable-type" ||
     form?.dataset.form === "new-cable-type-inline" ||
     form?.dataset.form.startsWith("edit-cable-type:");
 }
 
+/**
+ * Updates cable specification form labels based on construction type.
+ * Changes "Ground" to "Shield" label for pair construction type.
+ * @param {HTMLFormElement} form - Cable spec form element
+ */
 function updateCableSpecLabels(form) {
   if (!isCableTypeForm(form)) return;
   const construction = form.elements.namedItem("specConstruction").value;
@@ -1089,12 +1376,30 @@ function updateCableSpecLabels(form) {
   groundShieldLabel.textContent = construction === "pair" ? "Include shield" : "Include ground";
 }
 
+/**
+ * Creates an HTML select field with options.
+ * @param {string} name - Field name attribute
+ * @param {string} label - Field label text
+ * @param {Array} choices - Array of {value, label} objects
+ * @param {string} selectedValue - Currently selected value
+ * @param {Object} fieldOptions - Display options (full, optional)
+ * @returns {string} HTML string for select field
+ */
 function selectField(name, label, choices, selectedValue = "", fieldOptions = {}) {
   const full = fieldOptions.full ? " full" : "";
   const optional = fieldOptions.optional ? ` <span class="optional">(optional)</span>` : "";
   return `<div class="field${full}"><label for="modal-${name}">${escapeHtml(label)}${optional}</label><select id="modal-${name}" name="${name}"><option value="">Select…</option>${choices.map(({ value, label: choiceLabel }) => `<option value="${escapeHtml(value)}" ${value === selectedValue ? "selected" : ""}>${escapeHtml(choiceLabel)}</option>`).join("")}</select></div>`;
 }
 
+/**
+ * Opens a modal dialog with form fields.
+ * Creates and displays a modal overlay with a form for data entry.
+ * @param {string} title - Modal title
+ * @param {string} subtitle - Modal subtitle/description
+ * @param {string} formKind - Form identifier for handling submission
+ * @param {string} fields - HTML string of form fields
+ * @param {string} submitLabel - Label for submit button (default: "Save")
+ */
 function openModal(title, subtitle, formKind, fields, submitLabel = "Save") {
   modalRoot.innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
     <div class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div></div>
@@ -1103,10 +1408,23 @@ function openModal(title, subtitle, formKind, fields, submitLabel = "Save") {
   modalRoot.querySelector(".modal").focus();
 }
 
+/**
+ * Closes the currently open modal dialog.
+ * Clears the modal overlay from the DOM.
+ */
 function closeModal() {
   modalRoot.innerHTML = "";
 }
 
+/**
+ * Creates an HTML text input field.
+ * @param {string} name - Field name attribute
+ * @param {string} label - Field label text
+ * @param {string} value - Current field value
+ * @param {string} placeholder - Placeholder text
+ * @param {Object} options - Field options (full, required, type, step, min, max, optional)
+ * @returns {string} HTML string for text input field
+ */
 function textField(name, label, value = "", placeholder = "", options = {}) {
   const full = options.full ? " full" : "";
   const required = options.required === false ? "" : " required";
@@ -1117,10 +1435,21 @@ function textField(name, label, value = "", placeholder = "", options = {}) {
   return `<div class="field${full}"><label for="modal-${name}">${escapeHtml(label)}${options.optional ? ` <span class="optional">(optional)</span>` : ""}</label><input id="modal-${name}" name="${name}" type="${type}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}"${required}${step}${min}${max} /></div>`;
 }
 
+/**
+ * Extracts the prefix letter (P, C, or S) from a schedule number.
+ * @param {string|number} number - Schedule number to parse
+ * @returns {string} Prefix letter ('P', 'C', or 'S'; defaults to 'P')
+ */
 function numberPrefixFrom(number) {
   return String(number || "").trim().match(/^([PCS])\d+/i)?.[1].toUpperCase() || "P";
 }
 
+/**
+ * Returns valid cable prefixes for a conduit based on its prefix.
+ * P conduits can hold P, C, or S cables; C can hold C or S; S only holds S.
+ * @param {string|number} number - Conduit schedule number
+ * @returns {Array} Valid cable prefixes for this conduit
+ */
 function cablePrefixesForConduit(number) {
   const conduitPrefix = numberPrefixFrom(number);
   if (conduitPrefix === "P") return ["P", "C", "S"];
@@ -1128,6 +1457,12 @@ function cablePrefixesForConduit(number) {
   return [];
 }
 
+/**
+ * Calculates the next schedule number for a given prefix.
+ * @param {Array} items - Items with 'number' field
+ * @param {string} prefix - Prefix letter (P, C, or S)
+ * @returns {string} Next schedule number (e.g., "P1", "P2")
+ */
 function nextScheduleNumber(items, prefix) {
   const matchingNumbers = items
     .map((item) => String(item.number || "").trim().match(/^([PCS])(\d+)/i))
@@ -1146,6 +1481,14 @@ function nextScheduleNumber(items, prefix) {
   return candidate;
 }
 
+/**
+ * Calculates multiple consecutive schedule numbers for a given prefix.
+ * Used for creating parallel cable sets.
+ * @param {Array} items - Items with 'number' field
+ * @param {string} prefix - Prefix letter (P, C, or S)
+ * @param {number} count - Number of consecutive numbers to generate
+ * @returns {Array} Array of schedule numbers
+ */
 function nextScheduleNumbers(items, prefix, count) {
   const availableItems = [...items];
   const numbers = [];
@@ -1157,6 +1500,12 @@ function nextScheduleNumbers(items, prefix, count) {
   return numbers;
 }
 
+/**
+ * Returns all cables in the same parallel group.
+ * Cables in a parallel set share the same parallelGroupId.
+ * @param {Object} cable - Cable object
+ * @returns {Array} Array of cables in the same parallel group
+ */
 function parallelGroupMembers(cable) {
   if (!cable?.parallelGroupId) return cable ? [cable] : [];
   return state.cables
@@ -1164,6 +1513,11 @@ function parallelGroupMembers(cable) {
     .sort((a, b) => Number(a.parallelSetIndex || 0) - Number(b.parallelSetIndex || 0));
 }
 
+/**
+ * Formats cable purpose text, adding parallel set info if applicable.
+ * @param {Object} cable - Cable object
+ * @returns {string} Formatted purpose display text
+ */
 function cablePurposeDisplay(cable) {
   const purpose = String(cable?.purpose || "").trim();
   if (!cable?.parallelGroupId) return purpose;
@@ -1173,6 +1527,18 @@ function cablePurposeDisplay(cable) {
   return purpose ? `${purpose} - ${setLabel}` : setLabel;
 }
 
+/**
+ * Creates an HTML input field for schedule number with prefix selector.
+ * Includes auto-numbering based on existing items.
+ * @param {string} label - Field label
+ * @param {Array} items - Existing items for calculating next number
+ * @param {string} recordType - Type identifier for data attribute
+ * @param {string} prefix - Initial prefix (P, C, or S)
+ * @param {string} value - Current value
+ * @param {boolean} full - Use full width
+ * @param {boolean} autoNumberNote - Show auto-numbering note
+ * @returns {string} HTML string for schedule number field
+ */
 function scheduleNumberField(label, items, recordType, prefix = "P", value = "", full = false, autoNumberNote = false) {
   const selectedPrefix = ["P", "C", "S"].includes(prefix) ? prefix : "P";
   const number = value || nextScheduleNumber(items, selectedPrefix);
@@ -1180,10 +1546,28 @@ function scheduleNumberField(label, items, recordType, prefix = "P", value = "",
   return `<div class="field${full ? " full" : ""}"><label for="modal-number">${escapeHtml(label)}</label><div class="number-prefix-entry"><select id="modal-number-prefix" name="numberPrefix" data-number-records="${recordType}" aria-label="${escapeHtml(label)} prefix"><option value="P" ${selectedPrefix === "P" ? "selected" : ""}>P · Power</option><option value="C" ${selectedPrefix === "C" ? "selected" : ""}>C · Control</option><option value="S" ${selectedPrefix === "S" ? "selected" : ""}>S · Spare</option></select><input id="modal-number" name="number" value="${escapeHtml(number)}" placeholder="e.g. ${selectedPrefix}101" required /></div>${note}</div>`;
 }
 
+/**
+ * Creates an HTML input field for a parallel set cable number.
+ * @param {number} index - Parallel set index (0-based)
+ * @param {string} value - Current cable number value
+ * @param {boolean} customized - Whether the user has customized this number
+ * @returns {string} HTML string for parallel number input
+ */
 function parallelNumberInputMarkup(index, value, customized = false) {
   return `<div class="field"><label for="modal-parallel-number-${index + 1}">Set ${index + 1} cable number</label><input id="modal-parallel-number-${index + 1}" name="parallelNumbers" value="${escapeHtml(value)}" required data-customized="${customized}" /></div>`;
 }
 
+/**
+ * Creates an HTML select field for route location selection.
+ * Includes option to create new location inline.
+ * @param {string} name - Field name
+ * @param {string} label - Field label
+ * @param {string} selectedId - Selected location ID
+ * @param {boolean} includeEquipmentId - Include equipment ID in label
+ * @param {boolean} includeCableTray - Include cable tray as option
+ * @param {boolean} combineDuplicateNames - Filter duplicate location names
+ * @returns {string} HTML string for route location field
+ */
 function routeLocationField(name, label, selectedId, includeEquipmentId = false, includeCableTray = false, combineDuplicateNames = false) {
   let equipmentLocations = state.settings.locations.filter((location) => !isCableTrayLocation(location));
   if (combineDuplicateNames) {
@@ -1208,12 +1592,25 @@ function routeLocationField(name, label, selectedId, includeEquipmentId = false,
   return `<div class="field"><label for="modal-${name}">${escapeHtml(label)}</label><div class="inline-select-action"><select id="modal-${name}" name="${name}" required>${options(locations, resolvedSelectedId)}</select><button class="button button-secondary" type="button" data-action="add-route-location" data-field="${name}">+ New location</button></div></div>`;
 }
 
+/**
+ * Creates an HTML select field for conduit size selection.
+ * Allows custom sizes to be preserved alongside standard sizes.
+ * @param {string} selectedSize - Currently selected size
+ * @returns {string} HTML string for conduit size field
+ */
 function conduitSizeField(selectedSize) {
   const sizes = [...CONDUIT_SIZES];
   if (selectedSize && !sizes.includes(selectedSize)) sizes.push(selectedSize);
   return `<div class="field"><label for="modal-size">Conduit size <span class="optional">(optional)</span></label><select id="modal-size" name="size"><option value="">Select size…</option>${sizes.map((size) => `<option value="${escapeHtml(size)}" ${size === selectedSize ? "selected" : ""}>${escapeHtml(size)}</option>`).join("")}</select></div>`;
 }
 
+/**
+ * Opens the cable form for creating or editing a cable.
+ * Handles single cables and parallel cable sets.
+ * @param {string} id - Cable ID (undefined for new cable)
+ * @param {Object} draft - Draft form data to pre-populate
+ * @param {Object} modalOptions - Modal title, subtitle, and submitLabel
+ */
 function openCableForm(id, draft = {}, modalOptions = {}) {
   const cable = state.cables.find((item) => item.id === id);
   const groupMembers = cable?.parallelGroupId ? parallelGroupMembers(cable) : [];
@@ -1262,6 +1659,12 @@ function openCableForm(id, draft = {}, modalOptions = {}) {
   updateParallelNumberPreview(form);
 }
 
+/**
+ * Updates the preview and validation of parallel cable numbers in the form.
+ * Shows auto-generated numbers and validates user input.
+ * @param {HTMLFormElement} form - Cable form element
+ * @param {boolean} prefixChanged - Whether the prefix selector was changed
+ */
 function updateParallelNumberPreview(form, prefixChanged = false) {
   if (!form || !(form.dataset.form === "new-cable" || form.dataset.form.startsWith("edit-cable:"))) return;
   const countInput = form.elements.namedItem("parallelSets");
@@ -1329,6 +1732,13 @@ function updateParallelNumberPreview(form, prefixChanged = false) {
   note.textContent = "Cable numbers are suggested automatically. Edit any number to use a custom value.";
 }
 
+/**
+ * Opens the conduit form for creating or editing a conduit run.
+ * Manages conduit type, cables, size, and fill analysis.
+ * @param {string} id - Conduit ID (undefined for new conduit)
+ * @param {Object} draft - Draft form data to pre-populate
+ * @param {Object} modalOptions - Modal title, subtitle, and submitLabel
+ */
 function openConduitForm(id, draft = {}, modalOptions = {}) {
   const conduit = state.conduits.find((item) => item.id === id);
   const needsLocations = !state.settings.locations.length;
@@ -1374,6 +1784,11 @@ function openConduitForm(id, draft = {}, modalOptions = {}) {
   if (needsLocations) modalRoot.querySelector('[type="submit"]').disabled = true;
 }
 
+/**
+ * Updates visible and enabled cable options in a conduit form.
+ * Filters cables based on conduit prefix and location compatibility.
+ * @param {HTMLFormElement} form - Conduit form element
+ */
 function updateConduitCableOptions(form) {
   if (!form) return;
   const conduitNumber = form.elements.namedItem("number").value;
@@ -1412,6 +1827,11 @@ function updateConduitCableOptions(form) {
   if (assignmentWarning) assignmentWarning.hidden = !hasIncompatibleAssignments;
 }
 
+/**
+ * Updates the nipple length field visibility based on fill condition.
+ * Shows/hides the nipple length input when nipple condition is selected.
+ * @param {HTMLFormElement} form - Conduit form element
+ */
 function updateConduitFillCondition(form) {
   if (!form) return;
   const isNipple = form.elements.namedItem("fillCondition").value === "nipple";
@@ -1422,6 +1842,12 @@ function updateConduitFillCondition(form) {
   input.required = isNipple;
 }
 
+/**
+ * Updates the raceway internal area field based on selected type and size.
+ * Auto-fills from NEC tables if available, otherwise allows custom entry.
+ * @param {HTMLFormElement} form - Conduit form element
+ * @param {boolean} preserveExisting - Keep existing custom values if set
+ */
 function updateConduitRacewayArea(form, preserveExisting = false) {
   if (!form) return;
   const racewayType = form.elements.namedItem("racewayType").value;
@@ -1443,10 +1869,21 @@ function updateConduitRacewayArea(form, preserveExisting = false) {
   }
 }
 
+/**
+ * Checks if a form is a conduit form (new or edit).
+ * @param {HTMLFormElement} form - Form element to check
+ * @returns {boolean} True if the form is a conduit form
+ */
 function isConduitForm(form) {
   return form?.dataset.form === "new-conduit" || form?.dataset.form.startsWith("edit-conduit:");
 }
 
+/**
+ * Opens the cable type form for creating or editing a cable specification.
+ * Manages cable construction, sizing, and material properties.
+ * @param {string} id - Cable type ID (undefined for new type)
+ * @param {Object} returnToCableDraft - Draft cable data to return to after type creation
+ */
 function openCableTypeForm(id, returnToCableDraft = null) {
   const type = state.settings.cableTypes.find((item) => item.id === id);
   const fields = `<div class="form-grid">
@@ -1476,6 +1913,12 @@ function openCableTypeForm(id, returnToCableDraft = null) {
   }
 }
 
+/**
+ * Opens the location form for creating or editing equipment locations.
+ * Locations serve as cable and conduit route endpoints.
+ * @param {string} id - Location ID (undefined for new location)
+ * @param {Object} returnContext - Context to return to after location creation (e.g., form being edited)
+ */
 function openLocationForm(id, returnContext = null) {
   const location = state.settings.locations.find((item) => item.id === id);
   const fields = `<div class="form-grid">${textField("name", "Equipment Name", location?.name || "", "e.g. MCC-01", { full: true })}${textField("description", "Equipment ID", location?.description || "", "e.g. EQ-001", { required: false, full: true, optional: true })}</div>`;
@@ -1488,10 +1931,20 @@ function openLocationForm(id, returnContext = null) {
   }
 }
 
+/**
+ * Generates a unique identifier using crypto.randomUUID().
+ * @returns {string} Unique UUID string
+ */
 function makeId() {
   return crypto.randomUUID();
 }
 
+/**
+ * Main form submission handler for all modal forms.
+ * Routes submissions to appropriate handlers based on form type.
+ * Handles cables, conduits, cable types, and equipment locations.
+ * @param {Event} event - Form submit event
+ */
 function handleSubmit(event) {
   const form = event.target;
   if (form.id === "project-settings-form") {
@@ -1758,11 +2211,26 @@ function handleSubmit(event) {
   }
 }
 
+/**
+ * Checks if an item with the given value already exists in collection.
+ * Case-insensitive comparison for duplicate detection.
+ * @param {Array} items - Array of items to check
+ * @param {*} value - Value to search for
+ * @param {string} id - Current item ID to exclude from check
+ * @param {string} key - Property key to compare
+ * @returns {boolean} True if a duplicate exists
+ */
 function isDuplicate(items, value, id, key) {
   const normalized = String(value ?? "").trim().toLocaleLowerCase();
   return items.some((item) => item.id !== id && String(item[key] ?? "").trim().toLocaleLowerCase() === normalized);
 }
 
+/**
+ * Checks if an equipment location with matching name and ID already exists.
+ * @param {Array} locations - Array of location objects
+ * @param {Object} location - Location to check for duplicates
+ * @returns {boolean} True if a duplicate location exists
+ */
 function isDuplicateEquipment(locations, location) {
   const normalize = (value) => String(value ?? "").trim().toLocaleLowerCase();
   return locations.some((item) =>
@@ -1771,6 +2239,10 @@ function isDuplicateEquipment(locations, location) {
     normalize(item.description) === normalize(location.description));
 }
 
+/**
+ * Persists state, closes modal, re-renders page, and displays success message.
+ * @param {string} message - Toast message to display
+ */
 function saveAndClose(message) {
   if (persist()) {
     closeModal();
@@ -1779,6 +2251,12 @@ function saveAndClose(message) {
   }
 }
 
+/**
+ * Removes a record from a collection and updates the UI.
+ * @param {Array} collection - Array to remove from
+ * @param {string} id - ID of item to remove
+ * @param {string} label - Display name for toast message
+ */
 function removeRecord(collection, id, label) {
   const index = collection.findIndex((item) => item.id === id);
   if (index < 0) return;
@@ -1789,6 +2267,11 @@ function removeRecord(collection, id, label) {
   }
 }
 
+/**
+ * Returns to a previous form with draft data after creating related record.
+ * Used for inline creation of cable types or locations while editing cables/conduits.
+ * @param {Object} returnContext - Context with formKind, draft, and other data
+ */
 function returnToRoute(returnContext) {
   if (!returnContext) return;
   const { formKind, draft } = returnContext;
@@ -1798,6 +2281,11 @@ function returnToRoute(returnContext) {
   if (formKind.startsWith("edit-conduit:")) return openConduitForm(formKind.split(":")[1], draft);
 }
 
+/**
+ * Starts a new project after user confirmation.
+ * Clears all project data and resets state to empty.
+ * User is prompted to save backup first.
+ */
 function startNewProject() {
   if (!confirm("Start a new project? This will replace the project currently open in this browser. Save a backup first if you need to keep it.")) return;
   const previousState = state;
@@ -1815,6 +2303,14 @@ function startNewProject() {
   showToast("New project started.");
 }
 
+/**
+ * Main action dispatcher for DOM event handling.
+ * Routes user actions (button clicks, form submissions) to appropriate handlers.
+ * Manages modal operations, form creation, and special actions.
+ * @param {string} action - Action identifier
+ * @param {string} id - Target record ID (for edit/delete operations)
+ * @param {string} fieldName - Target field name (for form updates)
+ */
 function handleAction(action, id, fieldName) {
   if (action === "new-project") return startNewProject();
   if (action === "close-modal") return closeModal();
@@ -1953,6 +2449,11 @@ function handleAction(action, id, fieldName) {
   if (action === "print-voltage-drop") printVoltageDropReport();
 }
 
+/**
+ * Renders the conduit cable schedule in print-ready format.
+ * Creates a formatted table for printing or saving as PDF.
+ * @returns {string} HTML string for print layout
+ */
 function renderConduitCablePrint() {
   const rows = formattedConduitCableRows();
   const [headers, ...scheduleRows] = rows;
@@ -2007,6 +2508,10 @@ function renderConduitCablePrint() {
     </main>`;
 }
 
+/**
+ * Opens the browser print dialog for the conduit cable schedule.
+ * Displays the schedule in print-ready format before printing.
+ */
 function printConduitCableSchedule() {
   const printRoot = document.querySelector("#print-root");
   document.querySelector("#export-menu").hidden = true;
@@ -2019,6 +2524,11 @@ function printConduitCableSchedule() {
   });
 }
 
+/**
+ * Renders the voltage drop report in print-ready format.
+ * Creates a formatted table with voltage drop analysis for printing or export.
+ * @returns {string} HTML string for voltage drop print layout
+ */
 function renderVoltageDropPrint() {
   const rows = voltageDropReportData();
   const settings = state.settings;
@@ -2082,6 +2592,10 @@ function renderVoltageDropPrint() {
     </main>`;
 }
 
+/**
+ * Opens the browser print dialog for the voltage drop report.
+ * Displays the voltage analysis in print-ready format before printing.
+ */
 function printVoltageDropReport() {
   const printRoot = document.querySelector("#print-root");
   document.querySelector("#export-menu").hidden = true;
@@ -2094,6 +2608,12 @@ function printVoltageDropReport() {
   });
 }
 
+/**
+ * Triggers browser print dialog for the specified report type.
+ * Updates document title and handles print completion callback.
+ * @param {string} reportType - Report type name for document title
+ * @param {Function} afterPrint - Callback function after print completes
+ */
 function printReport(reportType, afterPrint = null) {
   const originalTitle = document.title;
   document.title = projectFileBaseName(reportType);
@@ -2104,6 +2624,10 @@ function printReport(reportType, afterPrint = null) {
   window.print();
 }
 
+/**
+ * Generates export rows for cable schedule in CSV format.
+ * @returns {Array} 2D array with headers and cable data rows
+ */
 function cableExportRows() {
   return [
     ["Cable Number", "Cable Length (ft)", "Manufacturer", "Spec Number", "Spec Type", "Overall Diameter (in)", "Net Weight (lbs/1000')", "From Location", "To Location", "Cable Purpose"],
@@ -2114,6 +2638,10 @@ function cableExportRows() {
   ];
 }
 
+/**
+ * Generates export rows for conduit schedule in CSV format.
+ * @returns {Array} 2D array with headers and conduit data rows
+ */
 function conduitExportRows() {
   return [
     ["Conduit Number", "Size", "Conduit Length (ft)", "From Location", "To Location", "Assigned Cable Numbers"],
@@ -2121,6 +2649,11 @@ function conduitExportRows() {
   ];
 }
 
+/**
+ * Generates export rows for bill of materials in CSV format.
+ * Includes both cable and conduit material summaries with length totals.
+ * @returns {Array} 2D array with headers and material data rows
+ */
 function billOfMaterialsExportRows() {
   const { usedCableTypes, usedConduitGroups } = billOfMaterialsGroups();
   return [
@@ -2148,6 +2681,11 @@ function billOfMaterialsExportRows() {
   ];
 }
 
+/**
+ * Generates export rows for conduit cable schedule combining both schedules.
+ * Creates detailed mixed cable/conduit assignment table for export.
+ * @returns {Array} 2D array with headers and mixed schedule rows
+ */
 function conduitCableExportRows() {
   const listedCableIds = new Set();
   const rows = [[
@@ -2207,16 +2745,31 @@ function conduitCableExportRows() {
   return rows;
 }
 
+/**
+ * Exports the conduit cable schedule to CSV format.
+ * Uses formatted conduit cable rows with uppercase text for readability.
+ */
 function exportConduitCableCsv() {
   exportCsv(projectFileName("csv", "Conduit Cable Schedule"), formattedConduitCableRows());
 }
 
+/**
+ * Formats conduit cable export rows with uppercase text.
+ * Makes cable-related cells uppercase for visual distinction.
+ * @returns {Array} 2D array with formatted rows for CSV export
+ */
 function formattedConduitCableRows() {
   return conduitCableExportRows().map((row, rowIndex) =>
     row === null ? null : row.map((cell, columnIndex) =>
       typeof cell === "string" && !(rowIndex > 0 && columnIndex === 3) ? cell.toUpperCase() : cell));
 }
 
+/**
+ * Exports data rows to CSV file.
+ * Properly escapes quotes and applies formula injection prevention.
+ * @param {string} filename - Output file name
+ * @param {Array} rows - 2D array of data to export
+ */
 function exportCsv(filename, rows) {
   const content = rows.map((row) => row === null ? "" : row.map((cell) => {
     const value = String(cell ?? "");
@@ -2226,15 +2779,31 @@ function exportCsv(filename, rows) {
   download(filename, `\uFEFF${content}`, "text/csv;charset=utf-8");
 }
 
+/**
+ * Exports the current project state to JSON format as backup.
+ * Includes all project data with export timestamp.
+ */
 function exportJson() {
   const backup = { ...state, exportedAt: new Date().toISOString(), formatVersion: 1 };
   download(projectFileName("ccs", "Project"), JSON.stringify(backup, null, 2), "application/json");
 }
 
+/**
+ * Generates a file name with extension for exports.
+ * @param {string} extension - File extension (without dot)
+ * @param {string} reportType - Optional report type name
+ * @returns {string} Full file name with extension
+ */
 function projectFileName(extension, reportType = "") {
   return `${projectFileBaseName(reportType)}.${extension}`;
 }
 
+/**
+ * Generates a base file name from project details.
+ * Uses internal project number, client, project name, and report type.
+ * @param {string} reportType - Optional report type name
+ * @returns {string} Sanitized base file name
+ */
 function projectFileBaseName(reportType = "") {
   const fileNameParts = [
     state.settings.internalProjectNumber,
@@ -2246,6 +2815,13 @@ function projectFileBaseName(reportType = "") {
   return fileNameParts.join(" - ") || "project";
 }
 
+/**
+ * Validates backup JSON data for correctness and compatibility.
+ * Checks all project data structure, types, and allowed values.
+ * @param {Object} backup - Backup object to validate
+ * @returns {Object} Validated and normalized project state
+ * @throws {Error} If backup is invalid or incompatible
+ */
 function validateBackupData(backup) {
   const isRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
   const isText = (value) => typeof value === "string" && value.trim().length > 0;
@@ -2355,10 +2931,23 @@ async function importProjectBackup(file) {
   showToast("Project backup imported.");
 }
 
+/**
+ * Triggers a file download by creating and clicking a temporary anchor element.
+ * @param {string} filename - File name for download
+ * @param {string} content - Text content to download
+ * @param {string} mimeType - MIME type for content (e.g., "text/csv")
+ */
 function download(filename, content, mimeType) {
   downloadBlob(filename, new Blob([content], { type: mimeType }));
 }
 
+/**
+ * Triggers a file download from a Blob object.
+ * Creates temporary object URL and handles cleanup.
+ * Shows success toast and closes export menu.
+ * @param {string} filename - File name for download
+ * @param {Blob} blob - Blob object containing file data
+ */
 function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
