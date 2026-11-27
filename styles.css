@@ -417,7 +417,8 @@ tbody tr:hover { background: #fcfcfd; }
 :root[data-theme="dark"] .export-menu button:hover,
 :root[data-theme="dark"] tbody tr:hover,
 :root[data-theme="dark"] .icon-button:hover,
-:root[data-theme="dark"] .checkbox-option:hover { background: #293648; }
+:root[data-theme="dark"] .checkbox-option:hover,
+:root[data-theme="dark"] .sortable-header:hover { background: #293648; }
 :root[data-theme="dark"] .nav-item.active { background: #263653; color: #a9bbff; }
 :root[data-theme="dark"] .nav-item.active .nav-icon,
 :root[data-theme="dark"] .text-button,
