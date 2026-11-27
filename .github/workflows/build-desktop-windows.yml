@@ -45,7 +45,7 @@ jobs:
 
       - name: Package Windows portable app with Pake
         shell: bash
-        run: pake ./dist --name Wireframe --icon ./brand-icon.svg --keep-binary --app-version "$APP_VERSION"
+        run: pake ./dist --name Wireframe --icon ./icons/brand-icon.svg --keep-binary --app-version "$APP_VERSION"
 
       - name: Upload Windows portable executable
         uses: actions/upload-artifact@v4

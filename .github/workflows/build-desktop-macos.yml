@@ -61,7 +61,7 @@ jobs:
             echo "::error::APPLE_SIGNING_IDENTITY must be a Developer ID Application identity, not ad-hoc signing"
             exit 1
           fi
-          pake ./dist --name Wireframe --icon ./brand-icon.svg --app-version "$APP_VERSION"
+          pake ./dist --name Wireframe --icon ./icons/brand-icon.svg --app-version "$APP_VERSION"
 
       - name: Verify macOS signature and notarization
         shell: bash
