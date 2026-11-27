@@ -134,6 +134,14 @@ const VERSION_HISTORY = [
       "Added voltage drop statistics info line to the Voltage Drop page showing count of rows with errors, rows passing voltage drop %, and the configured voltage drop limit percentage.",
     ],
   },
+  {
+    version: "2026.11.16",
+    changes: [
+      "Added optional cable-specific ampacity overrides for voltage drop calculations and corrected nonmetallic raceway impedance handling.",
+      "Refreshed the interface with Material Design icons, improved accessibility and icon tooltips, and polished dark-theme hover states.",
+      "Updated the example project with cable ampacity, load, and length values to better demonstrate calculations.",
+    ],
+  },
 ];
 let showAllVersionHistory = false;
 /**
