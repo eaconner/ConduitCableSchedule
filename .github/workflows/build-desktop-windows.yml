@@ -38,6 +38,8 @@ jobs:
         shell: bash
         run: |
           version=$(node .github/scripts/desktop-version.js)
+          year=${version%%.*}
+          version="$((year % 100)).${version#*.}"
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
 
       - name: Package Windows portable app with Pake
