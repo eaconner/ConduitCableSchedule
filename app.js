@@ -339,9 +339,13 @@ function showToast(message, isError = false) {
 
 function updateWorkspace() {
   const settings = state.settings;
-  document.querySelector("#sidebar-project-name").textContent = settings.projectName || "New Project";
-  document.querySelector("#sidebar-project-number").textContent = settings.internalProjectNumber || "Project Workspace";
-  document.querySelector("#editor-avatar").textContent = (settings.editorName || "E").trim().charAt(0).toUpperCase();
+  const project = (settings.projectName || "").trim();
+  const client = (settings.clientName || "").trim();
+  const breadcrumb = project ? (client ? `${client} - ${project}` : project) : "New Project";
+  const breadcrumbProject = document.querySelector("#breadcrumb-project");
+  breadcrumbProject.textContent = breadcrumb;
+  breadcrumbProject.title = breadcrumb;
+  document.querySelector("#sidebar-version").textContent = `v${VERSION_HISTORY[VERSION_HISTORY.length - 1].version}`;
   document.querySelector("#cable-nav-count").textContent = state.cables.length;
   document.querySelector("#conduit-nav-count").textContent = state.conduits.length;
 }
@@ -522,7 +526,7 @@ function renderDashboard() {
         const cableNumbers = cables.map((member) => member.number).join(", ");
         const type = cableType(cable.cableTypeId);
         return `<tr><td class="primary-cell">${escapeHtml(cableNumbers)}</td><td>${cables.length}</td><td>${escapeHtml(type?.specNumber || "—")}<span class="secondary-cell">${escapeHtml(type?.specType || "Cable type unavailable")}</span></td><td>${renderScheduledLength(cable.length)}</td><td>${escapeHtml(cableLocationName(cable.fromLocationId))} <span style="color:#a6aeba">→</span> ${escapeHtml(cableLocationName(cable.toLocationId))}</td><td>${escapeHtml(cable.purpose || "—")}</td></tr>`;
-      }).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon">⌁</div><h3>Your schedule starts here</h3><p>Add cable types and equipment locations in Settings, then create your first cable schedule entry.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Create a cable</button></div>`}
+      }).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></div><h3>Your schedule starts here</h3><p>Add cable types and equipment locations in Settings, then create your first cable schedule entry.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Create a cable</button></div>`}
     </section>`;
 }
 
@@ -539,12 +543,12 @@ function renderCables() {
   const cableCount = state.cables.length;
   return `
     <div class="page-heading">
-      <div><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></span><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
+      <div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Cable<br>number</th><th>Parallel<br>Sets</th><th>Mfr. / Spec</th><th>Spec<br>Type</th><th>Cable<br>Length</th><th>Cable Routing From</th><th>Cable Routing To</th><th>Purpose</th><th>Conduit<br>Assignment</th><th>Actions</th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>${rows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon">⌁</div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon">⌕</span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers"><thead><tr><th>Cable<br>number</th><th>Parallel<br>Sets</th><th>Mfr. / Spec</th><th>Spec<br>Type</th><th>Cable<br>Length</th><th>Cable Routing From</th><th>Cable Routing To</th><th>Purpose</th><th>Conduit<br>Assignment</th><th>Actions</th></tr></thead><tbody id="cable-rows">${rows.map(renderCableRow).join("")}</tbody></table></div><div class="table-footer"><span>${rows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7h3v6h-3zM14.5 7h3v6h-3zM5.5 10c2-3.5 7-3.5 9 0" /></svg></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first cable</button></div>`}
     </section>`;
 }
 
@@ -576,11 +580,11 @@ function renderVoltageDrop() {
   const rows = cableDisplayGroups();
   return `
     <div class="page-heading">
-      <div><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></span><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
+      <div><h1>Voltage Drop</h1><p>Review cable electrical details and parallel sets.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>
     </div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr><th>Cable #</th><th>Spec Type</th><th>Cable Material</th><th>Voltage</th><th>Load (Amps)</th><th>Cable<br>Ampacity</th><th>Ampacity<br>Overhead</th><th>Parallel Sets</th><th>Cable Rating</th><th>Phase</th><th>Voltage Drop %</th><th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon">⚡</div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr><th>Cable #</th><th>Spec Type</th><th>Cable Material</th><th>Voltage</th><th>Load (Amps)</th><th>Cable<br>Ampacity</th><th>Ampacity<br>Overhead</th><th>Parallel Sets</th><th>Cable Rating</th><th>Phase</th><th>Voltage Drop %</th><th>Actions</th></tr></thead><tbody>${rows.map(renderVoltageDropRow).join("")}</tbody></table></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4v12h13M6 7v9m3.5-7v7m3.5-5v5m3.5-3v3" /></svg></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Cable</button></div>`}
     </section>`;
 }
 
@@ -606,13 +610,13 @@ function renderVoltageDropRow(cables) {
     <td>${escapeHtml(row.type?.specType || "—")}</td>
     <td>${escapeHtml(row.material)}</td>
     <td>${escapeHtml(row.voltage)}</td>
-    <td>${escapeHtml(row.loadAmps)}</td>
+    <td>${Number.isFinite(row.numericLoadAmps) ? escapeHtml(row.loadAmps) : `<span class="tag tbd">TBD</span>`}</td>
     <td>${escapeHtml(row.cableAmpacity)}</td>
     <td><span class="tag ${row.overheadClass}">${row.ampacityOverhead === null ? "—" : `${formatNumber(row.ampacityOverhead)} A`}</span></td>
     <td>${row.parallelSets}</td>
     <td>${escapeHtml(row.rating)}</td>
     <td>${escapeHtml(row.phase)}</td>
-    <td><span class="tag ${row.voltageDropClass}"${row.voltageDropTitle ? ` title="${escapeHtml(row.voltageDropTitle)}"` : ""}>${row.voltageDrop.percent === null ? "Needs data" : `${row.voltageDrop.percent.toFixed(2)}%${row.voltageDrop.approximate ? " est." : ""}`}</span></td>
+    <td><span class="tag ${row.voltageDrop.percent === null ? "tbd" : row.voltageDropClass}"${row.voltageDropTitle ? ` title="${escapeHtml(row.voltageDropTitle)}"` : ""}>${row.voltageDrop.percent === null ? "Needs data" : `${row.voltageDrop.percent.toFixed(2)}%${row.voltageDrop.approximate ? " est." : ""}`}</span></td>
     <td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${row.cable.id}" aria-label="Edit ${escapeHtml(row.cableNumbers)}">✎</button></div></td>
   </tr>`;
 }
@@ -795,7 +799,7 @@ function renderConduits() {
   const rows = sortByNumber(state.conduits);
   return `
     <div class="page-heading">
-      <div><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4.5 3v8a4.5 4.5 0 0 0 4.5 4.5h7M2.5 3h4M13 13.5h4" /></svg></span><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
+      <div><h1>Conduit Schedule</h1><p>Document conduit routes, cable assignments, and conduit fill.</p></div>
       <div class="heading-actions"><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add Conduit</button></div>
     </div>
     <div class="schedule-info"><strong>${rows.length} ${rows.length === 1 ? "conduit" : "conduits"}</strong><span class="divider"></span><span>${renderLengthSummary(rows)}</span><span class="divider"></span><span>${state.settings.necEdition ? `${escapeHtml(state.settings.necEdition)} NEC fill basis` : "NEC edition not selected"}</span><span class="divider"></span><span>${state.cables.length} cables available to assign</span></div>
@@ -814,7 +818,7 @@ function renderConduits() {
         <td>${conduit.cableIds.length ? `<span class="tag blue">${conduit.cableIds.length} ${conduit.cableIds.length === 1 ? "cable" : "cables"}</span><span class="secondary-cell">${escapeHtml(conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number || "Removed").join(", "))}</span>` : `<span class="tag neutral">Unassigned</span>`}</td>
         <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}">✎</button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}" title="Duplicate conduit">⧉</button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}">×</button></div></td>
       </tr>`;
-      }).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} conduits</span><span>Fill checks use the selected NEC edition's Table 1 limits. Raceway area is entered per conduit.</span></div>` : `<div class="empty-state"><div class="empty-icon">▤</div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first conduit</button></div>`}
+      }).join("")}</tbody></table></div><div class="table-footer"><span>Showing ${rows.length} of ${rows.length} conduits</span><span>Fill checks use the selected NEC edition's Table 1 limits. Raceway area is entered per conduit.</span></div>` : `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 3v8a4.5 4.5 0 0 0 4.5 4.5h7M2.5 3h4M13 13.5h4" /></svg></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" /></svg>Add your first conduit</button></div>`}
     </section>`;
 }
 
