@@ -273,20 +273,21 @@ tbody tr:hover { background: #fcfcfd; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; padding-top: 17px; border-top: 1px solid #f0f2f5; }
 .form-note { margin: 0 0 14px; border-radius: 6px; padding: 10px 12px; background: #f5f7fb; color: #717e90; font-size: 11px; line-height: 1.5; }
 .form-note a { color: #4268e8; font-weight: 700; }
-.checkbox-list { max-height: 220px; overflow: auto; border: 1px solid #e2e6ec; border-radius: 6px; }
-.checkbox-list-header, .checkbox-option { display: grid; grid-template-columns: 44px minmax(90px, .7fr) minmax(120px, 1fr) minmax(0, 1.5fr); align-items: center; gap: 12px; }
-.checkbox-list-header { position: sticky; z-index: 1; top: 0; padding: 9px 12px; border-bottom: 1px solid #e2e6ec; background: #f7f8fa; color: #778294; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.checkbox-list { display: grid; grid-template-columns: 44px max-content minmax(max-content, 1fr) max-content; column-gap: 12px; max-height: 220px; overflow: auto; border: 1px solid #e2e6ec; border-radius: 6px; }
+.checkbox-list-header, .checkbox-option { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; text-align: left; }
+.checkbox-list-header > :nth-child(-n + 2), .checkbox-cable-number { text-align: center; }
+.checkbox-list-header { position: sticky; z-index: 1; top: 0; align-items: end; padding: 9px 12px; border-bottom: 1px solid #e2e6ec; background: #f7f8fa; color: #778294; font-size: 9px; font-weight: 700; text-transform: uppercase; }
 .checkbox-option { min-height: 48px; padding: 8px 12px; border-bottom: 1px solid #f0f2f5; color: #566275; font-size: 11px; cursor: pointer; }
 .checkbox-option.incompatible { background: #fff6f4; }
 .checkbox-option.incompatible:hover { background: #fff0ed; }
 .checkbox-option[hidden], .checkbox-list-header[hidden] { display: none; }
-.checkbox-list-empty { padding: 12px; color: #778294; font-size: 11px; }
+.checkbox-list-empty { grid-column: 1 / -1; padding: 12px; color: #778294; font-size: 11px; }
 .checkbox-option:last-child { border-bottom: 0; }
 .checkbox-option:hover { background: #fafbfc; }
 .checkbox-option input[type="checkbox"] { width: 16px; height: 16px; min-height: 16px; justify-self: center; margin: 0; padding: 0; accent-color: var(--blue); }
-.checkbox-cable-number { color: #435064; font-weight: 600; overflow-wrap: anywhere; }
-.checkbox-cable-route { min-width: 0; color: #697587; font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
-.checkbox-cable-type { display: grid; min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.checkbox-cable-number { color: #435064; font-weight: 600; white-space: nowrap; }
+.checkbox-cable-route { color: #697587; font-size: 10px; line-height: 1.4; white-space: nowrap; }
+.checkbox-cable-type { display: grid; gap: 3px; white-space: nowrap; }
 .checkbox-cable-type strong { color: #435064; font-size: 10px; font-weight: 600; }
 .checkbox-cable-type small { color: #929cab; font-size: 9px; }
 .checkbox-cable-type small.checkbox-cable-incompatible { color: #a33b37; font-weight: 700; }
@@ -356,7 +357,8 @@ tbody tr:hover { background: #fcfcfd; }
   .modal-header, .modal-form { padding-right: 17px; padding-left: 17px; }
   .number-prefix-entry select { flex-basis: 110px; }
   .parallel-number-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .checkbox-list-header, .checkbox-option { grid-template-columns: 30px minmax(64px, .6fr) minmax(80px, 1fr) minmax(0, 1.2fr); gap: 6px; padding-right: 9px; padding-left: 9px; }
+  .checkbox-list { grid-template-columns: 30px max-content minmax(max-content, 1fr) max-content; column-gap: 6px; }
+  .checkbox-list-header, .checkbox-option { padding-right: 9px; padding-left: 9px; }
 }
 
 :root[data-theme="dark"] {

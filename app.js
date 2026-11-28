@@ -2237,14 +2237,14 @@ function updateParallelNumberPreview(form, prefixChanged = false) {
 function openConduitForm(id, draft = {}, modalOptions = {}) {
   const conduit = state.conduits.find((item) => item.id === id);
   const needsLocations = !state.settings.locations.length && !state.settings.tees.length;
-  const setupNote = needsLocations ? `<p class="form-note">Add a location or tee using the buttons below.</p>` : "";
+  const setupNote = needsLocations ? `<div class="field full"><p class="form-note">Add a location or tee using the buttons below.</p></div>` : "";
   const assignedCableIds = draft.cableIds || conduit?.cableIds || [];
   const numberField = conduit
     ? textField("number", "Conduit number", draft.number ?? conduit.number, "e.g. CON-101", { full: true })
     : scheduleNumberField("Conduit number", state.conduits, "conduits", draft.numberPrefix || numberPrefixFrom(draft.number), draft.number, true);
   const selectedFillCondition = draft.fillCondition || conduit?.fillCondition || "standard";
   const cableOptions = state.cables.length ? `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><label class="appearance-checkbox"><input type="checkbox" name="showAllCables" ${draft.showAllCables ? "checked" : ""} />Show all compatible cables</label><p class="section-description">Cable locations must contain the selected From and To locations. Tees and cable tray do not filter that endpoint.</p><p class="section-description hidden-assignments" aria-live="polite" hidden></p><p class="form-note assignment-warning" hidden>Remove incompatible cable assignments before saving this conduit.</p><div class="checkbox-list" role="group" aria-label="Assign cables">
-    <div class="checkbox-list-header" aria-hidden="true"><span>Select</span><span>Cable number</span><span>From → To</span><span>Cable type / spec</span></div>
+    <div class="checkbox-list-header" aria-hidden="true"><span>Select</span><span>Cable<br>Number</span><span>From → To</span><span>Cable Type / Spec</span></div>
     ${sortCablesByPrefix(state.cables).map((cable) => {
       const type = cableType(cable.cableTypeId);
       const typeDetails = [type?.manufacturer, type?.specNumber].filter(Boolean).join(" · ");
@@ -2253,7 +2253,7 @@ function openConduitForm(id, draft = {}, modalOptions = {}) {
     <div class="checkbox-list-empty" hidden></div>
   </div></div>` : `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><p class="form-note">No cables are available yet. Add cables from the Cable schedule to assign them here.</p></div>`;
   const nippleLength = `<div class="field" data-nipple-length-field ${selectedFillCondition === "nipple" ? "" : "hidden"}><label for="modal-nippleLengthInches">Nipple length (in)</label><input id="modal-nippleLengthInches" name="nippleLengthInches" type="number" min="0.1" max="24" step="0.1" value="${escapeHtml(draft.nippleLengthInches ?? conduit?.nippleLengthInches ?? "")}" ${selectedFillCondition === "nipple" ? "required" : ""} /></div>`;
-  const fields = `${setupNote}<p class="form-note">For branched routes, use the same tee at each connected conduit and assign a cable to every conduit it passes through.</p><p class="form-note">Supplied EMT, RMC, and PVC Schedule 40/80 areas auto-fill for listed sizes. For other combinations, enter the 100% internal area from the applicable NEC Chapter 9 raceway table or product data.</p><div class="form-grid">
+  const fields = `<div class="form-grid">
     ${numberField}
     <div class="form-grid conduit-raceway-fields">
       ${conduitSizeField(draft.size ?? conduit?.size ?? "")}
@@ -2267,6 +2267,7 @@ function openConduitForm(id, draft = {}, modalOptions = {}) {
     { value: "nipple", label: "Nipple 24 in or shorter" },
     ], selectedFillCondition)}
     ${nippleLength}
+    ${setupNote}
     ${routeLocationField("fromLocationId", "From location", draft.fromLocationId || conduit?.fromLocationId, false, true, true)}
     ${routeLocationField("toLocationId", "To location", draft.toLocationId || conduit?.toLocationId, false, true, true)}
     ${cableOptions}
