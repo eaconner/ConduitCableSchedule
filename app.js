@@ -153,6 +153,13 @@ const VERSION_HISTORY = [
       "Updated the example projects to the current project format, including a conduit tee example.",
     ],
   },
+  {
+    version: "2026.11.18",
+    changes: [
+      "Updated desktop build workflows to verify both macOS architectures and name checksum files to match their release assets.",
+      "Automatically assigned sequential tee identifiers without an extra dialog and hid the Tees section when no tees exist.",
+    ],
+  },
 ];
 let showAllVersionHistory = false;
 /**
