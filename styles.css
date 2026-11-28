@@ -201,6 +201,7 @@ tbody tr:hover { background: #fcfcfd; }
 .field input::placeholder, .field textarea::placeholder { color: #b1b8c2; }
 .field textarea { min-height: 72px; padding-top: 10px; resize: vertical; }
 .settings-submit { display: flex; justify-content: flex-end; margin-top: 18px; }
+.nec-reference-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .section-title-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .section-title-row .button { min-height: 32px; padding: 0 10px; font-size: 10px; }
 .section-title-row .button svg { width: 14px; height: 14px; }
@@ -271,6 +272,13 @@ tbody tr:hover { background: #fcfcfd; }
 .modal-header h2 { margin: 0; font-family: "Avenir Next", "Segoe UI", sans-serif; font-size: 17px; }
 .modal-header p { margin: 5px 0 0; color: #929cab; font-size: 11px; }
 .modal-form { padding: 20px 22px 22px; }
+.nec-reference-modal { display: flex; flex-direction: column; width: min(100%, 950px); overflow: hidden; }
+.nec-reference-table-wrap { min-height: 0; overflow: auto; }
+.nec-reference-table thead { position: sticky; top: 0; }
+.nec-reference-table th { white-space: normal; line-height: 1.35; }
+.nec-reference-table tbody th { border-top: 1px solid var(--line); color: #435064; font-size: 11px; letter-spacing: normal; text-transform: none; white-space: nowrap; }
+.nec-reference-table th:not(:first-child), .nec-reference-table td { text-align: right; }
+.nec-reference-actions { display: flex; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--line); }
 .modal-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .modal-form .form-grid.conduit-raceway-fields { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .modal-form .form-grid.cable-electrical-fields { grid-column: 1 / -1; grid-template-columns: repeat(6, minmax(0, 1fr)); }
@@ -412,6 +420,7 @@ tbody tr:hover { background: #fcfcfd; }
 :root[data-theme="dark"] .checkbox-cable-number,
 :root[data-theme="dark"] .checkbox-cable-type strong,
 :root[data-theme="dark"] .bom-project-title h2 { color: var(--ink); }
+:root[data-theme="dark"] .nec-reference-table tbody th { color: var(--ink); }
 :root[data-theme="dark"] .brand-name span,
 :root[data-theme="dark"] .workspace-label,
 :root[data-theme="dark"] .sidebar-footer,

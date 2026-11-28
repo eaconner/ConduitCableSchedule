@@ -1703,6 +1703,13 @@ function renderSettings() {
             ${settingsField("necJurisdiction", "Jurisdiction / Amendments", settings.necJurisdiction, "e.g. City or project code notes")}
           </div>
           <p class="section-description">Select the edition adopted by the authority having jurisdiction. Supplied area lookups cover EMT, RMC, and PVC Schedule 40/80 sizes; other combinations need manual dimensions. Local amendments and requirements beyond conduit fill are not evaluated automatically.</p>
+          <div class="form-divider"></div>
+          <div class="card-heading settings-inline-heading"><div><h3>NEC Reference Data</h3><p>View the lookup values used by the application</p></div></div>
+          <div class="nec-reference-buttons">
+            <button type="button" class="button button-secondary" data-action="show-nec-reference" data-id="ampacity">Ampacity Data</button>
+            <button type="button" class="button button-secondary" data-action="show-nec-reference" data-id="raceway">Raceway Area Data</button>
+            <button type="button" class="button button-secondary" data-action="show-nec-reference" data-id="impedance">Voltage Drop Data</button>
+          </div>
           <div class="settings-submit"><button class="button button-primary" type="submit">Save project details</button></div>
         </form>
       </section>
@@ -1877,6 +1884,44 @@ function openModal(title, subtitle, formKind, fields, submitLabel = "Save") {
   modalRoot.innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
     <div class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div></div>
     <form class="modal-form" data-form="${formKind}">${fields}<div class="modal-actions"><button type="button" class="button button-secondary" data-action="close-modal">Cancel</button><button type="submit" class="button button-primary">${escapeHtml(submitLabel)}</button></div></form>
+  </section></div>`;
+  modalRoot.querySelector(".modal").focus();
+}
+
+function openNecReferenceTable(kind) {
+  let title;
+  let subtitle;
+  let headers;
+  let rows;
+  if (kind === "ampacity") {
+    title = "Ampacity Data";
+    subtitle = "NEC Table 310.15(B)(16) lookup values, in amperes. Dashes indicate unavailable values.";
+    headers = ["Conductor size", "Copper<br>60°C", "Copper<br>75°C", "Copper<br>90°C", "Aluminum<br>60°C", "Aluminum<br>75°C", "Aluminum<br>90°C"];
+    rows = Object.entries(CABLE_AMPACITY_TABLE).map(([size, values]) => [size, ...values.Copper, ...values.Aluminum]);
+  } else if (kind === "raceway") {
+    title = "Raceway Area Data";
+    subtitle = "NEC Chapter 9, Table 4 lookup values: 100% internal area in square inches. Dashes indicate unavailable values.";
+    const types = Object.keys(RACEWAY_INTERNAL_AREAS);
+    headers = ["Trade size (in)", ...types.map((type) => escapeHtml(racewayTypeLabel(type) || type))];
+    const sizes = new Set(types.flatMap((type) => Object.keys(RACEWAY_INTERNAL_AREAS[type])));
+    const orderedSizes = CONDUIT_SIZES.map((size) => size.replace(/"/g, "")).filter((size) => sizes.delete(size));
+    rows = [...orderedSizes, ...sizes].map((size) => [size, ...types.map((type) => RACEWAY_INTERNAL_AREAS[type][size])]);
+  } else if (kind === "impedance") {
+    title = "Voltage Drop Data";
+    subtitle = "NEC Chapter 9, Table 9 lookup values: ohms per 1,000 ft at 75°C. Dashes indicate unavailable values.";
+    headers = ["Conductor size", "Reactance<br>nonmetallic", "Reactance<br>steel", "Copper resistance<br>nonmetallic", "Copper resistance<br>steel", "Aluminum resistance<br>nonmetallic", "Aluminum resistance<br>steel"];
+    rows = Object.entries(CABLE_AC_IMPEDANCE_TABLE).map(([size, values]) => [
+      size, values.reactance.nm, values.reactance.steel,
+      values.resistance.Copper.nm, values.resistance.Copper.steel,
+      values.resistance.Aluminum.nm, values.resistance.Aluminum.steel,
+    ]);
+  } else {
+    throw new Error(`Unknown NEC reference table: ${kind}`);
+  }
+  modalRoot.innerHTML = `<div class="modal-backdrop"><section class="modal nec-reference-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+    <div class="modal-header"><div><h2 id="modal-title">${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)} These are the application's supplied lookup values, not complete NEC tables.</p></div></div>
+    <div class="nec-reference-table-wrap"><table class="nec-reference-table"><thead><tr>${headers.map((header) => `<th scope="col">${header}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((value, index) => index === 0 ? `<th scope="row">${escapeHtml(value)}</th>` : `<td>${value == null ? "—" : escapeHtml(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    <div class="nec-reference-actions"><button type="button" class="button button-secondary" data-action="close-modal">Close</button></div>
   </section></div>`;
   modalRoot.querySelector(".modal").focus();
 }
@@ -2881,6 +2926,7 @@ function startNewProject() {
 function handleAction(action, id, fieldName) {
   if (action === "new-project") return startNewProject();
   if (action === "close-modal") return closeModal();
+  if (action === "show-nec-reference") return openNecReferenceTable(id);
   if (action === "check-lengths") {
     const search = document.querySelector("#cable-search")?.value;
     const scrollLeft = document.querySelector(".cable-schedule-table")?.closest(".table-wrap").scrollLeft;
