@@ -142,6 +142,17 @@ const VERSION_HISTORY = [
       "Updated the example project with cable ampacity, load, and length values to better demonstrate calculations.",
     ],
   },
+  {
+    version: "2026.11.17",
+    changes: [
+      "Added conduit tees and cable routing through connected conduit segments, including tee management and route validation.",
+      "Added an on-demand Cable Schedule length check comparing assigned conduit lengths with cable length and a 10 ft termination allowance.",
+      "Replaced Pake with Tauri for the desktop app, including native project file saving and external links.",
+      "Improved pagination and saved page sizes, theme, and sidebar preference with each project.",
+      "Refined the Add/Edit Cable and Conduit dialogs, assignment filtering, table layouts, and application icons.",
+      "Updated the example projects to the current project format, including a conduit tee example.",
+    ],
+  },
 ];
 let showAllVersionHistory = false;
 /**
