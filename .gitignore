@@ -4,3 +4,4 @@ cable-conductor-schedule.code-workspace
 /src-tauri/gen/
 /src-tauri/dist/
 /src-tauri/icons/
+.DS_Store
