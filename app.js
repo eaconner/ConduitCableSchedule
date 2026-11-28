@@ -2200,7 +2200,7 @@ function openConduitForm(id, draft = {}, modalOptions = {}) {
     ? textField("number", "Conduit number", draft.number ?? conduit.number, "e.g. CON-101", { full: true })
     : scheduleNumberField("Conduit number", state.conduits, "conduits", draft.numberPrefix || numberPrefixFrom(draft.number), draft.number, true);
   const selectedFillCondition = draft.fillCondition || conduit?.fillCondition || "standard";
-  const cableOptions = state.cables.length ? `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><label class="appearance-checkbox"><input type="checkbox" name="showAllCables" ${draft.showAllCables ? "checked" : ""} />Show all compatible cables</label><p class="form-note assignment-warning" hidden>Remove incompatible cable assignments before saving this conduit.</p><div class="checkbox-list" role="group" aria-label="Assign cables">
+  const cableOptions = state.cables.length ? `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><label class="appearance-checkbox"><input type="checkbox" name="showAllCables" ${draft.showAllCables ? "checked" : ""} />Show all compatible cables</label><p class="section-description">Cable locations must contain the selected From and To locations. Tees and cable tray do not filter that endpoint.</p><p class="section-description hidden-assignments" aria-live="polite" hidden></p><p class="form-note assignment-warning" hidden>Remove incompatible cable assignments before saving this conduit.</p><div class="checkbox-list" role="group" aria-label="Assign cables">
     <div class="checkbox-list-header" aria-hidden="true"><span>Select</span><span>Cable number</span><span>From → To</span><span>Cable type / spec</span></div>
     ${sortCablesByPrefix(state.cables).map((cable) => {
       const type = cableType(cable.cableTypeId);
@@ -2247,45 +2247,36 @@ function updateConduitCableOptions(form) {
   const allowedCablePrefixes = new Set(cablePrefixesForConduit(conduitNumber));
   const fromLocationId = form.elements.namedItem("fromLocationId").value;
   const toLocationId = form.elements.namedItem("toLocationId").value;
-  const fromLocationName = fromLocationId ? locationNameKey(fromLocationId) : "";
-  const toLocationName = toLocationId ? locationNameKey(toLocationId) : "";
-  const cableTrayName = normalizedLocationName(CABLE_TRAY_LOCATION_NAME);
+  const filterFrom = fromLocationId && fromLocationId !== CABLE_TRAY_LOCATION_ID && !isTee(fromLocationId);
+  const filterTo = toLocationId && toLocationId !== CABLE_TRAY_LOCATION_ID && !isTee(toLocationId);
+  const fromLocationName = filterFrom ? locationNameKey(fromLocationId) : "";
+  const toLocationName = filterTo ? locationNameKey(toLocationId) : "";
   const showAllCables = form.elements.namedItem("showAllCables")?.checked;
   const options = [...form.querySelectorAll(".checkbox-option")];
   let visibleCount = 0;
+  let hiddenAssignmentCount = 0;
   let hasIncompatibleAssignments = false;
 
   options.forEach((option) => {
     const checkbox = option.querySelector('input[name="cableIds"]');
     const isCompatible = allowedCablePrefixes.has(option.dataset.cablePrefix);
     const isIncompatibleAssignment = checkbox.checked && !isCompatible;
-    const cableFromLocationName = option.dataset.fromLocationName;
-    const cableToLocationName = option.dataset.toLocationName;
-    
-    let matchesLocation = false;
-    if (showAllCables || isTee(fromLocationId) || isTee(toLocationId)) {
-      matchesLocation = true;
-    } else if (fromLocationId && toLocationId) {
-      matchesLocation = (cableFromLocationName === fromLocationName && cableFromLocationName !== cableTrayName) ||
-                        (cableToLocationName === toLocationName && cableToLocationName !== cableTrayName);
-    } else if (fromLocationId) {
-      matchesLocation = cableFromLocationName === fromLocationName && cableFromLocationName !== cableTrayName;
-    } else if (toLocationId) {
-      matchesLocation = cableToLocationName === toLocationName && cableToLocationName !== cableTrayName;
-    } else {
-      matchesLocation = true;
-    }
-    
-    option.hidden = !(isCompatible && matchesLocation) && !checkbox.checked;
+    const matchesLocation = showAllCables ||
+      ((!filterFrom || (fromLocationName && option.dataset.fromLocationName.includes(fromLocationName))) &&
+       (!filterTo || (toLocationName && option.dataset.toLocationName.includes(toLocationName))));
+
+    option.hidden = !(isCompatible && matchesLocation) && !isIncompatibleAssignment;
     option.classList.toggle("incompatible", isIncompatibleAssignment);
     option.querySelector(".checkbox-cable-incompatible").hidden = !isIncompatibleAssignment;
     if (isIncompatibleAssignment) hasIncompatibleAssignments = true;
+    if (option.hidden && checkbox.checked) hiddenAssignmentCount += 1;
     if (!option.hidden) visibleCount += 1;
   });
 
   const header = form.querySelector(".checkbox-list-header");
   const emptyMessage = form.querySelector(".checkbox-list-empty");
   const assignmentWarning = form.querySelector(".assignment-warning");
+  const hiddenAssignments = form.querySelector(".hidden-assignments");
   if (header) header.hidden = visibleCount === 0;
   if (emptyMessage) emptyMessage.hidden = visibleCount !== 0;
   if (emptyMessage && visibleCount === 0) {
@@ -2294,6 +2285,10 @@ function updateConduitCableOptions(form) {
       : "No compatible cables match the selected conduit locations.";
   }
   if (assignmentWarning) assignmentWarning.hidden = !hasIncompatibleAssignments;
+  if (hiddenAssignments) {
+    hiddenAssignments.hidden = hiddenAssignmentCount === 0;
+    hiddenAssignments.textContent = `${hiddenAssignmentCount} assigned ${hiddenAssignmentCount === 1 ? "cable is" : "cables are"} hidden by the location filter. Select "Show all compatible cables" to review.`;
+  }
 }
 
 /**
