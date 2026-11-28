@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  build-pake:
+  build-desktop:
     runs-on: macos-latest
 
     steps:
@@ -25,17 +25,8 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
-      - name: Prepare static app files
-        shell: bash
-        run: |
-          mkdir -p dist/data dist/icons/interface
-          cp index.html styles.css app.js dist/
-          cp data/raceway-data.js data/ampacity-data.js data/voltage-drop-data.js dist/data/
-          cp icons/interface/mdi-*.svg dist/icons/interface/
-          cp icons/interface/MDI-LICENSE icons/interface/APACHE-2.0-LICENSE dist/icons/interface/
-
-      - name: Install Pake CLI
-        run: npm install -g pake-cli
+      - name: Install desktop dependencies
+        run: npm ci --prefix src-tauri
 
       - name: Set desktop app version
         shell: bash
@@ -43,7 +34,7 @@ jobs:
           version=$(node .github/scripts/desktop-version.js)
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
 
-      - name: Package macOS app with Pake
+      - name: Package macOS app with Tauri
         shell: bash
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -63,7 +54,13 @@ jobs:
             echo "::error::APPLE_SIGNING_IDENTITY must be a Developer ID Application identity, not ad-hoc signing"
             exit 1
           fi
-          pake ./dist --name Wireframe --icon ./icons/brand-icon.svg --multi-arch --app-version "$APP_VERSION"
+          src-tauri/node_modules/.bin/tauri build --target universal-apple-darwin --bundles dmg --config "{\"version\":\"$APP_VERSION\"}"
+          dmgs=(src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg)
+          if [ "${#dmgs[@]}" -ne 1 ] || [ ! -f "${dmgs[0]}" ]; then
+            echo "::error::Expected exactly one macOS DMG"
+            exit 1
+          fi
+          mv "${dmgs[0]}" Wireframe.dmg
 
       - name: Verify macOS signature and notarization
         shell: bash
@@ -101,7 +98,7 @@ jobs:
 
   publish-release:
     if: github.event_name == 'release'
-    needs: build-pake
+    needs: build-desktop
     runs-on: ubuntu-latest
     permissions:
       contents: write

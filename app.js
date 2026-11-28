@@ -3388,13 +3388,26 @@ function download(filename, content, mimeType) {
 }
 
 /**
- * Triggers a file download from a Blob object.
- * Creates temporary object URL and handles cleanup.
- * Shows success toast and closes export menu.
+ * Saves a Blob through the desktop dialog or a browser download.
  * @param {string} filename - File name for download
  * @param {Blob} blob - Blob object containing file data
  */
-function downloadBlob(filename, blob) {
+async function downloadBlob(filename, blob) {
+  document.querySelector("#export-menu").hidden = true;
+  document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
+
+  if (window.__TAURI__) {
+    try {
+      const contents = Array.from(new Uint8Array(await blob.arrayBuffer()));
+      const saved = await window.__TAURI__.core.invoke("save_export", { filename, contents });
+      if (saved) showToast(`${filename} exported.`);
+    } catch (error) {
+      console.error("Could not export the file.", error);
+      showToast("Could not export the file.", true);
+    }
+    return;
+  }
+
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -3402,11 +3415,19 @@ function downloadBlob(filename, blob) {
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   showToast(`${filename} exported.`);
-  document.querySelector("#export-menu").hidden = true;
-  document.querySelector("#export-trigger").setAttribute("aria-expanded", "false");
 }
 
 document.addEventListener("click", (event) => {
+  const externalLink = event.target.closest('a[target="_blank"]');
+  if (window.__TAURI__ && externalLink) {
+    event.preventDefault();
+    window.__TAURI__.core.invoke("open_external", { url: externalLink.href }).catch((error) => {
+      console.error("Could not open the link.", error);
+      showToast("Could not open the link.", true);
+    });
+    return;
+  }
+
   const pageLink = event.target.closest("[data-page]");
   if (pageLink) {
     event.preventDefault();

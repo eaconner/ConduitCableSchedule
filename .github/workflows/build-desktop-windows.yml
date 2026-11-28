@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  build-pake:
+  build-desktop:
     runs-on: windows-latest
 
     steps:
@@ -23,17 +23,8 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Prepare static app files
-        shell: bash
-        run: |
-          mkdir -p dist/data dist/icons/interface
-          cp index.html styles.css app.js dist/
-          cp data/raceway-data.js data/ampacity-data.js data/voltage-drop-data.js dist/data/
-          cp icons/interface/mdi-*.svg dist/icons/interface/
-          cp icons/interface/MDI-LICENSE icons/interface/APACHE-2.0-LICENSE dist/icons/interface/
-
-      - name: Install Pake CLI
-        run: npm install -g pake-cli
+      - name: Install desktop dependencies
+        run: npm ci --prefix src-tauri
 
       - name: Set desktop app version
         shell: bash
@@ -43,9 +34,9 @@ jobs:
           version="$((year % 100)).${version#*.}"
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
 
-      - name: Package Windows portable app with Pake
+      - name: Package Windows portable app with Tauri
         shell: bash
-        run: pake ./dist --name Wireframe --icon ./icons/brand-icon.svg --targets x64 --keep-binary --app-version "$APP_VERSION"
+        run: src-tauri/node_modules/.bin/tauri build --target x86_64-pc-windows-msvc --no-bundle --config "{\"version\":\"$APP_VERSION\"}"
 
       # Windows signing is disabled until a trusted certificate is available.
       - name: Archive Windows app and generate checksum
@@ -53,6 +44,7 @@ jobs:
         run: |
           $version = $env:GITHUB_REF_NAME -creplace '^v', ''
           $asset = "wireframe-$version-windows-x64-portable.zip"
+          Copy-Item ./src-tauri/target/x86_64-pc-windows-msvc/release/wireframe.exe ./Wireframe.exe
           Compress-Archive -Path ./Wireframe.exe -DestinationPath $asset
           $hash = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $asset" | Set-Content -Encoding ascii Wireframe-windows.sha256
@@ -69,7 +61,7 @@ jobs:
 
   publish-release:
     if: github.event_name == 'release'
-    needs: build-pake
+    needs: build-desktop
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -1,1 +1,6 @@
 cable-conductor-schedule.code-workspace
+/src-tauri/node_modules/
+/src-tauri/target/
+/src-tauri/gen/
+/src-tauri/dist/
+/src-tauri/icons/
