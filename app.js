@@ -163,6 +163,7 @@ const emptyState = () => ({
     maxVoltageDropPercent: 3,
     cableTypes: [],
     locations: [],
+    tees: [],
   },
   cables: [],
   conduits: [],
@@ -779,6 +780,23 @@ function titleCaseHeading(value) {
   );
 }
 
+function connectedTeeConduits(tee) {
+  return sortByNumber(state.conduits.filter((conduit) =>
+    conduit.fromLocationId === tee.id || conduit.toLocationId === tee.id));
+}
+
+function teeBaseName(tee) {
+  const connected = connectedTeeConduits(tee);
+  return connected.length ? `Tee ${connected.map((conduit) => conduit.number).join(", ")}` : `Tee: ${tee.name}`;
+}
+
+function teeDisplayName(tee) {
+  const name = teeBaseName(tee);
+  const duplicate = state.settings.tees.some((other) =>
+    other.id !== tee.id && normalizedLocationName(teeBaseName(other)) === normalizedLocationName(name));
+  return duplicate ? `${name} (${tee.name})` : name;
+}
+
 /**
  * Gets the display name of a location by ID.
  * Returns special handling for cable tray location.
@@ -787,7 +805,56 @@ function titleCaseHeading(value) {
  */
 function locationName(id) {
   if (id === CABLE_TRAY_LOCATION_ID) return CABLE_TRAY_LOCATION_NAME;
+  const tee = state.settings.tees.find((item) => item.id === id);
+  if (tee) return teeDisplayName(tee);
   return state.settings.locations.find((location) => location.id === id)?.name || "Location removed";
+}
+
+function isTee(id) {
+  return state.settings.tees.some((tee) => tee.id === id);
+}
+
+function routeNodeKey(id) {
+  if (!id || id === CABLE_TRAY_LOCATION_ID) return null;
+  if (isTee(id)) return `tee:${id}`;
+  const name = locationNameKey(id);
+  return name ? `location:${name}` : null;
+}
+
+function cableConduitRoute(cable) {
+  const conduits = state.conduits.filter((conduit) => conduit.cableIds.includes(cable.id));
+  if (!conduits.some((conduit) => isTee(conduit.fromLocationId) || isTee(conduit.toLocationId))) return null;
+  if (conduits.some((conduit) => conduit.fromLocationId === CABLE_TRAY_LOCATION_ID || conduit.toLocationId === CABLE_TRAY_LOCATION_ID)) {
+    return { status: "partial", message: "Cable tray routing is not tracked; verify this route manually." };
+  }
+  const start = routeNodeKey(cable.fromLocationId);
+  const end = routeNodeKey(cable.toLocationId);
+  const adjacency = new Map();
+  for (const conduit of conduits) {
+    const from = routeNodeKey(conduit.fromLocationId);
+    const to = routeNodeKey(conduit.toLocationId);
+    if (!from || !to || from === to) return { status: "partial", message: "Check conduit endpoints for this route." };
+    for (const [node, other] of [[from, to], [to, from]]) {
+      if (!adjacency.has(node)) adjacency.set(node, []);
+      adjacency.get(node).push({ conduit, other });
+    }
+  }
+  if (!start || !end || start === end || adjacency.get(start)?.length !== 1 || adjacency.get(end)?.length !== 1) {
+    return { status: "partial", message: "Route is incomplete or ambiguous; check assigned conduits." };
+  }
+  const route = [];
+  const used = new Set();
+  let node = start;
+  while (node !== end) {
+    const choices = (adjacency.get(node) || []).filter(({ conduit }) => !used.has(conduit.id));
+    if (choices.length !== 1) return { status: "partial", message: "Route is incomplete or ambiguous; check assigned conduits." };
+    const { conduit, other } = choices[0];
+    route.push(conduit);
+    used.add(conduit.id);
+    node = other;
+  }
+  if (used.size !== conduits.length) return { status: "partial", message: "Route has extra or disconnected conduit assignments." };
+  return { status: "complete", conduits: route };
 }
 
 /**
@@ -1149,8 +1216,17 @@ function renderCableRow(cables) {
   const cableNumbers = cables.map((member) => member.number).join(", ");
   const conduits = state.conduits.filter((conduit) => conduit.cableIds.some((cableId) => cableIds.has(cableId)));
   const conduitNumbers = [...new Set(conduits.map((conduit) => conduit.number))];
+  const routes = cables.map((member) => ({ cable: member, route: cableConduitRoute(member) })).filter(({ route }) => route);
+  const routeDetails = routes.map(({ cable: member, route }) => {
+    const prefix = cables.length > 1 ? `${member.number}: ` : "";
+    const description = route.status === "complete"
+      ? `Route: ${route.conduits.map((conduit) => conduit.number).join(" → ")}`
+      : `Route warning: ${route.message}`;
+    return `<span class="secondary-cell">${escapeHtml(prefix + description)}</span>`;
+  }).join("");
+  const needsRouteReview = routes.some(({ route }) => route.status === "partial");
   const conduitStatus = conduits.length
-    ? `<span class="tag">Assigned</span><span class="secondary-cell">${escapeHtml(conduitNumbers.join(", "))}</span>`
+    ? `<span class="tag ${needsRouteReview ? "fill-fail" : ""}">${needsRouteReview ? "Check route" : "Assigned"}</span><span class="secondary-cell">${escapeHtml(conduitNumbers.join(", "))}</span>${routeDetails}`
     : `<span class="tag neutral">Unassigned</span>`;
   const isParallelGroup = Boolean(cable.parallelGroupId) && cables.length > 1;
   const actionLabels = isParallelGroup
@@ -1472,6 +1548,14 @@ function renderConduits() {
         <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}"><span class="mdi mdi-content-copy" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></td>
       </tr>`;
       }).join("")}</tbody></table></div>${renderPaginationControls("conduits", totalRows)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-pipe" aria-hidden="true"></span></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first conduit</button></div>`}
+    </section>
+    <section class="content-card settings-section conduit-tee-section">
+      <div class="card-heading section-title-row"><div><h2>Tees <span class="tag neutral">${state.settings.tees.length}</span></h2><p>Tee names update automatically from connected conduit numbers. Routing points do not represent cable splices. Assign each cable to every conduit it uses. The cable schedule shows routes and warnings; cable tray paths require manual verification.</p></div></div>
+      <div class="settings-list">${state.settings.tees.length ? sortByName(state.settings.tees).map((tee) => {
+        const name = teeDisplayName(tee);
+        const connected = connectedTeeConduits(tee);
+        return `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(name)}</strong><small>Identifier: ${escapeHtml(tee.name)}${connected.length ? "" : " · No conduits connected"}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-tee" data-id="${escapeHtml(tee.id)}" aria-label="Edit ${escapeHtml(name)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-tee" data-id="${escapeHtml(tee.id)}" aria-label="Delete ${escapeHtml(name)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`;
+      }).join("") : `<div class="settings-empty">No tees yet. Add one while creating or editing a conduit.</div>`}</div>
     </section>`;
 }
 
@@ -1684,7 +1768,7 @@ function scheduleStatusField(value) {
  * @returns {string} HTML string with options
  */
 function options(items, selectedId) {
-  return `<option value="">Select…</option>${items.map((item) => `<option value="${item.id}" ${item.id === selectedId ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
+  return `<option value="">Select…</option>${items.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selectedId ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
 }
 
 /**
@@ -1951,12 +2035,13 @@ function routeLocationField(name, label, selectedId, includeEquipmentId = false,
     id: location.id,
     name: includeEquipmentId ? locationDisplayName(location) : location.name,
   }));
+  if (includeCableTray) locations.push(...sortByName(state.settings.tees.map((tee) => ({ id: tee.id, name: teeDisplayName(tee) }))));
   const selectedLocation = state.settings.locations.find((location) => location.id === selectedId);
   const selectedName = selectedLocation ? normalizedLocationName(selectedLocation.name) : "";
   const resolvedSelectedId = combineDuplicateNames && selectedName
     ? equipmentLocations.find((location) => normalizedLocationName(location.name) === selectedName)?.id || selectedId
     : selectedId;
-  return `<div class="field"><label for="modal-${name}">${escapeHtml(label)}</label><div class="inline-select-action"><select id="modal-${name}" name="${name}" required>${options(locations, resolvedSelectedId)}</select><button class="button button-secondary" type="button" data-action="add-route-location" data-field="${name}">+ New location</button></div></div>`;
+  return `<div class="field"><label for="modal-${name}">${escapeHtml(label)}</label><div class="inline-select-action"><select id="modal-${name}" name="${name}" required>${options(locations, resolvedSelectedId)}</select><button class="button button-secondary" type="button" data-action="add-route-location" data-field="${name}">+ New location</button>${includeCableTray ? `<button class="button button-secondary" type="button" data-action="add-route-tee" data-field="${name}">+ New tee</button>` : ""}</div></div>`;
 }
 
 /**
@@ -2108,14 +2193,14 @@ function updateParallelNumberPreview(form, prefixChanged = false) {
  */
 function openConduitForm(id, draft = {}, modalOptions = {}) {
   const conduit = state.conduits.find((item) => item.id === id);
-  const needsLocations = !state.settings.locations.length;
-  const setupNote = needsLocations ? `<p class="form-note">Add at least one location using New location below or in <a href="#" data-page="settings">Settings</a>.</p>` : "";
+  const needsLocations = !state.settings.locations.length && !state.settings.tees.length;
+  const setupNote = needsLocations ? `<p class="form-note">Add a location or tee using the buttons below.</p>` : "";
   const assignedCableIds = draft.cableIds || conduit?.cableIds || [];
   const numberField = conduit
     ? textField("number", "Conduit number", draft.number ?? conduit.number, "e.g. CON-101", { full: true })
     : scheduleNumberField("Conduit number", state.conduits, "conduits", draft.numberPrefix || numberPrefixFrom(draft.number), draft.number, true);
   const selectedFillCondition = draft.fillCondition || conduit?.fillCondition || "standard";
-  const cableOptions = state.cables.length ? `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><p class="form-note assignment-warning" hidden>Remove incompatible cable assignments before saving this conduit.</p><div class="checkbox-list" role="group" aria-label="Assign cables">
+  const cableOptions = state.cables.length ? `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><label class="appearance-checkbox"><input type="checkbox" name="showAllCables" ${draft.showAllCables ? "checked" : ""} />Show all compatible cables</label><p class="form-note assignment-warning" hidden>Remove incompatible cable assignments before saving this conduit.</p><div class="checkbox-list" role="group" aria-label="Assign cables">
     <div class="checkbox-list-header" aria-hidden="true"><span>Select</span><span>Cable number</span><span>From → To</span><span>Cable type / spec</span></div>
     ${sortCablesByPrefix(state.cables).map((cable) => {
       const type = cableType(cable.cableTypeId);
@@ -2125,7 +2210,7 @@ function openConduitForm(id, draft = {}, modalOptions = {}) {
     <div class="checkbox-list-empty" hidden></div>
   </div></div>` : `<div class="field full"><label>Assign cables <span class="optional">(optional)</span></label><p class="form-note">No cables are available yet. Add cables from the Cable schedule to assign them here.</p></div>`;
   const nippleLength = `<div class="field" data-nipple-length-field ${selectedFillCondition === "nipple" ? "" : "hidden"}><label for="modal-nippleLengthInches">Nipple length (in)</label><input id="modal-nippleLengthInches" name="nippleLengthInches" type="number" min="0.1" max="24" step="0.1" value="${escapeHtml(draft.nippleLengthInches ?? conduit?.nippleLengthInches ?? "")}" ${selectedFillCondition === "nipple" ? "required" : ""} /></div>`;
-  const fields = `${setupNote}<p class="form-note">Supplied EMT, RMC, and PVC Schedule 40/80 areas auto-fill for listed sizes. For other combinations, enter the 100% internal area from the applicable NEC Chapter 9 raceway table or product data.</p><div class="form-grid">
+  const fields = `${setupNote}<p class="form-note">For branched routes, use the same tee at each connected conduit and assign a cable to every conduit it passes through.</p><p class="form-note">Supplied EMT, RMC, and PVC Schedule 40/80 areas auto-fill for listed sizes. For other combinations, enter the 100% internal area from the applicable NEC Chapter 9 raceway table or product data.</p><div class="form-grid">
     ${numberField}
     <div class="form-grid conduit-raceway-fields">
       ${conduitSizeField(draft.size ?? conduit?.size ?? "")}
@@ -2165,6 +2250,7 @@ function updateConduitCableOptions(form) {
   const fromLocationName = fromLocationId ? locationNameKey(fromLocationId) : "";
   const toLocationName = toLocationId ? locationNameKey(toLocationId) : "";
   const cableTrayName = normalizedLocationName(CABLE_TRAY_LOCATION_NAME);
+  const showAllCables = form.elements.namedItem("showAllCables")?.checked;
   const options = [...form.querySelectorAll(".checkbox-option")];
   let visibleCount = 0;
   let hasIncompatibleAssignments = false;
@@ -2177,7 +2263,9 @@ function updateConduitCableOptions(form) {
     const cableToLocationName = option.dataset.toLocationName;
     
     let matchesLocation = false;
-    if (fromLocationId && toLocationId) {
+    if (showAllCables || isTee(fromLocationId) || isTee(toLocationId)) {
+      matchesLocation = true;
+    } else if (fromLocationId && toLocationId) {
       matchesLocation = (cableFromLocationName === fromLocationName && cableFromLocationName !== cableTrayName) ||
                         (cableToLocationName === toLocationName && cableToLocationName !== cableTrayName);
     } else if (fromLocationId) {
@@ -2305,6 +2393,20 @@ function openLocationForm(id, returnContext = null) {
   const location = state.settings.locations.find((item) => item.id === id);
   const fields = `<div class="form-grid">${textField("name", "Equipment Name", location?.name || "", "e.g. MCC-01", { full: true })}${textField("description", "Equipment ID", location?.description || "", "e.g. EQ-001", { required: false, full: true, optional: true })}</div>`;
   openModal(location ? "Edit Equipment" : "Add Equipment", "Equipment locations are available as cable and conduit route endpoints.", location ? `edit-location:${id}` : returnContext ? "new-location-inline" : "new-location", fields, location ? "Save changes" : "Add Equipment");
+  if (returnContext) {
+    pendingLocationReturn = returnContext;
+    modalRoot.querySelectorAll('[data-action="close-modal"]').forEach((button) => {
+      button.dataset.action = "return-to-route";
+    });
+  }
+}
+
+function openTeeForm(id, returnContext = null) {
+  const tee = state.settings.tees.find((item) => item.id === id);
+  let nextNumber = 1;
+  while (isDuplicate(state.settings.tees, `Tee ${nextNumber}`, "", "name")) nextNumber += 1;
+  const fields = `<div class="form-grid">${textField("name", "Tee identifier", tee?.name || `Tee ${nextNumber}`, "e.g. Tee 1", { full: true })}</div><p class="form-note">The identifier is used before conduits are connected and to distinguish tees with identical connections. Otherwise the displayed name is based on connected conduit numbers.</p>`;
+  openModal(tee ? "Edit Tee" : "Add Tee", "Tees connect conduit segments and do not represent cable splices.", tee ? `edit-tee:${id}` : returnContext ? "new-tee-inline" : "new-tee", fields, tee ? "Save changes" : "Add Tee");
   if (returnContext) {
     pendingLocationReturn = returnContext;
     modalRoot.querySelectorAll('[data-action="close-modal"]').forEach((button) => {
@@ -2527,6 +2629,9 @@ function handleSubmit(event) {
   } else if (kind === "new-conduit" || kind.startsWith("edit-conduit:")) {
     const id = kind.startsWith("edit-conduit:") ? kind.split(":")[1] : makeId();
     const number = values.number.trim();
+    if (values.fromLocationId === values.toLocationId && isTee(values.fromLocationId)) {
+      return showToast("Choose different endpoints for a conduit connected to a tee.", true);
+    }
     const allowedCablePrefixes = new Set(cablePrefixesForConduit(number));
     const hasIncompatibleAssignment = formData.getAll("cableIds").some((cableId) => {
       const cable = state.cables.find((item) => item.id === cableId);
@@ -2571,6 +2676,25 @@ function handleSubmit(event) {
     if (index >= 0) state.conduits[index] = conduit;
     else state.conduits.push(conduit);
     saveAndClose(index >= 0 ? "Conduit updated." : "Conduit added.");
+  } else if (kind === "new-tee" || kind === "new-tee-inline" || kind.startsWith("edit-tee:")) {
+    const id = kind.startsWith("edit-tee:") ? kind.slice("edit-tee:".length) : makeId();
+    const name = values.name.trim();
+    if (!name) return showToast("Enter a tee identifier.", true);
+    if (isDuplicate(state.settings.tees, name, id, "name")) return showToast("A tee with that identifier already exists.", true);
+    const index = state.settings.tees.findIndex((item) => item.id === id);
+    if (index >= 0) state.settings.tees[index] = { id, name };
+    else state.settings.tees.push({ id, name });
+    if (kind === "new-tee-inline") {
+      if (persist()) {
+        const returnContext = pendingLocationReturn;
+        pendingLocationReturn = null;
+        closeModal();
+        returnToRoute({ ...returnContext, draft: { ...returnContext.draft, [returnContext.fieldName]: id } });
+        showToast("Tee added. Finish editing your conduit.");
+      }
+    } else {
+      saveAndClose(index >= 0 ? "Tee updated." : "Tee added.");
+    }
   } else if (kind.startsWith("new-location") || kind.startsWith("edit-location:")) {
     const id = kind.startsWith("edit-location:") ? kind.split(":")[1] : makeId();
     const equipmentId = values.description.trim();
@@ -2764,17 +2888,27 @@ function handleAction(action, id, fieldName) {
       submitLabel: "Create duplicate",
     });
   }
-  if (action === "add-route-location") {
+  if (action === "add-route-location" || action === "add-route-tee") {
     const form = modalRoot.querySelector(".modal-form");
     const formData = new FormData(form);
     const draft = Object.fromEntries(formData.entries());
     draft.cableIds = formData.getAll("cableIds");
-    return openLocationForm(undefined, { formKind: form.dataset.form, draft, fieldName });
+    const returnContext = { formKind: form.dataset.form, draft, fieldName };
+    return action === "add-route-tee" ? openTeeForm(undefined, returnContext) : openLocationForm(undefined, returnContext);
   }
   if (action === "new-cable-type") return openCableTypeForm();
   if (action === "edit-cable-type") return openCableTypeForm(id);
   if (action === "new-location") return openLocationForm();
   if (action === "edit-location") return openLocationForm(id);
+  if (action === "new-tee") return openTeeForm();
+  if (action === "edit-tee") return openTeeForm(id);
+  if (action === "delete-tee") {
+    const tee = state.settings.tees.find((item) => item.id === id);
+    if (state.conduits.some((conduit) => conduit.fromLocationId === id || conduit.toLocationId === id)) {
+      return showToast("This tee is used by a conduit. Update those routes before deleting it.", true);
+    }
+    if (tee && confirm(`Delete ${teeDisplayName(tee)}?`)) removeRecord(state.settings.tees, id, "Tee");
+  }
   if (action === "delete-cable") {
     const cable = state.cables.find((item) => item.id === id);
     if (!cable) return;
@@ -3322,6 +3456,13 @@ function validateBackupData(backup) {
     (item.url === undefined || item.url === null ||
       (typeof item.url === "string" && (!item.url.trim() || Boolean(safeHttpUrl(item.url))))));
   validateItems(settings.locations, "locations", (item) => isRecord(item) && isText(item.id) && isText(item.name));
+  validateItems(settings.tees, "tees", (item) => isRecord(item) && isText(item.id) && isText(item.name));
+  const teeIds = settings.tees.map((tee) => tee.id);
+  const teeNames = settings.tees.map((tee) => normalizedLocationName(tee.name));
+  if (new Set(teeIds).size !== teeIds.length || new Set(teeNames).size !== teeNames.length ||
+      teeIds.some((id) => id === CABLE_TRAY_LOCATION_ID || settings.locations.some((location) => location.id === id))) {
+    throw new Error("The backup contains duplicate or conflicting tees.");
+  }
   validateItems(backup.cables, "cables", (item) => isRecord(item) && isText(item.id) && isText(item.number));
   validateItems(backup.conduits, "conduits", (item) =>
     isRecord(item) && isText(item.id) && isText(item.number) &&
@@ -3597,7 +3738,7 @@ document.addEventListener("change", (event) => {
     updateConduitFillCondition(form);
     return;
   }
-  if (isConduitForm(form) && ["fromLocationId", "toLocationId", "cableIds"].includes(event.target.name)) {
+  if (isConduitForm(form) && ["fromLocationId", "toLocationId", "cableIds", "showAllCables"].includes(event.target.name)) {
     updateConduitCableOptions(form);
     return;
   }

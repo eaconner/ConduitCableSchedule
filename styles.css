@@ -168,6 +168,7 @@ tbody tr:hover { background: #fcfcfd; }
 .search-icon { position: absolute; top: 10px; left: 12px; color: #9aa3af; pointer-events: none; }
 .external-link-icon { width: 12px; height: 12px; vertical-align: -2px; }
 .settings-layout { display: grid; gap: 18px; }
+.conduit-tee-section { margin-top: 18px; }
 .settings-section { overflow: hidden; }
 .settings-form { padding: 20px; }
 .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
