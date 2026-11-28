@@ -121,7 +121,7 @@ test("imports old projects and preserves tees through project backup validation"
   };
   vm.createContext(context);
   vm.runInContext(source.slice(start, end), context);
-  const project = JSON.parse(fs.readFileSync(path.join(__dirname, "../../example/example-project.ccs"), "utf8"));
+  const project = JSON.parse(fs.readFileSync(path.join(__dirname, "../../example/INT-002 - Example - Conduit Tee.ccs"), "utf8"));
   const legacy = context.validateBackupData(project);
   assert.equal(legacy.settings.tees.length, 0);
   project.settings.tees = [{ id: "tee-1", name: "Tee 1" }];
