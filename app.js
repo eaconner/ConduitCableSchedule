@@ -292,9 +292,11 @@ const tableSortState = {
 };
 
 const paginationState = {
-  cables: { currentPage: 1, pageSize: 10 },
-  conduits: { currentPage: 1, pageSize: 10 },
-  voltageDrop: { currentPage: 1, pageSize: 10 },
+  cables: { currentPage: 1, pageSize: 25 },
+  conduits: { currentPage: 1, pageSize: 25 },
+  voltageDrop: { currentPage: 1, pageSize: 25 },
+  cableTypes: { currentPage: 1, pageSize: 25 },
+  equipment: { currentPage: 1, pageSize: 25 },
 };
 
 /**
@@ -959,7 +961,7 @@ function renderDashboard() {
   return `
     <div class="page-heading">
       <div><h1>${escapeHtml(projectName())}</h1><p>Your cable and conduit schedules, all in one place.</p></div>
-      <div class="heading-actions"><button class="button button-secondary" data-page="settings"><span class="mdi mdi-tune-variant" aria-hidden="true"></span>Project settings</button><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>New cable</button></div>
+      <div class="heading-actions"><button class="button button-secondary" data-page="settings"><span class="mdi mdi-tune-variant" aria-hidden="true"></span>Project settings</button></div>
     </div>
     <div class="overview-grid">
       <article class="metric-card"><div class="metric-top">Total Cables <span class="metric-icon"><span class="mdi mdi-cable-data" aria-hidden="true"></span></span></div><div class="metric-value">${state.cables.length}</div><div class="metric-sub">Across the project schedule</div></article>
@@ -1011,24 +1013,18 @@ function scheduleStatus() {
 
 /**
  * Renders pagination controls and page info for a table.
- * @param {string} tableType - Type of table: 'cables', 'conduits', or 'voltageDrop'
+ * @param {string} tableType - Table or settings list key
  * @param {number} totalRows - Total number of rows before pagination
- * @param {number} displayedRows - Number of rows being displayed on current page
  * @returns {string} HTML string for pagination controls
  */
-function renderPaginationControls(tableType, totalRows, displayedRows) {
+function renderPaginationControls(tableType, totalRows) {
   const pagination = paginationState[tableType];
   const pageSize = pagination.pageSize === "all" ? totalRows : parseInt(pagination.pageSize);
   const totalPages = Math.ceil(totalRows / pageSize);
   const startRow = pagination.pageSize === "all" ? 1 : (pagination.currentPage - 1) * pageSize + 1;
   const endRow = pagination.pageSize === "all" ? totalRows : Math.min(pagination.currentPage * pageSize, totalRows);
   
-  if (totalRows <= 10) {
-    return "";
-  }
-
   const pageSizeOptions = [
-    { value: "10", label: "10 rows" },
     { value: "25", label: "25 rows" },
     { value: "50", label: "50 rows" },
     { value: "75", label: "75 rows" },
@@ -1045,15 +1041,15 @@ function renderPaginationControls(tableType, totalRows, displayedRows) {
 
   return `<div class="pagination-controls">
     <div class="pagination-info">
-      <span>Showing ${startRow}–${endRow} of ${totalRows} ${displayedRows === 1 ? "row" : "rows"}</span>
+      <span>Showing ${startRow}–${endRow} of ${totalRows} ${totalRows === 1 ? "row" : "rows"}</span>
       <select class="pagination-page-size" data-table="${tableType}" aria-label="Rows per page">
         ${pageSizeSelect}
       </select>
     </div>
     <div class="pagination-nav">
-      <button class="pagination-button" data-table="${tableType}" data-action="prev-page" ${prevDisabled} aria-label="Previous page">← Previous</button>
       <span class="pagination-info-inline">Page ${pagination.currentPage} of ${totalPages}</span>
-      <button class="pagination-button" data-table="${tableType}" data-action="next-page" ${nextDisabled} aria-label="Next page">Next →</button>
+      <button class="pagination-button" data-table="${tableType}" data-action="prev-page" ${prevDisabled} aria-label="Previous page"><span class="mdi mdi-chevron-left" aria-hidden="true"></span></button>
+      <button class="pagination-button" data-table="${tableType}" data-action="next-page" ${nextDisabled} aria-label="Next page"><span class="mdi mdi-chevron-right" aria-hidden="true"></span></button>
     </div>
   </div>`;
 }
@@ -1070,6 +1066,8 @@ function paginateRows(rows, tableType) {
     return rows;
   }
   const pageSize = parseInt(pagination.pageSize);
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  pagination.currentPage = Math.min(pagination.currentPage, totalPages);
   const startIndex = (pagination.currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   return rows.slice(startIndex, endIndex);
@@ -1077,7 +1075,7 @@ function paginateRows(rows, tableType) {
 
 /**
  * Gets total pages for a table based on its current pagination state.
- * @param {string} tableType - Type of table: 'cables', 'conduits', or 'voltageDrop'
+ * @param {string} tableType - Type of table or settings list
  * @returns {number} Total number of pages
  */
 function getTotalPages(tableType) {
@@ -1095,6 +1093,10 @@ function getTotalPages(tableType) {
     let rows = cableDisplayGroups();
     rows = sortVoltageDropRows(rows, tableSortState.voltageDrop.column, tableSortState.voltageDrop.direction);
     totalRows = rows.length;
+  } else if (tableType === "cableTypes") {
+    totalRows = state.settings.cableTypes.length;
+  } else if (tableType === "equipment") {
+    totalRows = state.settings.locations.filter((location) => !isCableTrayLocation(location)).length;
   }
 
   const pagination = paginationState[tableType];
@@ -1130,7 +1132,7 @@ function renderCables() {
     </div>
     <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon mdi mdi-magnify" aria-hidden="true"></span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Mfr. /<br>Spec", "type")}${headerCell("Spec<br>Type", "specType")}${headerCell("Cable<br>Length", "length")}${headerCell("Cable Routing <br>From", "fromLocation")}${headerCell("Cable Routing <br>To", "toLocation")}${headerCell("Purpose", "purpose")}${headerCell("Conduit<br>Assignment", "conduitAssignment")}<th>Actions</th></tr></thead><tbody id="cable-rows">${paginatedRows.map(renderCableRow).join("")}</tbody></table></div>${renderPaginationControls("cables", totalRows, paginatedRows.length)}<div class="table-footer"><span>${paginatedRows.length} schedule rows for ${cableCount} cable entries</span><span>Length in feet</span></div>` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-cable-data" aria-hidden="true"></span></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon mdi mdi-magnify" aria-hidden="true"></span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Mfr. /<br>Spec", "type")}${headerCell("Spec<br>Type", "specType")}${headerCell("Cable<br>Length", "length")}${headerCell("Cable Routing <br>From", "fromLocation")}${headerCell("Cable Routing <br>To", "toLocation")}${headerCell("Purpose", "purpose")}${headerCell("Conduit<br>Assignment", "conduitAssignment")}<th>Actions</th></tr></thead><tbody id="cable-rows">${paginatedRows.map(renderCableRow).join("")}</tbody></table></div>${renderPaginationControls("cables", totalRows)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-cable-data" aria-hidden="true"></span></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first cable</button></div>`}
     </section>`;
 }
 
@@ -1205,7 +1207,7 @@ function renderVoltageDrop() {
     </div>
     ${totalRows ? `<div class="schedule-info"><strong>${rowsWithErrors} ${rowsWithErrors === 1 ? "row with errors" : "rows with errors"}</strong><span class="divider"></span><strong>${rowsPassing} ${rowsPassing === 1 ? "row passing" : "rows passing"}</strong><span class="divider"></span><span>${maxVoltageDropPercent}% voltage drop limit</span></div>` : ""}
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Spec Type", "specType")}${headerCell("Cable Material", "material")}${headerCell("Voltage", "voltage")}${headerCell("Load<br>(Amps)", "load")}${headerCell("Cable<br>Ampacity", "ampacity")}${headerCell("Ampacity<br>Overhead", "overhead")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Cable<br>Rating", "rating")}${headerCell("Phase", "phase")}${headerCell("Voltage<br>Drop %", "voltageDrop")}<th>Actions</th></tr></thead><tbody>${paginatedRows.map(renderVoltageDropRow).join("")}</tbody></table></div>${renderPaginationControls("voltageDrop", totalRows, paginatedRows.length)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-chart-bar" aria-hidden="true"></span></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add Cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Cable ampacity uses the selected material and rating; parallel sets show their combined ampacity. Ampacity Overhead is cable ampacity minus load. Multiconductor and pair voltage-drop values are estimates using single-conductor Table 9 impedance; missing inputs show Needs data.</p></div></div><div class="table-wrap"><table class="wrapped-headers voltage-drop-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Spec Type", "specType")}${headerCell("Cable Material", "material")}${headerCell("Voltage", "voltage")}${headerCell("Load<br>(Amps)", "load")}${headerCell("Cable<br>Ampacity", "ampacity")}${headerCell("Ampacity<br>Overhead", "overhead")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Cable<br>Rating", "rating")}${headerCell("Phase", "phase")}${headerCell("Voltage<br>Drop %", "voltageDrop")}<th>Actions</th></tr></thead><tbody>${paginatedRows.map(renderVoltageDropRow).join("")}</tbody></table></div>${renderPaginationControls("voltageDrop", totalRows)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-chart-bar" aria-hidden="true"></span></div><h3>No cables yet</h3><p>Add cables to see their voltage-drop inputs here.</p><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add Cable</button></div>`}
     </section>`;
 }
 
@@ -1469,7 +1471,7 @@ function renderConduits() {
         <td>${conduit.cableIds.length ? `<span class="tag blue">${conduit.cableIds.length} ${conduit.cableIds.length === 1 ? "cable" : "cables"}</span><span class="secondary-cell">${escapeHtml(conduit.cableIds.map((id) => state.cables.find((cable) => cable.id === id)?.number || "Removed").join(", "))}</span>` : `<span class="tag neutral">Unassigned</span>`}</td>
         <td><div class="table-actions"><button class="icon-button" data-action="edit-conduit" data-id="${conduit.id}" aria-label="Edit ${escapeHtml(conduit.number)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button" data-action="duplicate-conduit" data-id="${conduit.id}" aria-label="Duplicate ${escapeHtml(conduit.number)}"><span class="mdi mdi-content-copy" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-conduit" data-id="${conduit.id}" aria-label="Delete ${escapeHtml(conduit.number)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></td>
       </tr>`;
-      }).join("")}</tbody></table></div>${renderPaginationControls("conduits", totalRows, paginatedRows.length)}<div class="table-footer"><span>Showing ${paginatedRows.length} of ${totalRows} conduits</span><span>Fill checks use the selected NEC edition's Table 1 limits. Raceway area is entered per conduit.</span></div>` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-pipe" aria-hidden="true"></span></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first conduit</button></div>`}
+      }).join("")}</tbody></table></div>${renderPaginationControls("conduits", totalRows)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-pipe" aria-hidden="true"></span></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first conduit</button></div>`}
     </section>`;
 }
 
@@ -1552,6 +1554,8 @@ function renderBillOfMaterials() {
 function renderSettings() {
   const settings = state.settings;
   const equipmentLocations = sortByName(settings.locations.filter((location) => !isCableTrayLocation(location)));
+  const paginatedCableTypes = paginateRows(settings.cableTypes, "cableTypes");
+  const paginatedEquipmentLocations = paginateRows(equipmentLocations, "equipment");
   return `
     <div class="page-heading"><div><h1>Settings</h1><p>Manage project information, cable specifications, and equipment locations.</p></div></div>
     <div class="settings-layout">
@@ -1616,11 +1620,13 @@ function renderSettings() {
       </section>
       <section class="content-card settings-section">
         <div class="card-heading section-title-row"><div><h2>Cable Types <span class="tag neutral">${settings.cableTypes.length}</span></h2><p>Reusable manufacturer and specification details for cable entries</p></div><button class="button button-secondary" data-action="new-cable-type"><span class="mdi mdi-plus" aria-hidden="true"></span>Add Cable Type</button></div>
-        <div class="settings-list">${settings.cableTypes.length ? settings.cableTypes.map((type) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(type.manufacturer)} <span style="color:#a1a9b4;font-weight:400">·</span> ${escapeHtml(type.specNumber)}</strong><small>${escapeHtml(type.specType)} · ${formatNumber(type.diameter)} in OD · ${formatNumber(type.netWeight)} lbs/1000' · Material: ${escapeHtml(type.cableMaterial || "not set")} · Fill: ${escapeHtml(cableFillTypeLabel(type.fillClassification) || "not set")}${safeHttpUrl(type.url) ? ` · <a href="${escapeHtml(safeHttpUrl(type.url))}" target="_blank" rel="noopener noreferrer" style="color:#4268e8">Details <span class="mdi mdi-open-in-new external-link-icon" aria-hidden="true"></span></a>` : ""}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-cable-type" data-id="${type.id}" aria-label="Edit ${escapeHtml(type.specNumber)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-cable-type" data-id="${type.id}" aria-label="Delete ${escapeHtml(type.specNumber)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`).join("") : `<div class="settings-empty">No cable types yet. Add a specification to use it in the cable schedule.</div>`}</div>
+        <div class="settings-list">${settings.cableTypes.length ? paginatedCableTypes.map((type) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(type.manufacturer)} <span style="color:#a1a9b4;font-weight:400">·</span> ${escapeHtml(type.specNumber)}</strong><small>${escapeHtml(type.specType)} · ${formatNumber(type.diameter)} in OD · ${formatNumber(type.netWeight)} lbs/1000' · Material: ${escapeHtml(type.cableMaterial || "not set")} · Fill: ${escapeHtml(cableFillTypeLabel(type.fillClassification) || "not set")}${safeHttpUrl(type.url) ? ` · <a href="${escapeHtml(safeHttpUrl(type.url))}" target="_blank" rel="noopener noreferrer" style="color:#4268e8">Details <span class="mdi mdi-open-in-new external-link-icon" aria-hidden="true"></span></a>` : ""}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-cable-type" data-id="${type.id}" aria-label="Edit ${escapeHtml(type.specNumber)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-cable-type" data-id="${type.id}" aria-label="Delete ${escapeHtml(type.specNumber)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`).join("") : `<div class="settings-empty">No cable types yet. Add a specification to use it in the cable schedule.</div>`}</div>
+        ${settings.cableTypes.length ? renderPaginationControls("cableTypes", settings.cableTypes.length) : ""}
       </section>
       <section class="content-card settings-section">
         <div class="card-heading section-title-row"><div><h2>Equipment <span class="tag neutral">${equipmentLocations.length}</span></h2><p>Equipment appears in the From and To dropdowns on schedules</p></div><button class="button button-secondary" data-action="new-location"><span class="mdi mdi-plus" aria-hidden="true"></span>Add Equipment</button></div>
-        <div class="settings-list">${equipmentLocations.length ? equipmentLocations.map((location) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(locationDisplayName(location))}</strong></div><div class="table-actions"><button class="icon-button" data-action="edit-location" data-id="${location.id}" aria-label="Edit ${escapeHtml(location.name)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-location" data-id="${location.id}" aria-label="Delete ${escapeHtml(location.name)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`).join("") : `<div class="settings-empty">No equipment yet. Add equipment to use it on schedules.</div>`}</div>
+        <div class="settings-list">${equipmentLocations.length ? paginatedEquipmentLocations.map((location) => `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(locationDisplayName(location))}</strong></div><div class="table-actions"><button class="icon-button" data-action="edit-location" data-id="${location.id}" aria-label="Edit ${escapeHtml(location.name)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-location" data-id="${location.id}" aria-label="Delete ${escapeHtml(location.name)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`).join("") : `<div class="settings-empty">No equipment yet. Add equipment to use it on schedules.</div>`}</div>
+        ${equipmentLocations.length ? renderPaginationControls("equipment", equipmentLocations.length) : ""}
       </section>
       <section class="content-card settings-section">
         <div class="card-heading"><div><h2>Version History</h2><p>Updates and changes made to Wireframe</p></div></div>
