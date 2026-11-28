@@ -266,6 +266,9 @@ tbody tr:hover { background: #fcfcfd; }
 .modal-form { padding: 20px 22px 22px; }
 .modal-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .modal-form .form-grid.conduit-raceway-fields { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.modal-form .form-grid.cable-electrical-fields { grid-column: 1 / -1; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.cable-electrical-fields .field { grid-column: span 2; }
+.cable-electrical-fields .field:nth-child(n+4) { grid-column: span 3; }
 .modal-form .field.full { grid-column: 1 / -1; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; padding-top: 17px; border-top: 1px solid #f0f2f5; }
 .form-note { margin: 0 0 14px; border-radius: 6px; padding: 10px 12px; background: #f5f7fb; color: #717e90; font-size: 11px; line-height: 1.5; }

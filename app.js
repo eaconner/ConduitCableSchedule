@@ -2056,6 +2056,43 @@ function conduitSizeField(selectedSize) {
   return `<div class="field"><label for="modal-size">Conduit size <span class="optional">(optional)</span></label><select id="modal-size" name="size"><option value="">Select size…</option>${sizes.map((size) => `<option value="${escapeHtml(size)}" ${size === selectedSize ? "selected" : ""}>${escapeHtml(size)}</option>`).join("")}</select></div>`;
 }
 
+function suggestedCablePurpose(voltage, phase, type) {
+  let count = Number(type?.specCount);
+  let construction = type?.specConstruction;
+  if (construction === "pair") return "";
+  if (!Number.isSafeInteger(count) || count < 1 || !CABLE_SPEC_CONSTRUCTIONS.includes(construction)) {
+    const match = String(type?.specType || "").match(/^\s*(\d+)\s*(\/\s*C|PR\b)/i);
+    count = match ? Number(match[1]) : 0;
+    construction = match?.[2].toUpperCase().startsWith("PR") ? "pair" : "conductor";
+  }
+  if (construction === "pair") return "";
+  const parts = [];
+  const voltageText = String(voltage || "").trim();
+  if (voltageText) parts.push(`${voltageText}V`);
+  if (phase === "Single") parts.push("1PH");
+  if (phase === "Three") parts.push("3PH");
+  if (Number.isSafeInteger(count) && count > 0) parts.push(`${count}W`);
+  return parts.join(", ");
+}
+
+function updateCablePurpose(form) {
+  const purpose = form.elements.namedItem("purpose");
+  if (purpose.dataset.customized === "true") return;
+  purpose.value = suggestedCablePurpose(
+    form.elements.namedItem("voltage").value,
+    form.elements.namedItem("phase").value,
+    cableType(form.elements.namedItem("cableTypeId").value),
+  );
+}
+
+function captureCableDraft(form, formData) {
+  const draft = Object.fromEntries(formData.entries());
+  draft.parallelNumbers = formData.getAll("parallelNumbers");
+  draft.parallelNumbersCustomized = [...form.querySelectorAll('input[name="parallelNumbers"]')].map((input) => input.dataset.customized === "true");
+  draft.purposeCustomized = form.elements.namedItem("purpose").dataset.customized === "true";
+  return draft;
+}
+
 /**
  * Opens the cable form for creating or editing a cable.
  * Handles single cables and parallel cable sets.
@@ -2084,7 +2121,7 @@ function openCableForm(id, draft = {}, modalOptions = {}) {
       ? groupMembers.map((member) => member.number)
       : [];
   const customizedParallelNumbers = Array.isArray(draft.parallelNumbersCustomized) ? draft.parallelNumbersCustomized : [];
-  const parallelNumbersField = `<div class="field full" id="parallel-number-fields" hidden><label>Cable numbers</label><div class="parallel-number-list">${initialParallelNumbers.map((number, index) => parallelNumberInputMarkup(index, number, customizedParallelNumbers[index] === true)).join("")}</div><small class="number-auto-note" id="parallel-number-note"></small></div>`;
+  const parallelNumbersField = `<div class="field full" id="parallel-number-fields" data-active="${initialParallelNumbers.length > 0}" hidden><label>Cable numbers</label><div class="parallel-number-list">${initialParallelNumbers.map((number, index) => parallelNumberInputMarkup(index, number, customizedParallelNumbers[index] === true)).join("")}</div><small class="number-auto-note" id="parallel-number-note"></small></div>`;
   const cableRating = draft.cableRating ?? cable?.cableRating ?? "";
   const phase = draft.phase ?? cable?.phase ?? "";
   const fields = `${setupNote}<div class="form-grid">
@@ -2093,12 +2130,14 @@ function openCableForm(id, draft = {}, modalOptions = {}) {
     <div class="field full"><label for="modal-cableTypeId">Cable type</label><div class="inline-select-action"><select id="modal-cableTypeId" name="cableTypeId" required>${options(state.settings.cableTypes.map((type) => ({ id: type.id, name: [type.specType, type.manufacturer, type.specNumber].filter(Boolean).join(" · ") })), cableTypeId)}</select><button class="button button-secondary" type="button" data-action="add-cable-type-inline">+ New type</button></div></div>
     ${routeLocationField("fromLocationId", "From location", draft.fromLocationId || cable?.fromLocationId, true)}
     ${routeLocationField("toLocationId", "To location", draft.toLocationId || cable?.toLocationId, true)}
-    ${textField("purpose", "Cable purpose", draft.purpose ?? cable?.purpose ?? "", "e.g. Feeder, control, instrumentation", { required: false, full: true })}
-    ${textField("voltage", "Voltage", voltage, "e.g. 480", { required: false, optional: true })}
-    ${textField("loadAmps", "Load (Amps)", loadAmps, "e.g. 12.5", { type: "number", min: "0", step: "0.01", required: false, optional: true })}
-    ${textField("parallelSets", "Parallel Sets", parallelSets, "1", { type: "number", min: "1", max: String(MAX_PARALLEL_SETS), step: "1" })}
-    ${selectField("cableRating", "Cable Rating", CABLE_RATINGS.map((value) => ({ value, label: `${value}°C` })), cableRating, { optional: true })}
-    ${selectField("phase", "Phase", CABLE_PHASES.map((value) => ({ value, label: value })), phase, { optional: true })}
+    <div class="form-grid cable-electrical-fields">
+      ${textField("voltage", "Voltage", voltage, "e.g. 480", { required: false, optional: true })}
+      ${textField("loadAmps", "Load (Amps)", loadAmps, "e.g. 12.5", { type: "number", min: "0", step: "0.01", required: false, optional: true })}
+      ${selectField("phase", "Phase", CABLE_PHASES.map((value) => ({ value, label: value })), phase, { optional: true })}
+      ${textField("parallelSets", "Parallel Sets", parallelSets, "1", { type: "number", min: "1", max: String(MAX_PARALLEL_SETS), step: "1" })}
+      ${selectField("cableRating", "Cable Rating", CABLE_RATINGS.map((value) => ({ value, label: `${value}°C` })), cableRating, { optional: true })}
+    </div>
+    <div class="field full"><label for="modal-purpose">Cable purpose</label><input id="modal-purpose" name="purpose" value="${escapeHtml(draft.purpose ?? cable?.purpose ?? "")}" placeholder="e.g. 480V, 3PH, 3W" aria-describedby="cable-purpose-note" /><small class="number-auto-note" id="cable-purpose-note">Suggested from voltage, phase, and cable type conductor count (excluding ground). Pair cable purposes are entered manually. Editing the purpose stops automatic updates.</small></div>
   </div>`;
   const title = modalOptions.title || (isParallelGroup ? "Edit Parallel Cable Set" : cable ? "Edit Cable" : "Add Cable");
   const subtitle = modalOptions.subtitle || (isParallelGroup
@@ -2107,6 +2146,10 @@ function openCableForm(id, draft = {}, modalOptions = {}) {
   openModal(title, subtitle, cable ? `edit-cable:${id}` : "new-cable", fields, modalOptions.submitLabel || (cable ? "Save changes" : "Add Cable"));
   const form = modalRoot.querySelector(".modal-form");
   form.dataset.parallelGroup = String(isParallelGroup);
+  const purpose = form.elements.namedItem("purpose");
+  const suggested = suggestedCablePurpose(voltage, phase, cableType(cableTypeId));
+  purpose.dataset.customized = String(draft.purposeCustomized ?? Boolean(purpose.value && purpose.value !== suggested));
+  updateCablePurpose(form);
   if (needsLocations) modalRoot.querySelector('[type="submit"]').disabled = true;
   updateParallelNumberPreview(form);
 }
@@ -2840,9 +2883,7 @@ function handleAction(action, id, fieldName) {
   if (action === "add-cable-type-inline") {
     const form = modalRoot.querySelector(".modal-form");
     const formData = new FormData(form);
-    const draft = Object.fromEntries(formData.entries());
-    draft.parallelNumbers = formData.getAll("parallelNumbers");
-    draft.parallelNumbersCustomized = [...form.querySelectorAll('input[name="parallelNumbers"]')].map((input) => input.dataset.customized === "true");
+    const draft = captureCableDraft(form, formData);
     return openCableTypeForm(undefined, { formKind: form.dataset.form, draft });
   }
   if (action === "edit-cable") return openCableForm(id);
@@ -2886,7 +2927,8 @@ function handleAction(action, id, fieldName) {
   if (action === "add-route-location" || action === "add-route-tee") {
     const form = modalRoot.querySelector(".modal-form");
     const formData = new FormData(form);
-    const draft = Object.fromEntries(formData.entries());
+    const isCable = form.dataset.form === "new-cable" || form.dataset.form.startsWith("edit-cable:");
+    const draft = isCable ? captureCableDraft(form, formData) : Object.fromEntries(formData.entries());
     draft.cableIds = formData.getAll("cableIds");
     const returnContext = { formKind: form.dataset.form, draft, fieldName };
     return action === "add-route-tee" ? openTeeForm(undefined, returnContext) : openLocationForm(undefined, returnContext);
@@ -3721,6 +3763,10 @@ document.addEventListener("change", (event) => {
   }
   
   const form = event.target.closest(".modal-form");
+  if (form && (form.dataset.form === "new-cable" || form.dataset.form.startsWith("edit-cable:")) &&
+      ["cableTypeId", "phase"].includes(event.target.name)) {
+    updateCablePurpose(form);
+  }
   if (isCableTypeForm(form) && event.target.name === "specConstruction") {
     updateCableSpecLabels(form);
     return;
@@ -3766,6 +3812,10 @@ document.addEventListener("change", (event) => {
 
 document.addEventListener("input", (event) => {
   const form = event.target.closest(".modal-form");
+  if (form && (form.dataset.form === "new-cable" || form.dataset.form.startsWith("edit-cable:"))) {
+    if (event.target.name === "purpose") event.target.dataset.customized = "true";
+    if (event.target.name === "voltage") updateCablePurpose(form);
+  }
   if (form && event.target.name === "number") event.target.dataset.customized = "true";
   if (form && event.target.name === "parallelNumbers") event.target.dataset.customized = "true";
   if (form && event.target.name === "parallelSets") updateParallelNumberPreview(form);
