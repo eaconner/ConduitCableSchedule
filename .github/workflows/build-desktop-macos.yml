@@ -71,7 +71,8 @@ jobs:
           trap 'hdiutil detach "$mountpoint"; rmdir "$mountpoint"' EXIT
           app="$mountpoint/Wireframe.app"
           executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")
-          lipo -verify_arch x86_64 arm64 "$app/Contents/MacOS/$executable"
+          lipo "$app/Contents/MacOS/$executable" -verify_arch x86_64
+          lipo "$app/Contents/MacOS/$executable" -verify_arch arm64
           codesign --verify --deep --strict "$app"
           if ! codesign -d --verbose=4 "$app" 2>&1 | grep -q '^Authority=Developer ID Application:'; then
             echo "::error::The app is not signed with a Developer ID Application certificate"
@@ -84,7 +85,7 @@ jobs:
         run: |
           asset="wireframe-${GITHUB_REF_NAME#v}-macos-universal.dmg"
           mv Wireframe.dmg "$asset"
-          shasum -a 256 "$asset" > Wireframe-macos.sha256
+          shasum -a 256 "$asset" > "${asset%.dmg}.sha256"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -92,7 +93,7 @@ jobs:
           name: Wireframe-macos-latest
           path: |
             ./wireframe-*-macos-universal.dmg
-            ./Wireframe-macos.sha256
+            ./wireframe-*-macos-universal.sha256
           if-no-files-found: error
           retention-days: 90
 
@@ -113,4 +114,4 @@ jobs:
       - name: Upload macOS assets to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/wireframe-*-macos-universal.dmg release-assets/Wireframe-macos.sha256
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/wireframe-*-macos-universal.dmg release-assets/wireframe-*-macos-universal.sha256

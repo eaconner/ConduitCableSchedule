@@ -47,7 +47,7 @@ jobs:
           Copy-Item ./src-tauri/target/x86_64-pc-windows-msvc/release/wireframe.exe ./Wireframe.exe
           Compress-Archive -Path ./Wireframe.exe -DestinationPath $asset
           $hash = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $asset" | Set-Content -Encoding ascii Wireframe-windows.sha256
+          "$hash  $asset" | Set-Content -Encoding ascii ([System.IO.Path]::ChangeExtension($asset, ".sha256"))
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -55,7 +55,7 @@ jobs:
           name: Wireframe-windows-latest
           path: |
             ./wireframe-*-windows-x64-portable.zip
-            ./Wireframe-windows.sha256
+            ./wireframe-*-windows-x64-portable.sha256
           if-no-files-found: error
           retention-days: 90
 
@@ -76,4 +76,4 @@ jobs:
       - name: Upload Windows assets to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/wireframe-*-windows-x64-portable.zip release-assets/Wireframe-windows.sha256
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/wireframe-*-windows-x64-portable.zip release-assets/wireframe-*-windows-x64-portable.sha256
