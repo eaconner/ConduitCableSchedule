@@ -92,6 +92,7 @@ button { cursor: pointer; }
 .button-primary:hover { background: var(--blue-dark); }
 .button-secondary { border-color: #e3e7ed; background: #fff; color: #4c596b; }
 .button-secondary:hover { border-color: #cdd4df; background: #fafbfc; }
+.button-secondary[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); color: var(--blue-dark); }
 .project-file-actions { display: flex; align-items: center; gap: 6px; }
 .project-file-action { min-width: 82px; }
 .export-wrap { position: relative; }
@@ -183,6 +184,12 @@ tbody tr:hover { background: #fcfcfd; }
 .field input, .field select, .field textarea { width: 100%; min-height: 39px; border: 1px solid #e2e6ec; border-radius: 6px; outline: 0; padding: 0 11px; background: #fff; color: #394659; font-size: 12px; }
 .field .cable-spec-checkbox, .field .appearance-checkbox { display: flex; align-items: center; gap: 8px; min-height: 39px; color: var(--ink); font-size: 12px; }
 .cable-spec-checkbox input, .appearance-checkbox input { width: 16px; height: 16px; min-height: 16px; margin: 0; padding: 0; border: 0; accent-color: var(--blue); }
+.field .settings-toggle { display: flex; align-items: center; gap: 9px; min-height: 32px; color: var(--ink); font-size: 12px; cursor: pointer; }
+.field .settings-toggle input { appearance: none; flex: none; width: 36px; height: 20px; min-height: 20px; margin: 0; padding: 2px; border: 0; border-radius: 10px; background: #98a2b3; cursor: pointer; }
+.settings-toggle input::before { content: ""; display: block; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s ease; }
+.field .settings-toggle input:checked { background: var(--blue); }
+.settings-toggle input:checked::before { transform: translateX(16px); }
+.field .settings-toggle input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .number-prefix-entry { display: flex; min-width: 0; gap: 7px; }
 .number-prefix-entry select { min-width: 0; flex: 0 0 132px; }
 .number-prefix-entry input { min-width: 0; flex: 1; }
@@ -456,6 +463,7 @@ tbody tr:hover { background: #fcfcfd; }
 :root[data-theme="dark"] .nav-item.active .nav-count { background: #344a73; color: #c2ceff; }
 :root[data-theme="dark"] .button-secondary { color: var(--ink); }
 :root[data-theme="dark"] .button-secondary:hover { border-color: #53647b; background: #293648; }
+:root[data-theme="dark"] .button-secondary[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
 :root[data-theme="dark"] .button-primary { background: #4268e8; color: #fff; }
 :root[data-theme="dark"] .button-primary:hover { background: #3156d3; }
 :root[data-theme="dark"] .export-menu button span { color: var(--muted); }
@@ -487,6 +495,8 @@ tbody tr:hover { background: #fcfcfd; }
 :root[data-theme="dark"] .field input::placeholder,
 :root[data-theme="dark"] .field textarea::placeholder { color: #8492a5; }
 :root[data-theme="dark"] .form-note { background: #293648; }
+:root[data-theme="dark"] .field .settings-toggle input { background: #68778b; }
+:root[data-theme="dark"] .field .settings-toggle input:checked { background: var(--blue); }
 :root[data-theme="dark"] .checkbox-list { border-color: var(--line); }
 :root[data-theme="dark"] .checkbox-option { color: var(--muted); }
 :root[data-theme="dark"] .checkbox-option.incompatible,

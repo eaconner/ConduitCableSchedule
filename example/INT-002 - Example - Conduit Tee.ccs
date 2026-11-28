@@ -11,6 +11,15 @@
     "necJurisdiction": "",
     "powerFactor": 0.9,
     "maxVoltageDropPercent": 3,
+    "themePreference": "system",
+    "keepSidebarMinimized": false,
+    "pageSizes": {
+      "cables": 25,
+      "conduits": 25,
+      "voltageDrop": 25,
+      "cableTypes": 25,
+      "equipment": 25
+    },
     "cableTypes": [
       {
         "id": "5ce0c809-058e-4769-b894-3b07778a930d",

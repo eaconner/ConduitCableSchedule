@@ -11,6 +11,15 @@
     "necJurisdiction": "",
     "powerFactor": 0.9,
     "maxVoltageDropPercent": 3,
+    "themePreference": "system",
+    "keepSidebarMinimized": false,
+    "pageSizes": {
+      "cables": 25,
+      "conduits": 25,
+      "voltageDrop": 25,
+      "cableTypes": 25,
+      "equipment": 25
+    },
     "cableTypes": [
       {
         "id": "15307af5-32b4-4fe4-9018-64280cddcc86",
@@ -56,8 +65,8 @@
         "specConstruction": "conductor",
         "specSize": "500 KCMIL",
         "specGroundShield": true,
-        "customSpecType": false,
         "cableMaterial": "Copper",
+        "cableAmpacity": null,
         "fillClassification": "multiconductor",
         "diameter": 2.25,
         "netWeight": 5980,
@@ -73,8 +82,8 @@
         "specConstruction": "conductor",
         "specSize": "750 KCMIL",
         "specGroundShield": true,
-        "customSpecType": false,
         "cableMaterial": "Copper",
+        "cableAmpacity": null,
         "fillClassification": "multiconductor",
         "diameter": 2.75,
         "netWeight": 8626,
@@ -90,8 +99,8 @@
         "specConstruction": "conductor",
         "specSize": "350 KCMIL",
         "specGroundShield": true,
-        "customSpecType": false,
         "cableMaterial": "Copper",
+        "cableAmpacity": null,
         "fillClassification": "multiconductor",
         "diameter": 1.97,
         "netWeight": 4150,
@@ -107,8 +116,8 @@
         "specConstruction": "conductor",
         "specSize": "250 KCMIL",
         "specGroundShield": true,
-        "customSpecType": false,
         "cableMaterial": "Copper",
+        "cableAmpacity": null,
         "fillClassification": "multiconductor",
         "diameter": 1.75,
         "netWeight": 3190,
@@ -124,8 +133,8 @@
         "specConstruction": "conductor",
         "specSize": "1/0 AWG",
         "specGroundShield": true,
-        "customSpecType": false,
         "cableMaterial": "Copper",
+        "cableAmpacity": null,
         "fillClassification": "multiconductor",
         "diameter": 1.22,
         "netWeight": 1436,
@@ -141,8 +150,8 @@
         "specConstruction": "conductor",
         "specSize": "8 AWG",
         "specGroundShield": true,
-        "customSpecType": false,
         "cableMaterial": "Copper",
+        "cableAmpacity": null,
         "fillClassification": "multiconductor",
         "diameter": 0.445,
         "netWeight": 190,
@@ -255,7 +264,8 @@
         "name": "SWGR-2",
         "description": "CB-MCC-1A"
       }
-    ]
+    ],
+    "tees": []
   },
   "cables": [
     {

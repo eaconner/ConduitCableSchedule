@@ -96,6 +96,222 @@ test("does not infer connections through the generic cable tray or change legacy
   assert.match(context.cableConduitRoute(cable).message, /Cable tray routing is not tracked/);
 });
 
+function lengthCheckContext() {
+  const context = routeContext();
+  const start = source.indexOf("function formatNumber(value)");
+  const end = source.indexOf("/**\n * Renders a length summary", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  return context;
+}
+
+test("cable length check sums assigned segments and requires a 10 ft allowance", () => {
+  const context = lengthCheckContext();
+  const cable = { id: "c1", length: 60 };
+  const conduits = [
+    { length: 30, cableIds: ["c1", "c2"] },
+    { length: 20, cableIds: ["c1"] },
+  ];
+  const route = { status: "complete" };
+  assert.equal(context.cableLengthCheck(cable, conduits, route).status, "pass");
+  assert.equal(context.cableLengthCheck({ ...cable, length: 100 }, conduits, route).status, "pass");
+  const short = context.cableLengthCheck({ ...cable, length: 59.5 }, conduits);
+  assert.equal(short.status, "short");
+  assert.match(short.detail, /0\.5 ft short/);
+  assert.equal(context.cableLengthCheck({ id: "c2", length: 45 }, conduits.filter((item) => item.cableIds.includes("c2")), route).status, "pass");
+  assert.equal(context.cableLengthCheck({ length: 11.12 }, [{ length: 0.01 }, { length: 1.11 }], route).status, "pass");
+  assert.match(context.cableLengthCheck({ length: 59.999 }, conduits).detail, /Less than 0\.01 ft short/);
+});
+
+test("cable length check does not pass missing or uncertain route data", () => {
+  const context = lengthCheckContext();
+  const cable = { id: "c1", length: 100 };
+  const conduits = [{ length: 50, fromLocationId: "e1", toLocationId: "e2" }];
+  assert.match(context.cableLengthCheck({ ...cable, length: "" }, conduits).detail, /Cable length/);
+  assert.match(context.cableLengthCheck(cable, []).detail, /No conduit/);
+  assert.match(context.cableLengthCheck(cable, [{ ...conduits[0], length: null }]).detail, /Conduit length/);
+  assert.equal(context.cableLengthCheck(cable, conduits, { status: "partial", message: "Check route" }).status, "review");
+  assert.equal(context.cableLengthCheck(cable, [{ ...conduits[0], toLocationId: "tray" }]).status, "review");
+  assert.equal(context.cableLengthCheck({ ...cable, fromLocationId: "tray" }, conduits).status, "review");
+  assert.equal(context.cableLengthCheck({ ...cable, length: 55 }, conduits, { status: "partial" }).status, "short");
+  const routedCable = { ...cable, fromLocationId: "e1", toLocationId: "e2" };
+  assert.equal(context.cableLengthCheck(routedCable, conduits).status, "pass");
+  assert.equal(context.cableLengthCheck({ ...routedCable, length: 150 }, [conduits[0], conduits[0]]).status, "review");
+  assert.equal(context.cableLengthCheck({ ...routedCable, toLocationId: "e3" }, conduits).status, "review");
+});
+
+test("parallel cable rows show an individual check for each cable", () => {
+  const context = lengthCheckContext();
+  context.showCableLengthCheck = true;
+  Object.assign(context, {
+    cableType: () => null,
+    cableLocationName: (id) => id,
+    escapeHtml: (value) => String(value),
+  });
+  context.state.conduits = [
+    { number: "P1", length: 30, fromLocationId: "e1", toLocationId: "e2", cableIds: ["c1"] },
+    { number: "P2", length: 50, fromLocationId: "e1", toLocationId: "e2", cableIds: ["c2"] },
+  ];
+  const start = source.indexOf("function renderCableRow(cables)");
+  const end = source.indexOf("\n/**", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  const row = context.renderCableRow([
+    { id: "c1", number: "C1", length: 50, fromLocationId: "e1", toLocationId: "e2", parallelGroupId: "g1" },
+    { id: "c2", number: "C2", length: 50, fromLocationId: "e1", toLocationId: "e2", parallelGroupId: "g1" },
+  ]);
+  assert.match(row, /C1: <span class="tag fill-pass">Minimum met/);
+  assert.match(row, /C2: <span class="tag fill-fail">Too short/);
+  assert.match(row, /10 ft short/);
+  context.showCableLengthCheck = false;
+  assert.doesNotMatch(context.renderCableRow([
+    { id: "c1", number: "C1", length: 50, fromLocationId: "e1", toLocationId: "e2" },
+  ]), /Minimum met|Too short|Needs review/);
+});
+
+test("cable length checks reset on navigation but survive same-page updates", () => {
+  const context = {
+    activePage: "cables",
+    showCableLengthCheck: true,
+    document: { querySelectorAll: () => [], querySelector: () => ({}) },
+    renderPage: () => {},
+  };
+  vm.createContext(context);
+  const start = source.indexOf("function setPage(page)");
+  const end = source.indexOf("\n/**", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  context.setPage("cables");
+  assert.equal(context.showCableLengthCheck, true);
+  context.setPage("settings");
+  context.setPage("cables");
+  assert.equal(context.showCableLengthCheck, false);
+});
+
+test("project display settings accept legacy projects and reject invalid preferences", () => {
+  const context = {
+    THEME_PREFERENCES: ["system", "light", "dark"],
+    PAGE_SIZE_OPTIONS: [25, 50, 75, 100, "all"],
+    PAGINATION_TABLES: ["cables", "conduits", "voltageDrop", "cableTypes", "equipment"],
+  };
+  vm.createContext(context);
+  const start = source.indexOf("function validateProjectDisplaySettings(settings)");
+  const end = source.indexOf("\n/**", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  assert.doesNotThrow(() => context.validateProjectDisplaySettings({}));
+  assert.doesNotThrow(() => context.validateProjectDisplaySettings({ keepSidebarMinimized: false, pageSizes: { cables: "all", conduits: 50 } }));
+  assert.throws(() => context.validateProjectDisplaySettings({ keepSidebarMinimized: "false" }), /display settings/);
+  assert.throws(() => context.validateProjectDisplaySettings({ themePreference: "invalid" }), /theme preference/);
+  assert.throws(() => context.validateProjectDisplaySettings({ pageSizes: { cables: 10 } }), /pagination settings/);
+  assert.throws(() => context.validateProjectDisplaySettings({ pageSizes: { unknown: 25 } }), /pagination settings/);
+});
+
+test("project backups preserve display preferences and default them for legacy projects", () => {
+  const context = {
+    THEME_PREFERENCES: ["system", "light", "dark"],
+    PAGE_SIZE_OPTIONS: [25, 50, 75, 100, "all"],
+    PAGINATION_TABLES: ["cables", "conduits", "voltageDrop", "cableTypes", "equipment"],
+    NEC_EDITIONS: [], CABLE_MATERIALS: [], CABLE_FILL_TYPES: [], CABLE_SPEC_CONSTRUCTIONS: [],
+    CABLE_SPEC_SIZES: [], RACEWAY_TYPES: [], CONDUIT_FILL_CONDITIONS: [],
+    CABLE_TRAY_LOCATION_ID: "tray",
+    normalizeCableTrayLocations: (project) => project,
+    normalizeCableTypeMaterials: (project) => project,
+    normalizedLocationName: (name) => name,
+  };
+  vm.createContext(context);
+  const defaultsStart = source.indexOf("const emptyState = () =>");
+  const defaultsEnd = source.indexOf("\n/**\n * Loads application state", defaultsStart);
+  vm.runInContext(source.slice(defaultsStart, defaultsEnd), context);
+  const start = source.indexOf("function validateBackupData(backup)");
+  const end = source.indexOf("\nasync function importProjectBackup", start);
+  vm.runInContext(source.slice(start, end), context);
+  const legacy = context.validateBackupData({ settings: {}, cables: [], conduits: [] });
+  assert.equal(legacy.settings.showCableLengthCheck, undefined);
+  assert.equal(legacy.settings.themePreference, "system");
+  assert.equal(legacy.settings.keepSidebarMinimized, false);
+  assert.equal(legacy.settings.pageSizes.cables, 25);
+  const settings = { showCableLengthCheck: true, themePreference: "dark", keepSidebarMinimized: true, pageSizes: { cables: 50, conduits: "all" } };
+  const restored = context.validateBackupData(JSON.parse(JSON.stringify({ settings, cables: [], conduits: [] })));
+  assert.equal(restored.settings.showCableLengthCheck, undefined);
+  assert.equal(restored.settings.themePreference, "dark");
+  assert.equal(restored.settings.keepSidebarMinimized, true);
+  assert.equal(restored.settings.pageSizes.cables, 50);
+  assert.equal(restored.settings.pageSizes.conduits, "all");
+  assert.throws(() => context.validateBackupData({ settings: { ...settings, pageSizes: { cables: 0 } }, cables: [], conduits: [] }), /pagination settings/);
+});
+
+test("applying project display settings resets pagination and restores the sidebar", () => {
+  const context = {
+    showCableLengthCheck: true,
+    state: { settings: { keepSidebarMinimized: true, pageSizes: { cables: 50 } } },
+    PAGINATION_TABLES: ["cables", "conduits"],
+    paginationState: { cables: { currentPage: 3, pageSize: 25 }, conduits: { currentPage: 2, pageSize: "all" } },
+    applyTheme: () => { context.themeApplied = true; },
+    setSidebarCollapsed: (value) => { context.collapsed = value; },
+  };
+  vm.createContext(context);
+  const start = source.indexOf("function applyProjectDisplaySettings()");
+  const end = source.indexOf("\n\napplyProjectDisplaySettings();", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  context.applyProjectDisplaySettings();
+  assert.equal(context.themeApplied, true);
+  assert.equal(context.showCableLengthCheck, false);
+  assert.equal(context.collapsed, true);
+  assert.equal(context.paginationState.cables.pageSize, 50);
+  assert.equal(context.paginationState.conduits.pageSize, 25);
+  assert.equal(context.paginationState.cables.currentPage, 1);
+  assert.equal(context.paginationState.conduits.currentPage, 1);
+});
+
+test("theme changes persist with the project and roll back when saving fails", () => {
+  const context = {
+    THEME_PREFERENCES: ["system", "light", "dark"],
+    state: { settings: { themePreference: "system" } },
+    persist: () => true,
+    applyTheme: () => { context.applied = context.state.settings.themePreference; },
+    showToast: () => {},
+  };
+  vm.createContext(context);
+  const start = source.indexOf("function saveThemePreference(preference)");
+  const end = source.indexOf("\nfunction persist()", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  assert.equal(context.saveThemePreference("dark"), true);
+  assert.equal(context.state.settings.themePreference, "dark");
+  assert.equal(context.applied, "dark");
+  context.persist = () => false;
+  assert.equal(context.saveThemePreference("light"), false);
+  assert.equal(context.state.settings.themePreference, "dark");
+  assert.equal(context.applied, "dark");
+  assert.equal(context.saveThemePreference("invalid"), false);
+});
+
+test("project theme applies the selected or system appearance", () => {
+  const meta = {};
+  const context = {
+    state: { settings: { themePreference: "system" } },
+    systemTheme: { matches: true },
+    document: { documentElement: { dataset: {} }, querySelector: () => meta },
+  };
+  vm.createContext(context);
+  const start = source.indexOf("function applyTheme()");
+  const end = source.indexOf("\n/**", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  context.applyTheme();
+  assert.equal(context.document.documentElement.dataset.theme, "dark");
+  assert.equal(meta.content, "#141c27");
+  context.state.settings.themePreference = "light";
+  context.applyTheme();
+  assert.equal(context.document.documentElement.dataset.theme, "light");
+  context.state.settings.themePreference = "dark";
+  context.systemTheme.matches = false;
+  context.applyTheme();
+  assert.equal(context.document.documentElement.dataset.theme, "dark");
+});
+
 function assignmentForm(rows) {
   const fields = {
     number: { value: "P1" },
@@ -234,39 +450,59 @@ test("assignment filtering preserves hidden selections and exposes incompatible 
   assert.equal(form.messages[".hidden-assignments"].hidden, true);
 });
 
-test("imports old projects and preserves tees through project backup validation", () => {
+function backupContext() {
   const start = source.indexOf("function validateBackupData(backup)");
   const end = source.indexOf("\nasync function importProjectBackup", start);
   assert.ok(start >= 0 && end > start);
-  const context = {
-    emptyState: () => ({ settings: {
-      projectName: "", clientName: "", clientProjectNumber: "", internalProjectNumber: "",
-      revisionNumber: "", editorName: "", scheduleStatus: "In Progress", necEdition: "",
-      necJurisdiction: "", powerFactor: 0.9, maxVoltageDropPercent: 3, cableTypes: [], locations: [], tees: [],
-    } }),
-    NEC_EDITIONS: ["2017", "2020", "2023", "2026"],
-    CABLE_MATERIALS: ["Aluminum", "Copper"],
-    CABLE_FILL_TYPES: [{ value: "individual" }, { value: "multiconductor" }],
-    CABLE_SPEC_CONSTRUCTIONS: ["conductor", "pair"],
-    CABLE_SPEC_SIZES: ["2 AWG", "1/0 AWG", "500 KCMIL", "750 KCMIL", "350 KCMIL", "250 KCMIL", "8 AWG"],
-    RACEWAY_TYPES: [{ value: "emt" }, { value: "rmc" }, { value: "pvc-s40" }, { value: "pvc-s80" }, { value: "other" }],
-    CONDUIT_FILL_CONDITIONS: ["standard", "nipple"],
-    CABLE_TRAY_LOCATION_ID: "tray",
-    normalizedLocationName: (name) => String(name ?? "").trim().toLocaleLowerCase(),
-    safeHttpUrl: (url) => url,
-    normalizeCableTrayLocations: (project) => project,
-    normalizeCableTypeMaterials: (project) => project,
-  };
+  const context = { URL };
   vm.createContext(context);
+  const evaluateSection = (from, to) => {
+    const sectionStart = source.indexOf(from);
+    const sectionEnd = source.indexOf(to, sectionStart);
+    assert.ok(sectionStart >= 0 && sectionEnd > sectionStart);
+    vm.runInContext(source.slice(sectionStart, sectionEnd), context);
+  };
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "../../data/raceway-data.js"), "utf8"), context);
+  evaluateSection("const STORAGE_KEY", "const VERSION_HISTORY");
+  evaluateSection("const emptyState = () =>", "/**\n * Loads application state");
+  evaluateSection("function isCableTrayLocation(location)", "\nlet activePage");
+  evaluateSection("function safeHttpUrl(value)", "\n/**");
+  evaluateSection("function normalizedLocationName(name)", "\n/**");
   vm.runInContext(source.slice(start, end), context);
+  return context;
+}
+
+test("example projects match the current project format and import unchanged", () => {
+  const context = backupContext();
+  const defaults = vm.runInContext("emptyState().settings", context);
+  for (const name of ["INT-001 - Example - First Test.ccs", "INT-002 - Example - Conduit Tee.ccs"]) {
+    const project = JSON.parse(fs.readFileSync(path.join(__dirname, "../../example", name), "utf8"));
+    const restored = context.validateBackupData(project);
+    assert.deepEqual(JSON.parse(JSON.stringify(restored)), {
+      settings: project.settings,
+      cables: project.cables,
+      conduits: project.conduits,
+    }, name);
+    assert.equal(project.formatVersion, 1);
+    for (const key of ["themePreference", "keepSidebarMinimized", "pageSizes"]) {
+      assert.deepEqual(project.settings[key], JSON.parse(JSON.stringify(defaults[key])), `${name}: ${key}`);
+    }
+    for (const type of project.settings.cableTypes) {
+      assert.ok(Object.hasOwn(type, "cableAmpacity"));
+      assert.equal(Object.hasOwn(type, "customSpecType"), false);
+    }
+  }
+});
+
+test("imports old projects and preserves tees through project backup validation", () => {
+  const context = backupContext();
   const project = JSON.parse(fs.readFileSync(path.join(__dirname, "../../example/INT-002 - Example - Conduit Tee.ccs"), "utf8"));
-  const legacy = context.validateBackupData(project);
-  assert.equal(legacy.settings.tees.length, 0);
-  project.settings.tees = [{ id: "tee-1", name: "Tee 1" }];
-  project.conduits[0].toLocationId = "tee-1";
-  const restored = context.validateBackupData(JSON.parse(JSON.stringify(project)));
-  assert.equal(restored.settings.tees[0].name, "Tee 1");
-  assert.equal(restored.conduits[0].toLocationId, "tee-1");
-  project.settings.tees.push({ id: "tee-2", name: " tee 1 " });
+  const legacyProject = JSON.parse(fs.readFileSync(path.join(__dirname, "../../example/INT-001 - Example - First Test.ccs"), "utf8"));
+  delete legacyProject.settings.tees;
+  assert.equal(context.validateBackupData(legacyProject).settings.tees.length, 0);
+  const restored = context.validateBackupData(project);
+  assert.equal(restored.settings.tees.length, 2);
+  assert.equal(restored.conduits[0].toLocationId, restored.settings.tees[0].id);
+  project.settings.tees.push({ id: "duplicate", name: " tee 1 " });
   assert.throws(() => context.validateBackupData(project), /duplicate or conflicting tees/);
 });

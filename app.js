@@ -10,9 +10,9 @@
 
 // Storage and configuration constants
 const STORAGE_KEY = "wireframe-project-v1";
-const THEME_PREFERENCE_KEY = "wireframe-theme-preference-v1";
-const SIDEBAR_PREFERENCE_KEY = "wireframe-sidebar-minimized-v1";
 const THEME_PREFERENCES = ["system", "light", "dark"];
+const PAGE_SIZE_OPTIONS = [25, 50, 75, 100, "all"];
+const PAGINATION_TABLES = ["cables", "conduits", "voltageDrop", "cableTypes", "equipment"];
 const CONDUIT_SIZES = ['1/2"', '3/4"', '1"', '1-1/2"', '2"', '2-1/2"', '3"', '3-1/2"', '4"'];
 const NEC_EDITIONS = ["2017", "2020", "2023", "2026"];
 const CABLE_FILL_TYPES = [
@@ -161,6 +161,9 @@ const emptyState = () => ({
     necJurisdiction: "",
     powerFactor: 0.9,
     maxVoltageDropPercent: 3,
+    themePreference: "system",
+    keepSidebarMinimized: false,
+    pageSizes: { cables: 25, conduits: 25, voltageDrop: 25, cableTypes: 25, equipment: 25 },
     cableTypes: [],
     locations: [],
     tees: [],
@@ -168,6 +171,20 @@ const emptyState = () => ({
   cables: [],
   conduits: [],
 });
+
+function validateProjectDisplaySettings(settings) {
+  if (settings.keepSidebarMinimized !== undefined && typeof settings.keepSidebarMinimized !== "boolean") {
+    throw new Error("The project contains invalid display settings.");
+  }
+  if (settings.themePreference !== undefined && !THEME_PREFERENCES.includes(settings.themePreference)) {
+    throw new Error("The project contains an invalid theme preference.");
+  }
+  if (settings.pageSizes !== undefined &&
+      (!settings.pageSizes || typeof settings.pageSizes !== "object" || Array.isArray(settings.pageSizes) ||
+       Object.entries(settings.pageSizes).some(([key, value]) => !PAGINATION_TABLES.includes(key) || !PAGE_SIZE_OPTIONS.includes(value)))) {
+    throw new Error("The project contains invalid pagination settings.");
+  }
+}
 
 /**
  * Loads application state from browser localStorage with error handling.
@@ -186,6 +203,8 @@ function loadState() {
   if (!saved) return emptyState();
   try {
     const parsed = JSON.parse(saved);
+    validateProjectDisplaySettings(parsed.settings || {});
+    if (parsed.settings) delete parsed.settings.showCableLengthCheck;
     return normalizeCableTypeMaterials(normalizeCableTrayLocations({
       ...emptyState(),
       ...parsed,
@@ -269,6 +288,7 @@ function normalizeCableTypeMaterials(projectState) {
 }
 
 let activePage = "dashboard";
+let showCableLengthCheck = false;
 let toastTimer;
 let pendingCableDraft = null;
 let pendingLocationReturn = null;
@@ -276,13 +296,11 @@ const pageContent = document.querySelector("#page-content");
 const modalRoot = document.querySelector("#modal-root");
 const toast = document.querySelector("#toast");
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
-let themePreference = loadThemePreference();
-let keepSidebarMinimized = loadSidebarPreference();
+let state = loadState();
 applyTheme();
 systemTheme.addEventListener("change", () => {
-  if (themePreference === "system") applyTheme();
+  if (state.settings.themePreference === "system") applyTheme();
 });
-let state = loadState();
 const numberCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 // Table sorting state
@@ -293,81 +311,25 @@ const tableSortState = {
 };
 
 const paginationState = {
-  cables: { currentPage: 1, pageSize: 25 },
-  conduits: { currentPage: 1, pageSize: 25 },
-  voltageDrop: { currentPage: 1, pageSize: 25 },
-  cableTypes: { currentPage: 1, pageSize: 25 },
-  equipment: { currentPage: 1, pageSize: 25 },
+  cables: { currentPage: 1, pageSize: state.settings.pageSizes?.cables ?? 25 },
+  conduits: { currentPage: 1, pageSize: state.settings.pageSizes?.conduits ?? 25 },
+  voltageDrop: { currentPage: 1, pageSize: state.settings.pageSizes?.voltageDrop ?? 25 },
+  cableTypes: { currentPage: 1, pageSize: state.settings.pageSizes?.cableTypes ?? 25 },
+  equipment: { currentPage: 1, pageSize: state.settings.pageSizes?.equipment ?? 25 },
 };
-
-/**
- * Loads the user's saved theme preference from browser localStorage.
- * Falls back to 'system' if no preference is stored or localStorage is unavailable.
- * @returns {string} Theme preference: 'system', 'light', or 'dark'
- */
-function loadThemePreference() {
-  try {
-    const preference = localStorage.getItem(THEME_PREFERENCE_KEY);
-    return THEME_PREFERENCES.includes(preference) ? preference : "system";
-  } catch (error) {
-    console.error("Could not load the appearance preference.", error);
-    showToast("Could not load appearance preference. Using the system theme.", true);
-    return "system";
-  }
-}
-
-/**
- * Loads the user's sidebar minimized preference from browser localStorage.
- * Returns false (expanded) by default or if loading fails.
- * @returns {boolean} True if sidebar should be minimized, false if expanded
- */
-function loadSidebarPreference() {
-  try {
-    const preference = localStorage.getItem(SIDEBAR_PREFERENCE_KEY);
-    if (preference === null || preference === "false") return false;
-    if (preference === "true") return true;
-    console.error("Invalid sidebar appearance preference:", preference);
-    showToast("Could not load sidebar preference. Starting expanded.", true);
-    return false;
-  } catch (error) {
-    console.error("Could not load the sidebar preference.", error);
-    showToast("Could not load sidebar preference. Starting expanded.", true);
-    return false;
-  }
-}
-
-/**
- * Saves the sidebar minimized preference to browser localStorage.
- * Updates the application state and applies the visual changes.
- * @param {boolean} minimized - True to minimize sidebar, false to expand
- * @returns {boolean} True if save succeeded
- */
-function saveSidebarPreference(minimized) {
-  try {
-    localStorage.setItem(SIDEBAR_PREFERENCE_KEY, String(minimized));
-  } catch (error) {
-    console.error("Could not save the sidebar preference.", error);
-    showToast("Could not save sidebar preference in this browser.", true);
-    return false;
-  }
-  keepSidebarMinimized = minimized;
-  setSidebarCollapsed(minimized);
-  showToast("Sidebar preference saved.");
-  return true;
-}
 
 /**
  * Applies the current theme preference to the application.
  * Updates the HTML theme attribute and viewport theme color based on preference and system setting.
  */
 function applyTheme() {
-  const isDark = themePreference === "dark" || (themePreference === "system" && systemTheme.matches);
+  const isDark = state.settings.themePreference === "dark" || (state.settings.themePreference === "system" && systemTheme.matches);
   document.documentElement.dataset.theme = isDark ? "dark" : "light";
   document.querySelector('meta[name="theme-color"]').content = isDark ? "#141c27" : "#f5f7fa";
 }
 
 /**
- * Saves the theme preference to browser localStorage and applies it.
+ * Saves the theme preference with the project and applies it.
  * Valid preferences are 'system', 'light', or 'dark'.
  * @param {string} preference - Theme preference to save
  * @returns {boolean} True if save succeeded, false otherwise
@@ -377,14 +339,12 @@ function saveThemePreference(preference) {
     showToast("Choose system, light, or dark appearance.", true);
     return false;
   }
-  try {
-    localStorage.setItem(THEME_PREFERENCE_KEY, preference);
-  } catch (error) {
-    console.error("Could not save the appearance preference.", error);
-    showToast("Could not save appearance preference in this browser.", true);
+  const previous = state.settings.themePreference;
+  state.settings.themePreference = preference;
+  if (!persist()) {
+    state.settings.themePreference = previous;
     return false;
   }
-  themePreference = preference;
   applyTheme();
   showToast("Theme preference saved.");
   return true;
@@ -735,6 +695,7 @@ function updateWorkspace() {
  * @param {string} page - Page key: 'dashboard', 'cables', 'conduits', 'voltage-drop', 'bom', or 'settings'
  */
 function setPage(page) {
+  if (page !== activePage) showCableLengthCheck = false;
   activePage = page;
   document.querySelectorAll("[data-page]").forEach((item) => {
     item.classList.toggle("active", item.dataset.page === page && item.classList.contains("nav-item"));
@@ -855,6 +816,37 @@ function cableConduitRoute(cable) {
   }
   if (used.size !== conduits.length) return { status: "partial", message: "Route has extra or disconnected conduit assignments." };
   return { status: "complete", conduits: route };
+}
+
+function cableLengthCheck(cable, conduits, route) {
+  if (!hasScheduledLength(cable.length)) return { status: "review", detail: "Cable length not set" };
+  if (!conduits.length) return { status: "review", detail: "No conduit assigned" };
+  if (conduits.some((conduit) => !hasScheduledLength(conduit.length))) {
+    return { status: "review", detail: "Conduit length missing" };
+  }
+  const conduitLength = sumScheduledLengths(conduits);
+  const requiredLength = conduitLength + 10;
+  const shortfall = requiredLength - Number(cable.length);
+  const detail = `${formatNumber(conduitLength)} ft conduit + 10 ft allowance`;
+  if (shortfall > Number.EPSILON * Math.max(requiredLength, Number(cable.length), 1) * 4) {
+    const shortfallDetail = formatNumber(shortfall) === "0" ? "Less than 0.01 ft short" : `${formatNumber(shortfall)} ft short`;
+    return { status: "short", detail: `${detail}; ${shortfallDetail}` };
+  }
+  if (route?.status === "partial") return { status: "review", detail: route.message };
+  if ([cable.fromLocationId, cable.toLocationId, ...conduits.flatMap((conduit) => [conduit.fromLocationId, conduit.toLocationId])].includes(CABLE_TRAY_LOCATION_ID)) {
+    return { status: "review", detail: "Cable tray length requires manual review" };
+  }
+  if (!route) {
+    const start = routeNodeKey(cable.fromLocationId);
+    const end = routeNodeKey(cable.toLocationId);
+    const from = routeNodeKey(conduits[0].fromLocationId);
+    const to = routeNodeKey(conduits[0].toLocationId);
+    if (conduits.length !== 1 || !start || !end || start === end ||
+        !((start === from && end === to) || (start === to && end === from))) {
+      return { status: "review", detail: "Verify assigned conduit route" };
+    }
+  }
+  return { status: "pass", detail };
 }
 
 /**
@@ -1195,11 +1187,11 @@ function renderCables() {
   return `
     <div class="page-heading">
       <div><h1>Cable Schedule</h1><p>Define cable runs, specifications, and endpoints for this project.</p></div>
-      <div class="heading-actions"><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add Cable</button></div>
+      <div class="heading-actions"><button class="button button-secondary" data-action="check-lengths" aria-pressed="${showCableLengthCheck}">Check Lengths</button><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add Cable</button></div>
     </div>
     <div class="schedule-info"><strong>${cableCount} ${cableCount === 1 ? "cable" : "cables"}</strong><span class="divider"></span><span>${renderLengthSummary(state.cables)}</span><span class="divider"></span><span>${state.settings.cableTypes.length} cable types available</span></div>
     <section class="content-card">
-      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>Click a row action to edit or remove a schedule entry</p></div><div class="toolbar"><label class="search-box"><span class="search-icon mdi mdi-magnify" aria-hidden="true"></span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Mfr. /<br>Spec", "type")}${headerCell("Spec<br>Type", "specType")}${headerCell("Cable<br>Length", "length")}${headerCell("Cable Routing <br>From", "fromLocation")}${headerCell("Cable Routing <br>To", "toLocation")}${headerCell("Purpose", "purpose")}${headerCell("Conduit<br>Assignment", "conduitAssignment")}<th>Actions</th></tr></thead><tbody id="cable-rows">${paginatedRows.map(renderCableRow).join("")}</tbody></table></div>${renderPaginationControls("cables", totalRows)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-cable-data" aria-hidden="true"></span></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first cable</button></div>`}
+      ${rows.length ? `<div class="card-heading"><div><h2>All Cables</h2><p>${showCableLengthCheck ? "Length checks compare assigned conduit lengths plus 10 ft for terminations. Cable tray routing requires manual review." : "Click a row action to edit or remove a schedule entry"}</p></div><div class="toolbar"><label class="search-box"><span class="search-icon mdi mdi-magnify" aria-hidden="true"></span><input id="cable-search" type="search" placeholder="Search cables..." aria-label="Search cables" /></label></div></div><div class="table-wrap"><table class="wrapped-headers cable-schedule-table"><thead><tr>${headerCell("Cable<br>Number", "number")}${headerCell("Parallel<br>Sets", "parallelSets")}${headerCell("Mfr. /<br>Spec", "type")}${headerCell("Spec<br>Type", "specType")}${headerCell("Cable<br>Length", "length")}${headerCell("Cable Routing <br>From", "fromLocation")}${headerCell("Cable Routing <br>To", "toLocation")}${headerCell("Purpose", "purpose")}${headerCell("Conduit<br>Assignment", "conduitAssignment")}<th>Actions</th></tr></thead><tbody id="cable-rows">${paginatedRows.map(renderCableRow).join("")}</tbody></table></div>${renderPaginationControls("cables", totalRows)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-cable-data" aria-hidden="true"></span></div><h3>No cables yet</h3><p>Create your first cable schedule entry. Cable types and locations are managed in Settings.</p><button class="button button-primary" data-action="new-cable"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first cable</button></div>`}
     </section>`;
 }
 
@@ -1217,6 +1209,14 @@ function renderCableRow(cables) {
   const conduits = state.conduits.filter((conduit) => conduit.cableIds.some((cableId) => cableIds.has(cableId)));
   const conduitNumbers = [...new Set(conduits.map((conduit) => conduit.number))];
   const routes = cables.map((member) => ({ cable: member, route: cableConduitRoute(member) })).filter(({ route }) => route);
+  const lengthChecks = showCableLengthCheck ? cables.map((member) => {
+    const assigned = conduits.filter((conduit) => conduit.cableIds.includes(member.id));
+    const route = routes.find((entry) => entry.cable.id === member.id)?.route;
+    const check = cableLengthCheck(member, assigned, route);
+    const label = check.status === "pass" ? "Minimum met" : check.status === "short" ? "Too short" : "Needs review";
+    const className = check.status === "pass" ? "fill-pass" : check.status === "short" ? "fill-fail" : "neutral";
+    return `<span class="secondary-cell">${cables.length > 1 ? `${escapeHtml(member.number)}: ` : ""}<span class="tag ${className}">${label}</span></span><span class="secondary-cell fill-details">${escapeHtml(check.detail)}</span>`;
+  }).join("") : "";
   const routeDetails = routes.map(({ cable: member, route }) => {
     const prefix = cables.length > 1 ? `${member.number}: ` : "";
     const description = route.status === "complete"
@@ -1236,7 +1236,7 @@ function renderCableRow(cables) {
     <td class="primary-cell">${escapeHtml(cableNumbers)}</td>
     <td>${cables.length}</td>
     <td>${escapeHtml(type?.manufacturer || "—")}<span class="secondary-cell">${escapeHtml(type?.specNumber || "Type unavailable")}</span></td>
-    <td>${escapeHtml(type?.specType || "—")}</td><td>${renderScheduledLength(cable.length)}</td>
+    <td>${escapeHtml(type?.specType || "—")}</td><td>${renderScheduledLength(cable.length)}${lengthChecks}</td>
     <td>${escapeHtml(cableLocationName(cable.fromLocationId))}</td><td>${escapeHtml(cableLocationName(cable.toLocationId))}</td>
     <td>${escapeHtml(cable.purpose || "—")}</td><td>${conduitStatus}</td><td><div class="table-actions"><button class="icon-button" data-action="edit-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.edit)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button" data-action="duplicate-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.duplicate)}"><span class="mdi mdi-content-copy" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-cable" data-id="${cable.id}" aria-label="${escapeHtml(actionLabels.delete)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></td>
   </tr>`;
@@ -1685,20 +1685,20 @@ function renderSettings() {
         </form>
       </section>
       <section class="content-card settings-section">
-        <div class="card-heading"><div><h2>Appearance</h2><p>Choose how Wireframe looks on this device</p></div></div>
+        <div class="card-heading"><div><h2>Appearance</h2><p>Display preferences saved with this project</p></div></div>
         <div class="settings-form">
           <div class="field appearance-field">
             <label for="theme-preference">Theme</label>
             <select id="theme-preference" aria-describedby="theme-preference-description">
-              <option value="system" ${themePreference === "system" ? "selected" : ""}>Use system setting</option>
-              <option value="light" ${themePreference === "light" ? "selected" : ""}>Light</option>
-              <option value="dark" ${themePreference === "dark" ? "selected" : ""}>Dark</option>
+              <option value="system" ${settings.themePreference === "system" ? "selected" : ""}>Use system setting</option>
+              <option value="light" ${settings.themePreference === "light" ? "selected" : ""}>Light</option>
+              <option value="dark" ${settings.themePreference === "dark" ? "selected" : ""}>Dark</option>
             </select>
             <small id="theme-preference-description" class="section-description">System setting follows your device's appearance preference.</small>
           </div>
           <div class="field appearance-field sidebar-preference">
-            <label class="appearance-checkbox" for="sidebar-preference"><input id="sidebar-preference" type="checkbox" aria-describedby="sidebar-preference-description" ${keepSidebarMinimized ? "checked" : ""} />Keep sidebar minimized</label>
-            <small id="sidebar-preference-description" class="section-description">Start with the sidebar minimized. You can still expand it temporarily.</small>
+            <label class="settings-toggle" for="sidebar-preference"><input id="sidebar-preference" type="checkbox" role="switch" aria-describedby="sidebar-preference-description" ${settings.keepSidebarMinimized ? "checked" : ""} />Keep sidebar minimized</label>
+            <small id="sidebar-preference-description" class="section-description">Open this project with the sidebar minimized. You can still expand it temporarily.</small>
           </div>
         </div>
       </section>
@@ -2844,6 +2844,7 @@ function startNewProject() {
   pendingCableDraft = null;
   pendingLocationReturn = null;
   showAllVersionHistory = false;
+  applyProjectDisplaySettings();
   closeModal();
   setPage("dashboard");
   showToast("New project started.");
@@ -2860,6 +2861,21 @@ function startNewProject() {
 function handleAction(action, id, fieldName) {
   if (action === "new-project") return startNewProject();
   if (action === "close-modal") return closeModal();
+  if (action === "check-lengths") {
+    const search = document.querySelector("#cable-search")?.value;
+    const scrollLeft = document.querySelector(".cable-schedule-table")?.closest(".table-wrap").scrollLeft;
+    showCableLengthCheck = !showCableLengthCheck;
+    renderPage();
+    const searchInput = document.querySelector("#cable-search");
+    if (searchInput && search) {
+      searchInput.value = search;
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    const tableWrap = document.querySelector(".cable-schedule-table")?.closest(".table-wrap");
+    if (tableWrap) tableWrap.scrollLeft = scrollLeft;
+    document.querySelector('[data-action="check-lengths"]').focus();
+    return;
+  }
   if (action === "toggle-version-history") {
     showAllVersionHistory = !showAllVersionHistory;
     document.querySelector("#version-history-content").innerHTML = renderVersionHistory();
@@ -3464,6 +3480,8 @@ function validateBackupData(backup) {
   }
 
   const settings = { ...emptyState().settings, ...backup.settings };
+  delete settings.showCableLengthCheck;
+  validateProjectDisplaySettings(settings);
   settings.scheduleStatus ||= "In progress";
   const textSettings = ["projectName", "clientName", "clientProjectNumber", "internalProjectNumber", "revisionNumber", "editorName", "scheduleStatus", "necEdition", "necJurisdiction"];
   if (!textSettings.every((key) => typeof settings[key] === "string")) {
@@ -3558,6 +3576,7 @@ async function importProjectBackup(file) {
   }
 
   state = importedState;
+  applyProjectDisplaySettings();
   renderPage();
   showToast("Project backup imported.");
 }
@@ -3616,6 +3635,7 @@ document.addEventListener("click", (event) => {
   const pageLink = event.target.closest("[data-page]");
   if (pageLink) {
     event.preventDefault();
+    if (pageLink.dataset.page === "cables") showCableLengthCheck = false;
     setPage(pageLink.dataset.page);
     closeModal();
     return;
@@ -3735,7 +3755,17 @@ function setSidebarCollapsed(isCollapsed) {
   sidebarToggle.setAttribute("aria-expanded", String(!isCollapsed));
   sidebarToggle.dataset.tooltip = label;
 }
-setSidebarCollapsed(keepSidebarMinimized);
+function applyProjectDisplaySettings() {
+  showCableLengthCheck = false;
+  applyTheme();
+  setSidebarCollapsed(state.settings.keepSidebarMinimized);
+  for (const tableType of PAGINATION_TABLES) {
+    paginationState[tableType].pageSize = state.settings.pageSizes?.[tableType] ?? 25;
+    paginationState[tableType].currentPage = 1;
+  }
+}
+
+applyProjectDisplaySettings();
 sidebarToggle.addEventListener("click", () => {
   setSidebarCollapsed(!appShell.classList.contains("sidebar-collapsed"));
 });
@@ -3743,11 +3773,20 @@ sidebarToggle.addEventListener("click", () => {
 document.addEventListener("submit", handleSubmit);
 document.addEventListener("change", (event) => {
   if (event.target.id === "theme-preference") {
-    if (!saveThemePreference(event.target.value)) event.target.value = themePreference;
+    if (!saveThemePreference(event.target.value)) event.target.value = state.settings.themePreference;
     return;
   }
   if (event.target.id === "sidebar-preference") {
-    if (!saveSidebarPreference(event.target.checked)) event.target.checked = keepSidebarMinimized;
+    const key = "keepSidebarMinimized";
+    const previous = state.settings[key];
+    state.settings[key] = event.target.checked;
+    if (!persist()) {
+      state.settings[key] = previous;
+      event.target.checked = previous;
+      return;
+    }
+    setSidebarCollapsed(event.target.checked);
+    showToast("Project display preference saved.");
     return;
   }
   
@@ -3756,8 +3795,19 @@ document.addEventListener("change", (event) => {
     const tableType = event.target.dataset.table;
     const newPageSize = event.target.value;
     const pagination = paginationState[tableType];
-
-    pagination.pageSize = newPageSize === "all" ? "all" : parseInt(newPageSize);
+    const pageSize = newPageSize === "all" ? "all" : Number(newPageSize);
+    if (!pagination || !PAGE_SIZE_OPTIONS.includes(pageSize)) {
+      showToast("Choose a supported rows-per-page option.", true);
+      return;
+    }
+    const previousPageSizes = state.settings.pageSizes;
+    state.settings.pageSizes = { ...previousPageSizes, [tableType]: pageSize };
+    if (!persist()) {
+      state.settings.pageSizes = previousPageSizes;
+      event.target.value = String(pagination.pageSize);
+      return;
+    }
+    pagination.pageSize = pageSize;
     pagination.currentPage = 1;
     setPage(activePage);
     return;
