@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
@@ -13,6 +14,16 @@ const clickStart = source.indexOf("  const externalLink =", end);
 const pageStart = source.indexOf("  const pageLink =", clickStart);
 assert.ok(clickStart > end && pageStart > clickStart, "external link handler must be present");
 const linkSource = `(event) => { ${source.slice(clickStart, pageStart)} return false; }`;
+
+test("local desktop builds use the latest application version", () => {
+  const root = path.join(__dirname, "../..");
+  const version = execFileSync(process.execPath, [path.join(root, ".github/scripts/desktop-version.js")], {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, "../tauri.conf.json"), "utf8"));
+  assert.equal(config.version, version);
+});
 
 function createContext(invoke) {
   const toasts = [];
