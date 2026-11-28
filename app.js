@@ -1560,14 +1560,14 @@ function renderConduits() {
       </tr>`;
       }).join("")}</tbody></table></div>${renderPaginationControls("conduits", totalRows)}` : `<div class="empty-state"><div class="empty-icon"><span class="mdi mdi-pipe" aria-hidden="true"></span></div><h3>No conduits yet</h3><p>Create a conduit route, then assign any cables in your cable schedule.</p><button class="button button-primary" data-action="new-conduit"><span class="mdi mdi-plus" aria-hidden="true"></span>Add your first conduit</button></div>`}
     </section>
-    <section class="content-card settings-section conduit-tee-section">
+    ${state.settings.tees.length ? `<section class="content-card settings-section conduit-tee-section">
       <div class="card-heading section-title-row"><div><h2>Tees <span class="tag neutral">${state.settings.tees.length}</span></h2><p>Tee names update automatically from connected conduit numbers. Routing points do not represent cable splices. Assign each cable to every conduit it uses. The cable schedule shows routes and warnings; cable tray paths require manual verification.</p></div></div>
-      <div class="settings-list">${state.settings.tees.length ? sortByName(state.settings.tees).map((tee) => {
+      <div class="settings-list">${sortByName(state.settings.tees).map((tee) => {
         const name = teeDisplayName(tee);
         const connected = connectedTeeConduits(tee);
         return `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(name)}</strong><small>Identifier: ${escapeHtml(tee.name)}${connected.length ? "" : " · No conduits connected"}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-tee" data-id="${escapeHtml(tee.id)}" aria-label="Edit ${escapeHtml(name)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-tee" data-id="${escapeHtml(tee.id)}" aria-label="Delete ${escapeHtml(name)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`;
-      }).join("") : `<div class="settings-empty">No tees yet. Add one while creating or editing a conduit.</div>`}</div>
-    </section>`;
+      }).join("")}</div>
+    </section>` : ""}`;
 }
 
 /**

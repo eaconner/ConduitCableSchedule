@@ -60,6 +60,37 @@ test("tees with identical connected conduits have distinguishable names", () => 
   assert.equal(context.locationName("t2"), "Tee P1");
 });
 
+test("conduit schedule shows the tees section only when tees exist", () => {
+  const context = routeContext();
+  Object.assign(context, {
+    sortConduits: (items) => items,
+    sortByName: (items) => items,
+    paginateRows: (items) => items,
+    renderLengthSummary: () => "",
+    escapeHtml: (value) => value,
+    tableSortState: { conduits: { column: "number", direction: "asc" } },
+  });
+  context.state.cables = [];
+  const start = source.indexOf("function renderConduits()");
+  const end = source.indexOf("\n/**", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+
+  context.state.settings.tees = [];
+  assert.doesNotMatch(context.renderConduits(), /conduit-tee-section/);
+  assert.match(context.renderConduits(), /data-action="new-conduit"/);
+
+  context.state.settings.tees.push({ id: "t1", name: "Tee 1" });
+  const html = context.renderConduits();
+  assert.match(html, /conduit-tee-section/);
+  assert.match(html, /Identifier: Tee 1/);
+  assert.match(html, /data-action="edit-tee" data-id="t1"/);
+  assert.match(html, /data-action="delete-tee" data-id="t1"/);
+
+  context.state.settings.tees.pop();
+  assert.doesNotMatch(context.renderConduits(), /conduit-tee-section/);
+});
+
 test("orders each cable through shared segments and multiple tees regardless of conduit direction", () => {
   const context = routeContext();
   context.state.conduits = [
