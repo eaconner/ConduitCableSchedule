@@ -10,6 +10,9 @@ const files = [
   "data/raceway-data.js",
   "data/ampacity-data.js",
   "data/voltage-drop-data.js",
+  "icons/brand-icon.svg",
+  "icons/favicon-32.png",
+  "icons/apple-touch-icon.png",
   "icons/interface/MDI-LICENSE",
   "icons/interface/APACHE-2.0-LICENSE",
 ];
