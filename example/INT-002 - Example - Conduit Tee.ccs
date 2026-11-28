@@ -74,11 +74,11 @@
     "tees": [
       {
         "id": "2c8df51c-3b85-46c8-bd66-53573f728ed1",
-        "name": "Tee 1"
+        "name": "T0001"
       },
       {
         "id": "f0a470a0-aa94-4ed3-bfb8-c015691a6898",
-        "name": "Tee 2"
+        "name": "T0002"
       }
     ]
   },

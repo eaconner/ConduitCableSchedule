@@ -84,11 +84,90 @@ test("conduit schedule shows the tees section only when tees exist", () => {
   const html = context.renderConduits();
   assert.match(html, /conduit-tee-section/);
   assert.match(html, /Identifier: Tee 1/);
-  assert.match(html, /data-action="edit-tee" data-id="t1"/);
+  assert.doesNotMatch(html, /data-action="edit-tee"/);
   assert.match(html, /data-action="delete-tee" data-id="t1"/);
 
   context.state.settings.tees.pop();
   assert.doesNotMatch(context.renderConduits(), /conduit-tee-section/);
+});
+
+test("adding a tee assigns the next available identifier without interrupting the conduit form", () => {
+  const context = routeContext();
+  context.state.settings.tees = [{ id: "legacy", name: "Custom tee" }, { id: "existing", name: "t0002" }];
+  const select = (value) => ({
+    value,
+    options: [],
+    append(option) { this.options.push(option); },
+    focus() { this.focused = true; },
+  });
+  const from = select("e1");
+  const to = select("e2");
+  const submit = { disabled: true };
+  const note = { removed: false, remove() { this.removed = true; } };
+  const form = {
+    elements: { namedItem: (name) => ({ fromLocationId: from, toLocationId: to })[name] },
+    querySelector: (selector) => selector === "[data-route-setup-note]" ? note : submit,
+    draft: { number: "P123", cableIds: ["cable-1"] },
+  };
+  let saves = 0;
+  let renders = 0;
+  let updates = 0;
+  const messages = [];
+  Object.assign(context, {
+    document: { createElement: () => ({}) },
+    modalRoot: { querySelector: () => form },
+    makeId: () => `new-${saves + 1}`,
+    persist: () => { saves += 1; return true; },
+    renderPage: () => { renders += 1; },
+    updateConduitCableOptions: (current) => { assert.equal(current, form); updates += 1; },
+    showToast: (message) => messages.push(message),
+  });
+  const start = source.indexOf("function addRouteTee(form, fieldName)");
+  const end = source.indexOf("\n/**", start);
+  const actionStart = source.indexOf("function handleAction(action, id, fieldName)");
+  const actionEnd = source.indexOf("\n/**", actionStart);
+  assert.ok(start >= 0 && end > start && actionStart >= 0 && actionEnd > actionStart);
+  vm.runInContext(source.slice(start, end) + source.slice(actionStart, actionEnd), context);
+
+  context.handleAction("add-route-tee", "", "fromLocationId");
+  assert.equal(context.state.settings.tees[2].name, "T0001");
+  assert.equal(from.value, "new-1");
+  assert.equal(to.value, "e2");
+  assert.equal(from.options[0].value, "new-1");
+  assert.equal(to.options[0].value, "new-1");
+  assert.deepEqual(form.draft, { number: "P123", cableIds: ["cable-1"] });
+  assert.equal(submit.disabled, false);
+  assert.equal(note.removed, true);
+  assert.equal(from.focused, true);
+
+  context.handleAction("add-route-tee", "", "toLocationId");
+  assert.equal(context.state.settings.tees[3].name, "T0003");
+  assert.equal(to.value, "new-2");
+  assert.equal(saves, 2);
+  assert.equal(renders, 2);
+  assert.equal(updates, 2);
+  assert.equal(messages[1], "T0003 added.");
+
+  context.persist = () => false;
+  context.handleAction("add-route-tee", "", "fromLocationId");
+  assert.equal(context.state.settings.tees.length, 4);
+  assert.equal(from.value, "new-1");
+  assert.equal(from.options.length, 2);
+  assert.equal(renders, 2);
+});
+
+test("adding a tee reports when all four-digit identifiers are used", () => {
+  const context = routeContext();
+  context.state.settings.tees = Array.from({ length: 9999 }, (_, i) => ({ id: String(i), name: `T${String(i + 1).padStart(4, "0")}` }));
+  let message;
+  context.showToast = (text, error) => { message = [text, error]; };
+  const start = source.indexOf("function addRouteTee(form, fieldName)");
+  const end = source.indexOf("\n/**", start);
+  assert.ok(start >= 0 && end > start);
+  vm.runInContext(source.slice(start, end), context);
+  context.addRouteTee({}, "fromLocationId");
+  assert.deepEqual(message, ["No tee identifiers are available.", true]);
+  assert.equal(context.state.settings.tees.length, 9999);
 });
 
 test("orders each cable through shared segments and multiple tees regardless of conduit direction", () => {

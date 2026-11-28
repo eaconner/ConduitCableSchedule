@@ -1565,7 +1565,7 @@ function renderConduits() {
       <div class="settings-list">${sortByName(state.settings.tees).map((tee) => {
         const name = teeDisplayName(tee);
         const connected = connectedTeeConduits(tee);
-        return `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(name)}</strong><small>Identifier: ${escapeHtml(tee.name)}${connected.length ? "" : " · No conduits connected"}</small></div><div class="table-actions"><button class="icon-button" data-action="edit-tee" data-id="${escapeHtml(tee.id)}" aria-label="Edit ${escapeHtml(name)}"><span class="mdi mdi-pencil-outline" aria-hidden="true"></span></button><button class="icon-button delete" data-action="delete-tee" data-id="${escapeHtml(tee.id)}" aria-label="Delete ${escapeHtml(name)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`;
+        return `<div class="settings-list-row"><div class="settings-item-main"><strong>${escapeHtml(name)}</strong><small>Identifier: ${escapeHtml(tee.name)}${connected.length ? "" : " · No conduits connected"}</small></div><div class="table-actions"><button class="icon-button delete" data-action="delete-tee" data-id="${escapeHtml(tee.id)}" aria-label="Delete ${escapeHtml(name)}"><span class="mdi mdi-delete-outline" aria-hidden="true"></span></button></div></div>`;
       }).join("")}</div>
     </section>` : ""}`;
 }
@@ -2248,7 +2248,7 @@ function updateParallelNumberPreview(form, prefixChanged = false) {
 function openConduitForm(id, draft = {}, modalOptions = {}) {
   const conduit = state.conduits.find((item) => item.id === id);
   const needsLocations = !state.settings.locations.length && !state.settings.tees.length;
-  const setupNote = needsLocations ? `<div class="field full"><p class="form-note">Add a location or tee using the buttons below.</p></div>` : "";
+  const setupNote = needsLocations ? `<div class="field full" data-route-setup-note><p class="form-note">Add a location or tee using the buttons below.</p></div>` : "";
   const assignedCableIds = draft.cableIds || conduit?.cableIds || [];
   const numberField = conduit
     ? textField("number", "Conduit number", draft.number ?? conduit.number, "e.g. CON-101", { full: true })
@@ -2451,18 +2451,35 @@ function openLocationForm(id, returnContext = null) {
   }
 }
 
-function openTeeForm(id, returnContext = null) {
-  const tee = state.settings.tees.find((item) => item.id === id);
-  let nextNumber = 1;
-  while (isDuplicate(state.settings.tees, `Tee ${nextNumber}`, "", "name")) nextNumber += 1;
-  const fields = `<div class="form-grid">${textField("name", "Tee identifier", tee?.name || `Tee ${nextNumber}`, "e.g. Tee 1", { full: true })}</div><p class="form-note">The identifier is used before conduits are connected and to distinguish tees with identical connections. Otherwise the displayed name is based on connected conduit numbers.</p>`;
-  openModal(tee ? "Edit Tee" : "Add Tee", "Tees connect conduit segments and do not represent cable splices.", tee ? `edit-tee:${id}` : returnContext ? "new-tee-inline" : "new-tee", fields, tee ? "Save changes" : "Add Tee");
-  if (returnContext) {
-    pendingLocationReturn = returnContext;
-    modalRoot.querySelectorAll('[data-action="close-modal"]').forEach((button) => {
-      button.dataset.action = "return-to-route";
-    });
+function addRouteTee(form, fieldName) {
+  const usedNames = new Set(state.settings.tees.map((tee) => normalizedLocationName(tee.name)));
+  let number = 1;
+  while (number <= 9999 && usedNames.has(normalizedLocationName(`T${String(number).padStart(4, "0")}`))) number += 1;
+  if (number > 9999) {
+    showToast("No tee identifiers are available.", true);
+    return;
   }
+  const tee = { id: makeId(), name: `T${String(number).padStart(4, "0")}` };
+  state.settings.tees.push(tee);
+  if (!persist()) {
+    state.settings.tees.pop();
+    return;
+  }
+  for (const name of ["fromLocationId", "toLocationId"]) {
+    const select = form.elements.namedItem(name);
+    const option = document.createElement("option");
+    option.value = tee.id;
+    option.textContent = teeDisplayName(tee);
+    select.append(option);
+  }
+  const select = form.elements.namedItem(fieldName);
+  select.value = tee.id;
+  form.querySelector("[data-route-setup-note]")?.remove();
+  form.querySelector('[type="submit"]').disabled = false;
+  updateConduitCableOptions(form);
+  renderPage();
+  select.focus();
+  showToast(`${tee.name} added.`);
 }
 
 /**
@@ -2726,25 +2743,6 @@ function handleSubmit(event) {
     if (index >= 0) state.conduits[index] = conduit;
     else state.conduits.push(conduit);
     saveAndClose(index >= 0 ? "Conduit updated." : "Conduit added.");
-  } else if (kind === "new-tee" || kind === "new-tee-inline" || kind.startsWith("edit-tee:")) {
-    const id = kind.startsWith("edit-tee:") ? kind.slice("edit-tee:".length) : makeId();
-    const name = values.name.trim();
-    if (!name) return showToast("Enter a tee identifier.", true);
-    if (isDuplicate(state.settings.tees, name, id, "name")) return showToast("A tee with that identifier already exists.", true);
-    const index = state.settings.tees.findIndex((item) => item.id === id);
-    if (index >= 0) state.settings.tees[index] = { id, name };
-    else state.settings.tees.push({ id, name });
-    if (kind === "new-tee-inline") {
-      if (persist()) {
-        const returnContext = pendingLocationReturn;
-        pendingLocationReturn = null;
-        closeModal();
-        returnToRoute({ ...returnContext, draft: { ...returnContext.draft, [returnContext.fieldName]: id } });
-        showToast("Tee added. Finish editing your conduit.");
-      }
-    } else {
-      saveAndClose(index >= 0 ? "Tee updated." : "Tee added.");
-    }
   } else if (kind.startsWith("new-location") || kind.startsWith("edit-location:")) {
     const id = kind.startsWith("edit-location:") ? kind.split(":")[1] : makeId();
     const equipmentId = values.description.trim();
@@ -2952,21 +2950,20 @@ function handleAction(action, id, fieldName) {
       submitLabel: "Create duplicate",
     });
   }
-  if (action === "add-route-location" || action === "add-route-tee") {
+  if (action === "add-route-tee") return addRouteTee(modalRoot.querySelector(".modal-form"), fieldName);
+  if (action === "add-route-location") {
     const form = modalRoot.querySelector(".modal-form");
     const formData = new FormData(form);
     const isCable = form.dataset.form === "new-cable" || form.dataset.form.startsWith("edit-cable:");
     const draft = isCable ? captureCableDraft(form, formData) : Object.fromEntries(formData.entries());
     draft.cableIds = formData.getAll("cableIds");
     const returnContext = { formKind: form.dataset.form, draft, fieldName };
-    return action === "add-route-tee" ? openTeeForm(undefined, returnContext) : openLocationForm(undefined, returnContext);
+    return openLocationForm(undefined, returnContext);
   }
   if (action === "new-cable-type") return openCableTypeForm();
   if (action === "edit-cable-type") return openCableTypeForm(id);
   if (action === "new-location") return openLocationForm();
   if (action === "edit-location") return openLocationForm(id);
-  if (action === "new-tee") return openTeeForm();
-  if (action === "edit-tee") return openTeeForm(id);
   if (action === "delete-tee") {
     const tee = state.settings.tees.find((item) => item.id === id);
     if (state.conduits.some((conduit) => conduit.fromLocationId === id || conduit.toLocationId === id)) {
