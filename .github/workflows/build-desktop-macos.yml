@@ -22,6 +22,8 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Prepare static app files
         shell: bash
@@ -61,7 +63,7 @@ jobs:
             echo "::error::APPLE_SIGNING_IDENTITY must be a Developer ID Application identity, not ad-hoc signing"
             exit 1
           fi
-          pake ./dist --name Wireframe --icon ./icons/brand-icon.svg --app-version "$APP_VERSION"
+          pake ./dist --name Wireframe --icon ./icons/brand-icon.svg --multi-arch --app-version "$APP_VERSION"
 
       - name: Verify macOS signature and notarization
         shell: bash
@@ -71,6 +73,8 @@ jobs:
           hdiutil attach ./Wireframe.dmg -readonly -nobrowse -mountpoint "$mountpoint"
           trap 'hdiutil detach "$mountpoint"; rmdir "$mountpoint"' EXIT
           app="$mountpoint/Wireframe.app"
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")
+          lipo -verify_arch x86_64 arm64 "$app/Contents/MacOS/$executable"
           codesign --verify --deep --strict "$app"
           if ! codesign -d --verbose=4 "$app" 2>&1 | grep -q '^Authority=Developer ID Application:'; then
             echo "::error::The app is not signed with a Developer ID Application certificate"
@@ -78,17 +82,21 @@ jobs:
           fi
           xcrun stapler validate "$app"
 
-      - name: Generate macOS checksum
+      - name: Rename macOS app and generate checksum
         shell: bash
-        run: shasum -a 256 Wireframe.dmg > Wireframe-macos.sha256
+        run: |
+          asset="wireframe-${GITHUB_REF_NAME#v}-macos-universal.dmg"
+          mv Wireframe.dmg "$asset"
+          shasum -a 256 "$asset" > Wireframe-macos.sha256
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: Wireframe-macos-latest
           path: |
-            ./Wireframe*
-            ./*.dmg
+            ./wireframe-*-macos-universal.dmg
+            ./Wireframe-macos.sha256
+          if-no-files-found: error
           retention-days: 90
 
   publish-release:
@@ -108,4 +116,4 @@ jobs:
       - name: Upload macOS assets to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/Wireframe.dmg release-assets/Wireframe-macos.sha256
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/wireframe-*-macos-universal.dmg release-assets/Wireframe-macos.sha256
