@@ -275,9 +275,11 @@ tbody tr:hover { background: #fcfcfd; }
 .nec-reference-modal { display: flex; flex-direction: column; width: min(100%, 950px); overflow: hidden; }
 .nec-reference-table-wrap { min-height: 0; overflow: auto; }
 .nec-reference-table thead { position: sticky; top: 0; }
-.nec-reference-table th { white-space: normal; line-height: 1.35; }
+.nec-reference-table th, .nec-reference-table td { text-align: center; }
+.nec-reference-table th:first-child, .nec-reference-table td:first-child { text-align: right; }
+.nec-reference-table thead th { vertical-align: bottom; white-space: normal; line-height: 1.35; }
+.nec-reference-table tbody th, .nec-reference-table tbody td { vertical-align: middle; }
 .nec-reference-table tbody th { border-top: 1px solid var(--line); color: #435064; font-size: 11px; letter-spacing: normal; text-transform: none; white-space: nowrap; }
-.nec-reference-table th:not(:first-child), .nec-reference-table td { text-align: right; }
 .nec-reference-actions { display: flex; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--line); }
 .modal-form .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .modal-form .form-grid.conduit-raceway-fields { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -162,7 +162,10 @@ const VERSION_HISTORY = [
   },
   {
     version: "2026.11.19",
-    changes: ["Renamed Wireframe to TruRun and updated desktop app and release branding."],
+    changes: [
+      "Renamed Wireframe to TruRun and updated desktop app and release branding.",
+      "Added read-only NEC lookup tables to Settings for ampacity, raceway areas, and voltage drop.",
+    ],
   },
 ];
 let showAllVersionHistory = false;
