@@ -1,0 +1,199 @@
+{
+  "settings": {
+    "projectName": "Conduit Tee",
+    "clientName": "Example",
+    "clientProjectNumber": "EX-002",
+    "internalProjectNumber": "INT-002",
+    "revisionNumber": "1",
+    "editorName": "E. Conner",
+    "scheduleStatus": "Complete",
+    "necEdition": "2023",
+    "necJurisdiction": "",
+    "powerFactor": 0.9,
+    "maxVoltageDropPercent": 3,
+    "cableTypes": [
+      {
+        "id": "5ce0c809-058e-4769-b894-3b07778a930d",
+        "manufacturer": "Anixter",
+        "specNumber": "3MR-1203",
+        "specType": "3/C #12 AWG W/GND",
+        "specSuffix": "",
+        "specCount": 3,
+        "specConstruction": "conductor",
+        "specSize": "12 AWG",
+        "specGroundShield": true,
+        "cableMaterial": "Copper",
+        "cableAmpacity": null,
+        "fillClassification": "multiconductor",
+        "diameter": 0.435,
+        "netWeight": 1120,
+        "url": ""
+      }
+    ],
+    "locations": [
+      {
+        "id": "434d20a3-93d6-438e-9fe2-c22161a09eca",
+        "name": "SWGR-1",
+        "description": "SW-MCC-1"
+      },
+      {
+        "id": "20e43d12-6720-4e3a-b0d5-3b47251f0ece",
+        "name": "MCC-1",
+        "description": "Incoming Section"
+      },
+      {
+        "id": "6f2b79dc-e3a3-4e21-a360-bf639136700c",
+        "name": "SWGR-1",
+        "description": "SW-PUMP-1"
+      },
+      {
+        "id": "62fdc216-671a-4f81-aa00-2f39bc014797",
+        "name": "PUMP-1",
+        "description": ""
+      },
+      {
+        "id": "4b2334b7-aa3b-4310-9abd-2d7f53e5d7ac",
+        "name": "SWGR-1",
+        "description": "SW-HEATER-1"
+      },
+      {
+        "id": "859484b0-dde5-47d0-b718-0542e8f5ddf9",
+        "name": "HEATER-1",
+        "description": ""
+      }
+    ],
+    "tees": [
+      {
+        "id": "2c8df51c-3b85-46c8-bd66-53573f728ed1",
+        "name": "Tee 1"
+      },
+      {
+        "id": "f0a470a0-aa94-4ed3-bfb8-c015691a6898",
+        "name": "Tee 2"
+      }
+    ]
+  },
+  "cables": [
+    {
+      "id": "9322d7c7-438b-42e5-8876-4b5987e8415f",
+      "number": "P1001",
+      "length": 70,
+      "cableTypeId": "5ce0c809-058e-4769-b894-3b07778a930d",
+      "fromLocationId": "434d20a3-93d6-438e-9fe2-c22161a09eca",
+      "toLocationId": "20e43d12-6720-4e3a-b0d5-3b47251f0ece",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": 15,
+      "cableRating": "60",
+      "phase": "Three"
+    },
+    {
+      "id": "25702afd-6aab-4cc7-80eb-00b2d22afca4",
+      "number": "P1002",
+      "length": 80,
+      "cableTypeId": "5ce0c809-058e-4769-b894-3b07778a930d",
+      "fromLocationId": "6f2b79dc-e3a3-4e21-a360-bf639136700c",
+      "toLocationId": "62fdc216-671a-4f81-aa00-2f39bc014797",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": 18,
+      "cableRating": "60",
+      "phase": "Three"
+    },
+    {
+      "id": "b0f72f1a-f4eb-4ec9-91f7-6b846faa0d3a",
+      "number": "P1003",
+      "length": 80,
+      "cableTypeId": "5ce0c809-058e-4769-b894-3b07778a930d",
+      "fromLocationId": "4b2334b7-aa3b-4310-9abd-2d7f53e5d7ac",
+      "toLocationId": "859484b0-dde5-47d0-b718-0542e8f5ddf9",
+      "purpose": "480V, 3PH, 3W",
+      "voltage": "480",
+      "loadAmps": 15,
+      "cableRating": "60",
+      "phase": "Three"
+    }
+  ],
+  "conduits": [
+    {
+      "id": "874c1ab3-e9be-4bf1-aa9e-4386c7cd5d8e",
+      "number": "P1001",
+      "size": "1-1/2\"",
+      "racewayType": "rmc",
+      "racewayArea": 2.071,
+      "length": 50,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "434d20a3-93d6-438e-9fe2-c22161a09eca",
+      "toLocationId": "2c8df51c-3b85-46c8-bd66-53573f728ed1",
+      "cableIds": [
+        "9322d7c7-438b-42e5-8876-4b5987e8415f",
+        "25702afd-6aab-4cc7-80eb-00b2d22afca4",
+        "b0f72f1a-f4eb-4ec9-91f7-6b846faa0d3a"
+      ]
+    },
+    {
+      "id": "eaee1e18-93db-48dc-a7b3-45ca39ec3ae2",
+      "number": "P1002",
+      "size": "3/4\"",
+      "racewayType": "rmc",
+      "racewayArea": 0.549,
+      "length": 10,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "2c8df51c-3b85-46c8-bd66-53573f728ed1",
+      "toLocationId": "20e43d12-6720-4e3a-b0d5-3b47251f0ece",
+      "cableIds": [
+        "9322d7c7-438b-42e5-8876-4b5987e8415f"
+      ]
+    },
+    {
+      "id": "3f78879e-dcab-4d87-a449-6aff73cd8b95",
+      "number": "P1003",
+      "size": "1-1/2\"",
+      "racewayType": "rmc",
+      "racewayArea": 2.071,
+      "length": 10,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "2c8df51c-3b85-46c8-bd66-53573f728ed1",
+      "toLocationId": "f0a470a0-aa94-4ed3-bfb8-c015691a6898",
+      "cableIds": [
+        "25702afd-6aab-4cc7-80eb-00b2d22afca4",
+        "b0f72f1a-f4eb-4ec9-91f7-6b846faa0d3a"
+      ]
+    },
+    {
+      "id": "f1ead4cd-e9ce-4719-9c3d-d1ad7f50a093",
+      "number": "P1004",
+      "size": "3/4\"",
+      "racewayType": "rmc",
+      "racewayArea": 0.549,
+      "length": 10,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "f0a470a0-aa94-4ed3-bfb8-c015691a6898",
+      "toLocationId": "62fdc216-671a-4f81-aa00-2f39bc014797",
+      "cableIds": [
+        "25702afd-6aab-4cc7-80eb-00b2d22afca4"
+      ]
+    },
+    {
+      "id": "7982f3e6-60b3-48be-abd8-bc816daecf87",
+      "number": "P1005",
+      "size": "3/4\"",
+      "racewayType": "rmc",
+      "racewayArea": 0.549,
+      "length": 10,
+      "fillCondition": "standard",
+      "nippleLengthInches": null,
+      "fromLocationId": "f0a470a0-aa94-4ed3-bfb8-c015691a6898",
+      "toLocationId": "859484b0-dde5-47d0-b718-0542e8f5ddf9",
+      "cableIds": [
+        "b0f72f1a-f4eb-4ec9-91f7-6b846faa0d3a"
+      ]
+    }
+  ],
+  "exportedAt": "2026-11-28T14:23:08.858Z",
+  "formatVersion": 1
+}
