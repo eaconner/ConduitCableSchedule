@@ -60,16 +60,16 @@ jobs:
             echo "::error::Expected exactly one macOS DMG"
             exit 1
           fi
-          mv "${dmgs[0]}" Wireframe.dmg
+          mv "${dmgs[0]}" TruRun.dmg
 
       - name: Verify macOS signature and notarization
         shell: bash
         run: |
-          mountpoint="$RUNNER_TEMP/wireframe-dmg"
+          mountpoint="$RUNNER_TEMP/trurun-dmg"
           mkdir "$mountpoint"
-          hdiutil attach ./Wireframe.dmg -readonly -nobrowse -mountpoint "$mountpoint"
+          hdiutil attach ./TruRun.dmg -readonly -nobrowse -mountpoint "$mountpoint"
           trap 'hdiutil detach "$mountpoint"; rmdir "$mountpoint"' EXIT
-          app="$mountpoint/Wireframe.app"
+          app="$mountpoint/TruRun.app"
           executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")
           lipo "$app/Contents/MacOS/$executable" -verify_arch x86_64
           lipo "$app/Contents/MacOS/$executable" -verify_arch arm64
@@ -83,17 +83,17 @@ jobs:
       - name: Rename macOS app and generate checksum
         shell: bash
         run: |
-          asset="wireframe-${GITHUB_REF_NAME#v}-macos-universal.dmg"
-          mv Wireframe.dmg "$asset"
+          asset="trurun-${GITHUB_REF_NAME#v}-macos-universal.dmg"
+          mv TruRun.dmg "$asset"
           shasum -a 256 "$asset" > "${asset%.dmg}.sha256"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Wireframe-macos-latest
+          name: TruRun-macos-latest
           path: |
-            ./wireframe-*-macos-universal.dmg
-            ./wireframe-*-macos-universal.sha256
+            ./trurun-*-macos-universal.dmg
+            ./trurun-*-macos-universal.sha256
           if-no-files-found: error
           retention-days: 90
 
@@ -108,10 +108,10 @@ jobs:
       - name: Download macOS release assets
         uses: actions/download-artifact@v4
         with:
-          name: Wireframe-macos-latest
+          name: TruRun-macos-latest
           path: release-assets
 
       - name: Upload macOS assets to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/wireframe-*-macos-universal.dmg release-assets/wireframe-*-macos-universal.sha256
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/trurun-*-macos-universal.dmg release-assets/trurun-*-macos-universal.sha256

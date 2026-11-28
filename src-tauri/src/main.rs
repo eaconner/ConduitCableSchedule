@@ -60,7 +60,7 @@ fn main() {
             let _ = (window, event);
         })
         .build(tauri::generate_context!())
-        .expect("Failed to build Wireframe")
+        .expect("Failed to build TruRun")
         .run(|app, event| {
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen {

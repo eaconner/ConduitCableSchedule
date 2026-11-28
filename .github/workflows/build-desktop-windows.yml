@@ -43,19 +43,19 @@ jobs:
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME -creplace '^v', ''
-          $asset = "wireframe-$version-windows-x64-portable.zip"
-          Copy-Item ./src-tauri/target/x86_64-pc-windows-msvc/release/wireframe.exe ./Wireframe.exe
-          Compress-Archive -Path ./Wireframe.exe -DestinationPath $asset
+          $asset = "trurun-$version-windows-x64-portable.zip"
+          Copy-Item ./src-tauri/target/x86_64-pc-windows-msvc/release/wireframe.exe ./TruRun.exe
+          Compress-Archive -Path ./TruRun.exe -DestinationPath $asset
           $hash = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $asset" | Set-Content -Encoding ascii ([System.IO.Path]::ChangeExtension($asset, ".sha256"))
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Wireframe-windows-latest
+          name: TruRun-windows-latest
           path: |
-            ./wireframe-*-windows-x64-portable.zip
-            ./wireframe-*-windows-x64-portable.sha256
+            ./trurun-*-windows-x64-portable.zip
+            ./trurun-*-windows-x64-portable.sha256
           if-no-files-found: error
           retention-days: 90
 
@@ -70,10 +70,10 @@ jobs:
       - name: Download Windows release assets
         uses: actions/download-artifact@v4
         with:
-          name: Wireframe-windows-latest
+          name: TruRun-windows-latest
           path: release-assets
 
       - name: Upload Windows assets to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/wireframe-*-windows-x64-portable.zip release-assets/wireframe-*-windows-x64-portable.sha256
+        run: gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" release-assets/trurun-*-windows-x64-portable.zip release-assets/trurun-*-windows-x64-portable.sha256

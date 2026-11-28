@@ -1,5 +1,5 @@
 /**
- * Wireframe — Cable & Conduit Schedules
+ * TruRun — Cable & Conduit Schedules
  * A lightweight browser application for creating electrical cable and conduit schedules,
  * voltage drop calculations, conduit fill analysis, and bill of materials management.
  *
@@ -159,6 +159,10 @@ const VERSION_HISTORY = [
       "Updated desktop build workflows to verify both macOS architectures and name checksum files to match their release assets.",
       "Automatically assigned sequential tee identifiers without an extra dialog and hid the Tees section when no tees exist.",
     ],
+  },
+  {
+    version: "2026.11.19",
+    changes: ["Renamed Wireframe to TruRun and updated desktop app and release branding."],
   },
 ];
 let showAllVersionHistory = false;
@@ -1731,7 +1735,7 @@ function renderSettings() {
         ${equipmentLocations.length ? renderPaginationControls("equipment", equipmentLocations.length) : ""}
       </section>
       <section class="content-card settings-section">
-        <div class="card-heading"><div><h2>Version History</h2><p>Updates and changes made to Wireframe</p></div></div>
+        <div class="card-heading"><div><h2>Version History</h2><p>Updates and changes made to TruRun</p></div></div>
         <div id="version-history-content">${renderVersionHistory()}</div>
       </section>
     </div>`;
